@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .result { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; }
+        pre { background-color: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>AI Dungeon Master API Test</h1>
+    
+    <div>
+        <h2>1. Basic API Test</h2>
+        <button id="testBasicApi">Test Basic API</button>
+        <div id="basicApiResult" class="result"></div>
+    </div>
+    
+    <div>
+        <h2>2. Message API Test</h2>
+        <textarea id="testMessage" rows="3" cols="50" placeholder="Enter a test message here">Hello, I'm a new adventurer!</textarea>
+        <br>
+        <button id="testMessageApi">Test Message API</button>
+        <div id="messageApiResult" class="result"></div>
+    </div>
+    
+    <div>
+        <h2>3. Dice Roll API Test</h2>
+        <select id="diceType">
+            <option value="d4">d4</option>
+            <option value="d6">d6</option>
+            <option value="d8">d8</option>
+            <option value="d10">d10</option>
+            <option value="d12">d12</option>
+            <option value="d20" selected>d20</option>
+        </select>
+        <button id="testDiceApi">Test Dice Roll API</button>
+        <div id="diceApiResult" class="result"></div>
+    </div>
+    
+    <script>
+        // Test basic API endpoint
+        document.getElementById('testBasicApi').addEventListener('click', function() {
+            const resultDiv = document.getElementById('basicApiResult');
+            resultDiv.innerHTML = 'Testing...';
+            resultDiv.className = 'result';
+            
+            fetch('/test-api')
+                .then(response => response.json())
+                .then(data => {
+                    resultDiv.innerHTML = `<strong>Success!</strong> Response: <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    resultDiv.className = 'result success';
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<strong>Error!</strong> ${error.message}`;
+                    resultDiv.className = 'result error';
+                });
+        });
+        
+        // Test message API endpoint
+        document.getElementById('testMessageApi').addEventListener('click', function() {
+            const resultDiv = document.getElementById('messageApiResult');
+            const message = document.getElementById('testMessage').value;
+            
+            resultDiv.innerHTML = 'Testing...';
+            resultDiv.className = 'result';
+            
+            fetch('/api/send-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    session_id: null // Let the server create a new session
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    resultDiv.innerHTML = `<strong>Success!</strong> Response: <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    resultDiv.className = 'result success';
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<strong>Error!</strong> ${error.message}`;
+                    resultDiv.className = 'result error';
+                });
+        });
+        
+        // Test dice roll API endpoint
+        document.getElementById('testDiceApi').addEventListener('click', function() {
+            const resultDiv = document.getElementById('diceApiResult');
+            const diceType = document.getElementById('diceType').value;
+            
+            resultDiv.innerHTML = 'Testing...';
+            resultDiv.className = 'result';
+            
+            fetch('/api/roll-dice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    dice: diceType,
+                    modifier: 0
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    resultDiv.innerHTML = `<strong>Success!</strong> Response: <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    resultDiv.className = 'result success';
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = `<strong>Error!</strong> ${error.message}`;
+                    resultDiv.className = 'result error';
+                });
+        });
+    </script>
+</body>
+</html>
