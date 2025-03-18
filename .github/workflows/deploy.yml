@@ -16,7 +16,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /var/www/your-repo
+            cd /var/www/ai_dungeon_master
             git pull origin main
             source venv/bin/activate
             pip install -r requirements.txt
