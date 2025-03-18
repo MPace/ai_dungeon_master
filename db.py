@@ -55,7 +55,7 @@ def init_db():
 def get_db():
     """Get the database instance"""
     global db
-    if not db:
+    if db is None:
         init_db()
     return db
 

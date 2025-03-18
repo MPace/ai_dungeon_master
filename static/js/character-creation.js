@@ -4044,23 +4044,49 @@ function loadFinishStep() {
     }, 100);
 }
 
-// Function to finish character creation and start the game
-function finishCharacterCreation() {
+// Updated finishCharacterCreation function that continues even if database save fails
+async function finishCharacterCreation() {
     // Save final character description if any
     const descriptionElement = document.getElementById('character-description');
     if (descriptionElement) {
         characterData.description = descriptionElement.value;
     }
     
-    // Save character to database
-    saveCharacterToDatabase();
+    try {
+        // Attempt to save character to database
+        await saveCharacterToDatabase();
+        console.log("Character successfully saved to database");
+    } catch (error) {
+        console.error("Error saving character to database:", error);
+        
+        // Continue with the game even if database save fails
+        // Show a notification to the user, but don't block progress
+        const errorMessage = document.createElement('div');
+        errorMessage.style.position = 'fixed';
+        errorMessage.style.bottom = '20px';
+        errorMessage.style.right = '20px';
+        errorMessage.style.padding = '10px 20px';
+        errorMessage.style.backgroundColor = 'rgba(200,50,50,0.9)';
+        errorMessage.style.color = 'white';
+        errorMessage.style.borderRadius = '5px';
+        errorMessage.style.zIndex = '9999';
+        errorMessage.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+        errorMessage.textContent = "Character saved locally but couldn't be saved to the server.";
+        
+        document.body.appendChild(errorMessage);
+        
+        // Remove the notification after 5 seconds
+        setTimeout(() => {
+            document.body.removeChild(errorMessage);
+        }, 5000);
+    }
     
     // Set the active character for the chat interface
     if (window.setActiveCharacter) {
         window.setActiveCharacter(characterData);
         console.log('Set active character for adventure:', characterData.name);
     } else {
-        console.error('setActiveCharacter function not available');
+        console.warn('setActiveCharacter function not available, falling back to localStorage');
         // Fallback: store in localStorage directly
         localStorage.setItem('activeCharacter', JSON.stringify(characterData));
     }
@@ -4083,7 +4109,7 @@ function finishCharacterCreation() {
     // Include spellcasting information in the welcome message if applicable
     let spellcastingInfo = '';
     if (characterData.spellcasting && ['wizard', 'bard', 'cleric'].includes(characterData.class)) {
-        spellcastingInfo = ` As a ${classData[characterData.class].name}, you have access to powerful magic.`;
+        spellcastingInfo = ` As a ${classData[characterData.class]?.name || 'spellcaster'}, you have access to powerful magic.`;
     }
     
     welcomeMessage.innerHTML = `
@@ -4604,7 +4630,62 @@ function sendInitialMessageToAI(characterData) {
     });
 }
 
-
+// Function to save character to the database via the API
+function saveCharacterToDatabase() {
+    console.log("Attempting to save character to database...");
+    
+    // Create a clean copy of the character data to avoid any circular references
+    // and remove any functions or complex objects that might cause serialization issues
+    const cleanCharacterData = JSON.parse(JSON.stringify(characterData));
+    
+    // Log the data being sent for debugging
+    console.log("Character data being sent:", cleanCharacterData);
+    
+    return new Promise((resolve, reject) => {
+        // Make API call to the server endpoint
+        fetch('/api/save-character', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(cleanCharacterData)
+        })
+        .then(response => {
+            console.log("Server response status:", response.status);
+            
+            // Even if response is not OK, get the response body for debugging
+            return response.text().then(text => {
+                if (response.ok) {
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error("Error parsing successful response:", e);
+                        console.log("Raw response text:", text);
+                        throw new Error("Could not parse server response");
+                    }
+                } else {
+                    console.error("Server error response:", text);
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+            });
+        })
+        .then(data => {
+            if (data.success) {
+                console.log(`Character saved successfully with ID: ${data.character_id}`);
+                // Store the character_id in the characterData object
+                characterData.character_id = data.character_id;
+                resolve(data.character_id);
+            } else {
+                console.error("Error saving character:", data.error);
+                reject(new Error(data.error || "Unknown error saving character"));
+            }
+        })
+        .catch(error => {
+            console.error("Network or server error saving character:", error);
+            reject(error);
+        });
+    });
+}
 
 
 // Initialize the character creation process when "New Game" is clicked

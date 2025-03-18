@@ -14,7 +14,7 @@ def save_character(character_data, user_id=None):
         str: Character ID if successful, None otherwise
     """
     db = get_db()
-    if not db:
+    if db is None:
         print("Database not available, cannot save character")
         return None
     
