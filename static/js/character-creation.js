@@ -4044,6 +4044,63 @@ function loadFinishStep() {
     }, 100);
 }
 
+// Function to save character to the database via the API
+function saveCharacterToDatabase() {
+    console.log("Attempting to save character to database...");
+    
+    // Create a clean copy of the character data to avoid any circular references
+    // and remove any functions or complex objects that might cause serialization issues
+    const cleanCharacterData = JSON.parse(JSON.stringify(characterData));
+    
+    // Log the data being sent for debugging
+    console.log("Character data being sent:", cleanCharacterData);
+    
+    return new Promise((resolve, reject) => {
+        // Make API call to the server endpoint
+        fetch('/api/save-character', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(cleanCharacterData)
+        })
+        .then(response => {
+            console.log("Server response status:", response.status);
+            
+            // Even if response is not OK, get the response body for debugging
+            return response.text().then(text => {
+                if (response.ok) {
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error("Error parsing successful response:", e);
+                        console.log("Raw response text:", text);
+                        throw new Error("Could not parse server response");
+                    }
+                } else {
+                    console.error("Server error response:", text);
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+            });
+        })
+        .then(data => {
+            if (data.success) {
+                console.log(`Character saved successfully with ID: ${data.character_id}`);
+                // Store the character_id in the characterData object
+                characterData.character_id = data.character_id;
+                resolve(data.character_id);
+            } else {
+                console.error("Error saving character:", data.error);
+                reject(new Error(data.error || "Unknown error saving character"));
+            }
+        })
+        .catch(error => {
+            console.error("Network or server error saving character:", error);
+            reject(error);
+        });
+    });
+}
+
 // Updated finishCharacterCreation function that continues even if database save fails
 async function finishCharacterCreation() {
     // Save final character description if any
@@ -4630,62 +4687,7 @@ function sendInitialMessageToAI(characterData) {
     });
 }
 
-// Function to save character to the database via the API
-function saveCharacterToDatabase() {
-    console.log("Attempting to save character to database...");
-    
-    // Create a clean copy of the character data to avoid any circular references
-    // and remove any functions or complex objects that might cause serialization issues
-    const cleanCharacterData = JSON.parse(JSON.stringify(characterData));
-    
-    // Log the data being sent for debugging
-    console.log("Character data being sent:", cleanCharacterData);
-    
-    return new Promise((resolve, reject) => {
-        // Make API call to the server endpoint
-        fetch('/api/save-character', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(cleanCharacterData)
-        })
-        .then(response => {
-            console.log("Server response status:", response.status);
-            
-            // Even if response is not OK, get the response body for debugging
-            return response.text().then(text => {
-                if (response.ok) {
-                    try {
-                        return JSON.parse(text);
-                    } catch (e) {
-                        console.error("Error parsing successful response:", e);
-                        console.log("Raw response text:", text);
-                        throw new Error("Could not parse server response");
-                    }
-                } else {
-                    console.error("Server error response:", text);
-                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-                }
-            });
-        })
-        .then(data => {
-            if (data.success) {
-                console.log(`Character saved successfully with ID: ${data.character_id}`);
-                // Store the character_id in the characterData object
-                characterData.character_id = data.character_id;
-                resolve(data.character_id);
-            } else {
-                console.error("Error saving character:", data.error);
-                reject(new Error(data.error || "Unknown error saving character"));
-            }
-        })
-        .catch(error => {
-            console.error("Network or server error saving character:", error);
-            reject(error);
-        });
-    });
-}
+
 
 
 // Initialize the character creation process when "New Game" is clicked
