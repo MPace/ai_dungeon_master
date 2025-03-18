@@ -97,6 +97,8 @@ document.addEventListener('DOMContentLoaded', function() {
         scrollToBottom();
     }
     
+
+
     function scrollToBottom() {
         if (!chatWindow) {
             console.error('Chat window element not found');
@@ -140,6 +142,32 @@ document.addEventListener('DOMContentLoaded', function() {
     // Global variables for session management
     let sessionId = null;
     let gameState = 'intro';
+    let currentCharacter = null;
+    
+    // Attempt to load active character from localStorage
+    function loadActiveCharacter() {
+        const characterJson = localStorage.getItem('activeCharacter');
+        if (characterJson) {
+            try {
+                currentCharacter = JSON.parse(characterJson);
+                console.log('Loaded active character from storage:', currentCharacter?.name);
+                return true;
+            } catch (e) {
+                console.error('Error parsing stored character:', e);
+            }
+        }
+        return false;
+    }
+    
+    // Call this on page load
+    loadActiveCharacter();
+    
+    // Expose this function to be called from character-creation.js
+    window.setActiveCharacter = function(characterData) {
+        currentCharacter = characterData;
+        localStorage.setItem('activeCharacter', JSON.stringify(characterData));
+        console.log('Active character set:', characterData?.name);
+    };
     
     function sendToBackend(message) {
         console.log('Sending message to backend:', message);
@@ -158,6 +186,12 @@ document.addEventListener('DOMContentLoaded', function() {
             message: message,
             session_id: sessionId
         };
+        
+        // Add character data if available
+        if (currentCharacter) {
+            data.character_data = currentCharacter;
+            console.log('Including character data in request:', currentCharacter.name);
+        }
         
         // Send the API request
         console.log('Sending fetch request to /api/send-message');

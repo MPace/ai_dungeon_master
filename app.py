@@ -6,6 +6,8 @@ from datetime import datetime
 import uuid
 from dotenv import load_dotenv
 from xai_handler import XAIHandler
+from db import init_db, close_db
+from character_data import save_character, get_character, list_characters
 
 # Initialize Flask app
 app = Flask(__name__,
@@ -13,9 +15,14 @@ app = Flask(__name__,
            template_folder='templates')
 app.secret_key = os.urandom(24)  # For session management
 
+# Initialize database connection
+print("Initializing database connection...")
+db_available = init_db()
+
 # Ensure directory structure exists
 os.makedirs('static/css', exist_ok=True)
 os.makedirs('static/js', exist_ok=True)
+os.makedirs('static/images', exist_ok=True)
 os.makedirs('templates', exist_ok=True)
 
 # Print debug information
@@ -77,6 +84,7 @@ def send_message():
     data = request.json
     message = data.get('message', '')
     session_id = data.get('session_id')
+    character_data = data.get('character_data')
     
     print(f"\n--- New message received: '{message}' ---")
     
@@ -85,12 +93,15 @@ def send_message():
         session_id = str(uuid.uuid4())
         SESSIONS_DB[session_id] = {
             'history': [],
-            'character': None,
+            'character': character_data,  # Store character data in the session
             'game_state': 'intro'
         }
         print(f"Created new session: {session_id}")
     else:
         print(f"Using existing session: {session_id}")
+        # Update character data if provided
+        if character_data:
+            SESSIONS_DB[session_id]['character'] = character_data
     
     # Add player message to history
     SESSIONS_DB[session_id]['history'].append({
@@ -102,6 +113,26 @@ def send_message():
     # Process the message and generate a response
     if ai_handler:
         print(f"Using AI handler with model: {AI_MODEL}")
+        
+        # Create a system prompt that includes character information
+        character_info = ""
+        if SESSIONS_DB[session_id]['character']:
+            char = SESSIONS_DB[session_id]['character']
+            character_info = f"The player's character is named {char.get('name', 'Unknown')}, "
+            character_info += f"a level {char.get('level', '1')} {char.get('race', 'Unknown')} {char.get('class', 'Unknown')} "
+            character_info += f"with the following abilities: "
+            
+            abilities = char.get('abilities', {})
+            for ability_name, score in abilities.items():
+                modifier = (score - 10) // 2
+                sign = "+" if modifier >= 0 else ""
+                character_info += f"{ability_name.capitalize()}: {score} ({sign}{modifier}), "
+            
+            character_info += f"with proficiency in the following skills: {', '.join(char.get('skills', []))}. "
+            
+            if char.get('description'):
+                character_info += f"Character description: {char['description']}"
+        
         # Use AI handler to generate response
         response = ai_handler.generate_response(
             player_message=message,
@@ -163,6 +194,77 @@ def roll_dice():
         'modified_result': modified_result
     })
 
+@app.route('/api/save-character', methods=['POST'])
+def save_character_route():
+    """API endpoint to save a character"""
+    if not db_available:
+        return jsonify({
+            'success': False,
+            'error': 'Database not available'
+        })
+    
+    character_data = request.json
+    
+    # TODO: Get user_id from session when authentication is implemented
+    user_id = None
+    
+    character_id = save_character(character_data, user_id)
+    
+    if character_id:
+        return jsonify({
+            'success': True,
+            'character_id': character_id
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'error': 'Failed to save character'
+        })
+
+@app.route('/api/character/<character_id>', methods=['GET'])
+def get_character_route(character_id):
+    """API endpoint to retrieve a character"""
+    if not db_available:
+        return jsonify({
+            'success': False,
+            'error': 'Database not available'
+        })
+    
+    character = get_character(character_id)
+    
+    if character:
+        return jsonify({
+            'success': True,
+            'character': character
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'error': 'Character not found'
+        })
+
+@app.route('/api/characters', methods=['GET'])
+def list_characters_route():
+    """API endpoint to list characters"""
+    if not db_available:
+        return jsonify({
+            'success': False,
+            'error': 'Database not available'
+        })
+    
+    # TODO: Get user_id from session when authentication is implemented
+    user_id = None
+    
+    characters = list_characters(user_id)
+    
+    return jsonify({
+        'success': True,
+        'characters': characters
+    })
+
+
+
+
 def generate_dm_response(message, session):
     """
     Generate a DM response based on the player's message and session state
@@ -170,6 +272,8 @@ def generate_dm_response(message, session):
     """
     message_lower = message.lower()
     game_state = session.get('game_state', 'intro')
+    character = session.get('character', {})
+    character_name = character.get('name', 'adventurer') if character else 'adventurer'
     
     print("WARNING: Using fallback response generator instead of AI!")
     
@@ -177,23 +281,23 @@ def generate_dm_response(message, session):
     if game_state == 'intro':
         if any(word in message_lower for word in ['start', 'begin', 'new game', 'adventure']):
             session['game_state'] = 'tavern'
-            return ("You enter the Prancing Pony, a lively tavern in the town of Bree. "
+            return (f"Well met, {character_name}! You enter the Prancing Pony, a lively tavern in the town of Bree. "
                    "The tavern is bustling with activity. In the corner, you notice a "
                    "hooded figure watching you intently. The bartender nods in your direction. "
                    "What would you like to do?")
-        return ("Welcome to AI Dungeon Master! I'm here to guide you through a D&D 5e adventure. "
+        return (f"Welcome, {character_name}! I'm here to guide you through a D&D 5e adventure. "
                "Would you like to start a new game or create a character first?")
     
     if game_state == 'tavern':
         if any(word in message_lower for word in ['talk', 'bartender', 'speak']):
             return ("You approach the bartender, a stout halfling with a friendly smile. "
-                   "\"What can I do for ya, traveler?\" he asks, wiping a mug with a cloth.")
+                   f"\"What can I do for ya, {character_name}?\" he asks, wiping a mug with a cloth.")
         
         if any(word in message_lower for word in ['hooded', 'figure', 'corner', 'stranger']):
             session['game_state'] = 'quest_offer'
             return ("You approach the hooded figure. As you get closer, they pull back their hood "
                    "slightly, revealing the face of an elderly elven woman with silvery eyes. "
-                   "\"I've been waiting for someone like you,\" she says in a hushed voice. "
+                   f"\"I've been waiting for someone like you, {character_name},\" she says in a hushed voice. "
                    "\"I have a task that requires someone with your... unique abilities.\"")
     
     if game_state == 'quest_offer':
@@ -206,13 +310,13 @@ def generate_dm_response(message, session):
     
     # Default responses based on keywords
     if any(word in message_lower for word in ['attack', 'fight', 'hit']):
-        return "Roll for initiative! What are you attacking and with what weapon?"
+        return f"Roll for initiative, {character_name}! What are you attacking and with what weapon?"
     
     if any(word in message_lower for word in ['look', 'examine', 'inspect']):
-        return "You look around carefully. What specifically are you trying to examine?"
+        return f"You look around carefully. What specifically are you trying to examine, {character_name}?"
     
     # Fallback response
-    return ("FALLBACK RESPONSE: I understand you want to " + message[:20] + "... " +
+    return (f"FALLBACK RESPONSE: I understand you want to {message[:20]}... "
            "In a full implementation, I would use an AI language model to generate "
            "a contextually appropriate DM response.")
 

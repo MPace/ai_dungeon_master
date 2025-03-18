@@ -50,7 +50,6 @@ class XAIHandler:
             }
             
             print(f"Sending request to xAI API with model: {self.model}")
-            print(f"Request payload: {json.dumps(payload, indent=2)}")
             
             # Send request to the API
             response = requests.post(
@@ -64,8 +63,6 @@ class XAIHandler:
             
             # Parse the response
             result = response.json()
-            
-            print(f"Response received: {json.dumps(result, indent=2)}")
             
             # Extract the generated text
             if "choices" in result and len(result["choices"]) > 0:
@@ -119,50 +116,80 @@ class XAIHandler:
             "Describe environments vividly, represent NPCs with distinct personalities, "
             "and keep the game flowing naturally. "
             "When rules or dice rolls are needed, mention them and incorporate the results into the narrative. "
+            "Avoid using meta-language about AI, language models, or the simulation. "
+            "Stay fully in character as a Dungeon Master in a fantasy world. "
         )
         
         # Add game state context
         if game_state == "intro":
             base_prompt += (
                 "The player is just starting their adventure. Help them get oriented "
-                "and excited about the campaign world. Offer hooks to engage them."
+                "and excited about the campaign world. Offer hooks to engage them. "
+                "Provide vivid descriptions and options for what they might want to do. "
             )
         elif game_state == "combat":
             base_prompt += (
                 "The player is in combat. Describe the action vividly and maintain tension. "
-                "Track initiative order and enemy actions. Describe combat effects dramatically."
+                "Track initiative order and enemy actions. Describe combat effects dramatically. "
+                "Ask for specific actions, attacks, or spell casting. Mention AC checks and damage rolls when appropriate. "
+                "Make combat feel dynamic and consequential. "
             )
         elif game_state == "exploration":
             base_prompt += (
                 "The player is exploring. Describe the environment in rich detail. "
-                "Include sensory information and interesting features that reward investigation."
+                "Include sensory information and interesting features that reward investigation. "
+                "Offer clear directions and points of interest. Hint at possible secrets or hidden elements. "
+                "Create a sense of wonder and discovery. "
             )
         elif game_state == "social":
             base_prompt += (
                 "The player is in a social interaction. Portray NPCs with distinct personalities, "
-                "motivations, and speech patterns. Respond to social approaches and charisma-based actions."
+                "motivations, and speech patterns. Respond to social approaches and charisma-based actions. "
+                "Give NPCs clear voices, mannerisms, and attitudes. "
+                "Allow for persuasion, deception, and intimidation attempts where appropriate. "
             )
         
         # Add character context if available
         if character_data:
-            char_details = []
-            if "name" in character_data:
-                char_details.append(f"Name: {character_data['name']}")
-            if "race" in character_data:
-                char_details.append(f"Race: {character_data['race']}")
-            if "class" in character_data:
-                char_details.append(f"Class: {character_data['class']}")
-            if "level" in character_data:
-                char_details.append(f"Level: {character_data['level']}")
-                
-            if char_details:
-                char_info = ", ".join(char_details)
-                base_prompt += f"\n\nThe player's character is: {char_info}."
+            base_prompt += "\n\n## CHARACTER INFORMATION:"
+            
+            # Basic character info
+            if character_data.get("name"):
+                base_prompt += f"\nName: {character_data['name']}"
+            if character_data.get("race"):
+                race_key = character_data["race"]
+                race_name = race_key.capitalize()
+                # Add special race info if available from the frontend (not passed directly)
+                base_prompt += f"\nRace: {race_name}"
+            if character_data.get("class"):
+                class_key = character_data["class"]
+                class_name = class_key.capitalize()
+                base_prompt += f"\nClass: {class_name}"
+            if character_data.get("level"):
+                base_prompt += f"\nLevel: {character_data['level']}"
+            if character_data.get("background"):
+                background_key = character_data["background"]
+                background_name = background_key.capitalize()
+                base_prompt += f"\nBackground: {background_name}"
                 
             # Add abilities if available
-            if "abilities" in character_data:
-                base_prompt += "\nCharacter ability scores: "
+            if character_data.get("abilities"):
+                base_prompt += "\n\nAbility Scores:"
                 for ability, score in character_data["abilities"].items():
-                    base_prompt += f"{ability}: {score}, "
-                    
+                    modifier = (score - 10) // 2
+                    sign = "+" if modifier >= 0 else ""
+                    base_prompt += f"\n- {ability.capitalize()}: {score} ({sign}{modifier})"
+            
+            # Add skills if available
+            if character_data.get("skills") and len(character_data["skills"]) > 0:
+                base_prompt += "\n\nSkill Proficiencies:"
+                for skill in character_data["skills"]:
+                    base_prompt += f"\n- {skill}"
+            
+            # Add character description if available
+            if character_data.get("description"):
+                base_prompt += f"\n\nDescription: {character_data['description']}"
+        
+        base_prompt += "\n\nRespond as the Dungeon Master guiding this character through their adventure. Use their character name and reference their abilities, background, and skills where relevant."
+        
         return base_prompt

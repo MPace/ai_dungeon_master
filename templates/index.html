@@ -16,14 +16,39 @@
 <body class="bg-dark">
     <div class="container-fluid px-4 py-3">
         <!-- Header -->
-        <header class="text-center mb-3">
-            <h1 class="display-4 text-light">AI Dungeon Master</h1>
-            <p class="lead text-light">Your interactive D&D 5e experience</p>
+        <header class="text-center mb-5">
+            <h1 class="display-3 text-light main-title">AI Dungeon Master</h1>
+            <p class="lead text-light subtitle">Your Adventure Awaits</p>
         </header>
         
-        <!-- Main content -->
-        <div class="row">
-            <!-- Game chat area - Now wider -->
+        <!-- Main Menu - Only shown initially -->
+        <div id="main-menu" class="row justify-content-center mb-5">
+            <div class="col-md-8 text-center">
+                <div class="card main-menu-card">
+                    <div class="card-body p-5">
+                        <h2 class="card-title mb-4">Begin Your Adventure</h2>
+                        <div class="d-grid gap-4 col-md-8 mx-auto">
+                            <button id="new-game-btn" class="btn btn-lg btn-primary py-3">
+                                <i class="bi bi-plus-circle me-2"></i>New Game
+                            </button>
+                            <button id="load-game-btn" class="btn btn-lg btn-secondary py-3" disabled>
+                                <i class="bi bi-folder-symlink me-2"></i>Load Game
+                                <small class="d-block mt-1">(Coming Soon)</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Character Creation (Initially Hidden) -->
+        <div id="character-creation" class="row justify-content-center mb-4" style="display: none;">
+            <!-- Will be populated dynamically -->
+        </div>
+        
+        <!-- Game Interface (Initially Hidden) -->
+        <div id="game-interface" class="row" style="display: none;">
+            <!-- Game chat area -->
             <div class="col-md-9 mb-4">
                 <div class="card shadow h-100 d-flex flex-column border-0">
                     <div class="card-header bg-dark text-light border-bottom border-secondary">
@@ -46,7 +71,7 @@
                 </div>
             </div>
             
-            <!-- Sidebar for character info and tools - Now narrower -->
+            <!-- Sidebar for character info and tools -->
             <div class="col-md-3 mb-4">
                 <div class="card shadow mb-4 border-0">
                     <div class="card-header bg-dark text-light border-bottom border-secondary">
@@ -82,111 +107,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
     <script src="static/js/main.js"></script>
-    
-    <!-- Inline script for fallback functionality -->
-    <script>
-    // Fallback script in case the external JavaScript file doesn't load
-    console.log('Inline script executing');
-    
-    // Check if the main script has already initialized the handlers
-    setTimeout(function() {
-        // Elements
-        const chatWindow = document.getElementById('chatWindow');
-        const playerInput = document.getElementById('playerInput');
-        const sendButton = document.getElementById('sendButton');
-        
-        // Check if click handler is already attached
-        if (sendButton && !sendButton._hasClickHandler) {
-            console.log('Adding fallback click handler to send button');
-            sendButton._hasClickHandler = true;
-            
-            sendButton.addEventListener('click', function() {
-                console.log('Send button clicked (fallback handler)');
-                const message = playerInput.value.trim();
-                
-                if (message) {
-                    // Create and add player message element
-                    const playerMsgDiv = document.createElement('div');
-                    playerMsgDiv.classList.add('message', 'player-message');
-                    playerMsgDiv.innerHTML = '<p>' + message + '</p>';
-                    chatWindow.appendChild(playerMsgDiv);
-                    
-                    // Clear input
-                    playerInput.value = '';
-                    
-                    // Scroll to bottom
-                    chatWindow.scrollTop = chatWindow.scrollHeight;
-                    
-                    // Try to fetch from API first, fall back if it fails
-                    const apiErrorDiv = document.createElement('div');
-                    apiErrorDiv.classList.add('message', 'dm-message');
-                    apiErrorDiv.innerHTML = '<p>Testing API connection...</p>';
-                    chatWindow.appendChild(apiErrorDiv);
-                    chatWindow.scrollTop = chatWindow.scrollHeight;
-                    
-                    // Try to call the test API endpoint
-                    fetch('/test-api')
-                        .then(response => {
-                            if (!response.ok) throw new Error('API test failed with status: ' + response.status);
-                            return response.json();
-                        })
-                        .then(data => {
-                            // API is working, update message
-                            apiErrorDiv.innerHTML = '<p>API connection successful! However, the main API call failed. Check browser console for details.</p>';
-                            console.log('API test successful:', data);
-                            
-                            // Try the actual message API
-                            return fetch('/api/send-message', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    message: message,
-                                    session_id: null
-                                })
-                            });
-                        })
-                        .then(response => {
-                            if (!response.ok) throw new Error('Message API failed with status: ' + response.status);
-                            return response.json();
-                        })
-                        .then(data => {
-                            // If we get here, API worked after all!
-                            apiErrorDiv.innerHTML = '<p>' + data.response + '</p>';
-                        })
-                        .catch(error => {
-                            // Update with error details
-                            apiErrorDiv.innerHTML = '<p>API Error: ' + error.message + 
-                                '. Visit /api-test to debug API issues. Falling back to default response.</p>';
-                            console.error('API error in fallback handler:', error);
-                            
-                            // Add the fallback response after error message
-                            setTimeout(function() {
-                                const dmMsgDiv = document.createElement('div');
-                                dmMsgDiv.classList.add('message', 'dm-message');
-                                dmMsgDiv.innerHTML = '<p>The Dungeon Master acknowledges your action. (Fallback response)</p>';
-                                chatWindow.appendChild(dmMsgDiv);
-                                chatWindow.scrollTop = chatWindow.scrollHeight;
-                            }, 1000);
-                        });
-                }
-            });
-        }
-        
-        // Add Enter key handler to input if not already present
-        if (playerInput && !playerInput._hasKeyHandler) {
-            console.log('Adding fallback keypress handler to input');
-            playerInput._hasKeyHandler = true;
-            
-            playerInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && sendButton) {
-                    console.log('Enter key pressed (fallback handler)');
-                    sendButton.click();
-                }
-            });
-        }
-    }, 1000); // Wait 1 second to check if main script loaded
-    </script>
+    <script src="static/js/character-creation.js"></script>
+    <script src="static/js/spell-data.js"></script>
 </body>
 </html>
