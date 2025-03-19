@@ -335,7 +335,7 @@ def test_db_connection():
     
     try:
         db = get_db()
-        if not db:
+        if db is None:
             return jsonify({
                 'success': False,
                 'message': 'Database connection failed',
