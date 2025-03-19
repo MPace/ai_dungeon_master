@@ -29,7 +29,7 @@ def init_db():
         # Connect to MongoDB
         client = MongoClient(
             MONGO_URI,
-            tlsCAFile=certifi.where(),
+            tlsAllowInvalidCertificates=True,
             serverSelectionTimeoutMS=5000
         )
         
