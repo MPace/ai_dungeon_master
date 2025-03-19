@@ -1,8 +1,8 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, make_response
 import os
 import json
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 from dotenv import load_dotenv
 from xai_handler import XAIHandler
@@ -18,6 +18,23 @@ app = Flask(__name__,
            static_folder='static',
            template_folder='templates')
 app.secret_key = os.urandom(24)  # For session management
+
+## Configure session handling
+app.config.update(
+    SESSION_COOKIE_SECURE=False,  # Set to True only if using HTTPS
+    SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript access
+    SESSION_COOKIE_SAMESITE='Lax',  # Controls cross-site request behavior
+    PERMANENT_SESSION_LIFETIME=timedelta(days=1)  # Session expires after 1 day
+)
+
+# Ensure the secret key is consistent across app restarts
+if not os.getenv('FLASK_SECRET_KEY'):
+    # Generate a secret key if not in environment variables
+    app.secret_key = os.urandom(24)
+    logger.warning("Using temporary secret key - sessions will be invalidated on restart")
+else:
+    app.secret_key = os.getenv('FLASK_SECRET_KEY')
+    logger.info("Using persistent secret key from environment variables")
 
 # Initialize database connection
 print("Initializing database connection...")
@@ -76,9 +93,17 @@ logger = logging.getLogger(__name__)
 def login_required(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
+        logger.info(f"Checking authentication for route: {request.path}")
+        logger.info(f"Session contains user_id: {'user_id' in session}")
+        logger.info(f"Current session: {dict(session)}")
+        
         if 'user_id' not in session:
+            logger.warning(f"Authentication failed for route: {request.path}")
             flash('Please log in to access this page', 'warning')
             return redirect(url_for('index'))
+            
+        # Authentication successful
+        logger.info(f"Authentication successful for user: {session.get('username', 'Unknown')}")
         return f(*args, **kwargs)
     return decorated_function
 
@@ -90,7 +115,6 @@ def index():
     if 'user_id' in session:
         return redirect(url_for('user_dashboard'))
     return render_template('index.html')
-
 
 # User login endpoint
 @app.route('/login', methods=['POST'])
@@ -138,10 +162,30 @@ def login():
                 logger.info("Password valid, setting up session...")
                 session['user_id'] = str(user.get('_id'))
                 session['username'] = user.get('username')
+                session['authenticated'] = True
+                session['login_time'] = datetime.utcnow().isoformat()
+                
+                # Force session save
+                session.modified = True
+                
                 logger.info(f"Session data set: user_id={session.get('user_id')}, username={session.get('username')}")
+                logger.info(f"Session object type: {type(session)}")
+                logger.info(f"Session contents: {dict(session)}")
+                
                 flash('Login successful!', 'success')
                 logger.info("Redirecting to dashboard...")
-                return redirect(url_for('user_dashboard'))
+                
+                try:
+                    # Set a response cookie explicitly as a backup
+                    response = make_response(redirect(url_for('user_dashboard')))
+                    response.set_cookie('username', user.get('username'), max_age=86400)
+                    logger.info("Created redirect response with explicit cookie")
+                    return response
+                except Exception as redirect_error:
+                    logger.error(f"Redirect error: {str(redirect_error)}")
+                    # Fallback to direct URL
+                    logger.info("Trying fallback redirect to /dashboard")
+                    return redirect('/dashboard')
             else:
                 logger.error("Password verification failed!")
         else:
@@ -159,7 +203,6 @@ def login():
         return redirect(url_for('index'))
     finally:
         logger.info("=============================================")
-
 
 # User registration endpoint
 @app.route('/register', methods=['POST'])
@@ -392,12 +435,16 @@ def test_bcrypt():
 
 
 # User dashboard
-@app.route('/dashboard')
+@app.route('/user_dashboard')
+@app.route('/dashboard')  # Add an alternative route
 @login_required
 def user_dashboard():
     """User dashboard showing characters and drafts"""
     # Get user's ID from session
     user_id = session.get('user_id')
+    
+    logger.info(f"Dashboard accessed by user: {session.get('username', 'Unknown')} (ID: {user_id})")
+    logger.info(f"Session contents: {dict(session)}")
     
     try:
         db = get_db()
@@ -462,7 +509,7 @@ def user_dashboard():
                     # Keep as is if we can't parse it
                     pass
         
-        print(f"Found {len(characters)} completed characters and {len(drafts)} drafts")
+        logger.info(f"Found {len(characters)} completed characters and {len(drafts)} drafts")
         
         return render_template('user.html', 
                               username=session.get('username', 'User'),
@@ -470,36 +517,15 @@ def user_dashboard():
                               drafts=drafts)
                               
     except Exception as e:
-        print(f"Error in user_dashboard: {e}")
+        logger.error(f"Error in user_dashboard: {e}")
         import traceback
-        traceback.print_exc()
+        traceback.print_exc(file=open('/var/www/ai_dungeon_master/app.log', 'a'))
         flash('Error loading dashboard: ' + str(e), 'error')
         return render_template('user.html',
                               username=session.get('username', 'User'),
                               characters=[],
                               drafts=[])
-    # Get user's characters
-    db = get_db()
-    characters = list(db.characters.find({'user_id': session['user_id']}))
-    
-    # Convert ObjectId to string for serialization
-    for character in characters:
-        character['_id'] = str(character['_id'])
-    
-    # Get draft characters
-    drafts = list(db.character_drafts.find({
-        'user_id': session['user_id'],
-        'isDraft': True
-    }))
-    
-    # Convert ObjectId to string for serialization
-    for draft in drafts:
-        draft['_id'] = str(draft['_id'])
-    
-    return render_template('user.html', 
-                          username=session['username'],
-                          characters=characters,
-                          drafts=drafts)
+   
 
 # Character creation page
 @app.route('/create')
