@@ -11,6 +11,7 @@ from character_data import save_character, get_character, list_characters, delet
 import functools
 import bcrypt
 from bson.objectid import ObjectId
+import logging
 
 # Initialize Flask app
 app = Flask(__name__,
@@ -63,7 +64,13 @@ except Exception as e:
 SESSIONS_DB = {}
 
 
-
+# Logging setup
+logging.basicConfig(
+    filename='/var/www/ai_dungeon_master/app.log',
+    level=logging.DEBUG,
+    format='%(asctime)s %(levelname)s: %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # User authentication decorator
 def login_required(f):
@@ -91,77 +98,67 @@ def login():
     username = request.form.get('username')
     password = request.form.get('password')
     
-    print(f"=============================================")
-    print(f"Login attempt for user: {username}")
+    logger.info("=============================================")
+    logger.info(f"Login attempt for user: {username}")
     
-    # Validate inputs
     if not username or not password:
-        print("Missing username or password")
+        logger.error("Missing username or password")
         flash('Username and password are required', 'error')
         return redirect(url_for('index'))
     
     try:
-        # Get database connection
         db = get_db()
         if db is None:
-            print("Database connection failed in login")
+            logger.error("Database connection failed in login")
             flash('Database connection error', 'error')
             return redirect(url_for('index'))
         
-        # Look up the user
-        print(f"Searching for user '{username}' in database...")
+        logger.info(f"Searching for user '{username}' in database...")
         user_count = db.users.count_documents({})
-        print(f"Total users in database: {user_count}")
+        logger.info(f"Total users in database: {user_count}")
         
         all_users = list(db.users.find({}, {"username": 1}))
-        print(f"All usernames in database: {[u.get('username') for u in all_users]}")
+        logger.info(f"All usernames in database: {[u.get('username') for u in all_users]}")
         
         user = db.users.find_one({'username': username})
-        print(f"User found in database: {user is not None}")
+        logger.info(f"User found in database: {user is not None}")
         
         if user:
-            # Print details about the found user
-            print(f"User details: id={user.get('_id')}, username={user.get('username')}")
-            
-            # Debug password verification
+            logger.info(f"User details: id={user.get('_id')}, username={user.get('username')}")
             stored_hash = user.get('password_hash', '')
             password_bytes = password.encode('utf-8')
             hash_type = "bcrypt" if stored_hash.startswith('$2') else "sha256"
-            
-            print(f"Stored hash type: {hash_type}")
-            print(f"Attempting to verify password...")
+            logger.info(f"Stored hash type: {hash_type}")
+            logger.info("Attempting to verify password...")
             
             is_valid = verify_password(password, stored_hash)
-            print(f"Password verification result: {is_valid}")
+            logger.info(f"Password verification result: {is_valid}")
             
             if is_valid:
-                print(f"Password valid, setting up session...")
-                # Store user info in session
+                logger.info("Password valid, setting up session...")
                 session['user_id'] = str(user.get('_id'))
                 session['username'] = user.get('username')
-                print(f"Session data set: user_id={session.get('user_id')}, username={session.get('username')}")
-                
+                logger.info(f"Session data set: user_id={session.get('user_id')}, username={session.get('username')}")
                 flash('Login successful!', 'success')
-                print(f"Redirecting to dashboard...")
+                logger.info("Redirecting to dashboard...")
                 return redirect(url_for('user_dashboard'))
             else:
-                print(f"Password verification failed!")
+                logger.error("Password verification failed!")
         else:
-            print(f"No user found with username '{username}'")
+            logger.error(f"No user found with username '{username}'")
         
-        print("Login failed, redirecting to index")
+        logger.error("Login failed, redirecting to index")
         flash('Invalid username or password', 'error')
         return redirect(url_for('index'))
     
     except Exception as e:
-        print(f"Login exception: {str(e)}")
+        logger.error(f"Login exception: {str(e)}")
         import traceback
-        traceback.print_exc()
-        
+        traceback.print_exc(file=open('/var/www/ai_dungeon_master/app.log', 'a'))
         flash('An error occurred during login. Please try again.', 'error')
         return redirect(url_for('index'))
     finally:
-        print("=============================================")
+        logger.info("=============================================")
 
 
 # User registration endpoint
