@@ -29,6 +29,7 @@ def init_db():
         # Connect to MongoDB
         client = MongoClient(
             MONGO_URI,
+            ssl=True,
             ssl_cert_reqs=ssl.CERT_NONE,
             serverSelectionTimeoutMS=5000
         )
