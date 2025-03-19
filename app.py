@@ -27,6 +27,37 @@ app = Flask(__name__,
            static_folder='static',
            template_folder='templates')
 
+# Add this near the top of app.py after initializing the app
+@app.before_request
+def log_request_info():
+    """Log information about each request to help debug redirects"""
+    if request.path.startswith('/static'):
+        return  # Skip logging for static assets
+    
+    logger.info(f"Request: {request.method} {request.path} from {request.remote_addr}")
+    logger.info(f"Request headers: {dict(request.headers)}")
+    
+    # Log session information if available
+    if session:
+        logger.info(f"Session contains: {dict(session)}")
+        logger.info(f"User ID in session: {session.get('user_id', 'Not set')}")
+
+@app.after_request
+def log_response_info(response):
+    """Log information about each response to help debug redirects"""
+    if not request.path.startswith('/static'):
+        status_code = response.status_code
+        redirect_location = response.headers.get('Location', 'None')
+        
+        logger.info(f"Response: {status_code} for {request.method} {request.path}")
+        
+        if 300 <= status_code < 400:
+            logger.info(f"Redirect to: {redirect_location}")
+            
+        logger.info(f"Response headers: {dict(response.headers)}")
+    
+    return response
+
 
 # Use a consistent secret key - either from environment or a file
 secret_key_file = os.path.join(os.getcwd(), 'secret_key.txt')
@@ -107,19 +138,26 @@ except Exception as e:
 SESSIONS_DB = {}
 
 
-
-
-# User authentication decorator
+# User authentication decorator - modified to be more permissive with debugging
 def login_required(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
         logger.info(f"Checking authentication for route: {request.path}")
         logger.info(f"Session contains user_id: {'user_id' in session}")
-        logger.info(f"Current session: {dict(session)}")
+        
+        # Log the full session dictionary to see what's there
+        logger.info(f"Full session content: {dict(session)}")
         
         if 'user_id' not in session:
-            logger.warning(f"Authentication failed for route: {request.path}")
+            # CRITICAL CHANGE: Log this very clearly
+            logger.error(f"AUTHENTICATION FAILED: No user_id in session for {request.path}")
+            logger.error(f"AUTHENTICATION FAILED: Session keys: {list(session.keys())}")
+            
+            # Add flash message
             flash('Please log in to access this page', 'warning')
+            
+            # Return redirect to login page
+            logger.info("Redirecting to login page")
             return redirect(url_for('index'))
             
         # Authentication successful
@@ -145,7 +183,7 @@ def login():
     logger.info("=============================================")
     logger.info(f"Login attempt for user: {username}")
     
-    if not username or not password:
+    if username is None or password is None or username == "" or password == "":
         logger.error("Missing username or password")
         flash('Username and password are required', 'error')
         return redirect(url_for('index'))
@@ -157,49 +195,53 @@ def login():
             flash('Database connection error', 'error')
             return redirect(url_for('index'))
         
-        logger.info(f"Searching for user '{username}' in database...")
-        
         user = db.users.find_one({'username': username})
         logger.info(f"User found in database: {user is not None}")
         
-        if user:
-            stored_hash = user.get('password_hash', '')
-            is_valid = verify_password(password, stored_hash)
-            logger.info(f"Password verification result: {is_valid}")
+        if user is not None and verify_password(password, user.get('password_hash', '')):
+            logger.info("Password verification successful")
             
-            if is_valid:
-                logger.info("Password valid, setting up session...")
-                # Store user data in session
-                session['user_id'] = str(user.get('_id'))
-                session['username'] = user.get('username')
-                session['authenticated'] = True
-                session['login_time'] = datetime.utcnow().isoformat()
-                
-                # Force session save
-                session.modified = True
-                
-                logger.info(f"Session data set: {dict(session)}")
-                logger.info("Login successful, redirecting to dashboard...")
-                
-                # Set a simple flash message
-                flash('Login successful!', 'success')
-                
-                # SIMPLIFIED REDIRECTION - Direct return of redirect
-                logger.info("Returning redirect to /dashboard")
-                return redirect('/dashboard')
-            else:
-                logger.error("Password verification failed")
+            # Clear any existing session and create a new one
+            session.clear()
+            
+            # Critical: Set session data with string ID (avoiding ObjectId issues)
+            user_id = str(user.get('_id'))
+            session['user_id'] = user_id
+            session['username'] = user.get('username')
+            
+            # Force session to be saved
+            session.modified = True
+            
+            # Log all session values to help debug
+            logger.info(f"Session data: {dict(session)}")
+            
+            # Update last_login in user record
+            try:
+                db.users.update_one(
+                    {'_id': user.get('_id')},
+                    {'$set': {'last_login': datetime.utcnow()}}
+                )
+                logger.info("Updated user's last_login timestamp")
+            except Exception as e:
+                logger.error(f"Failed to update last_login: {e}")
+            
+            # Set flash message
+            flash('Login successful!', 'success')
+            
+            # Log the redirect attempt
+            logger.info("Attempting redirect to dashboard")
+            
+            # Explicitly return a redirect response
+            return redirect('/dashboard')
         else:
-            logger.error(f"No user found with username '{username}'")
-        
-        # If we get here, login failed
-        flash('Invalid username or password', 'error')
-        return redirect(url_for('index'))
-    
+            logger.error("Invalid username or password")
+            flash('Invalid username or password', 'error')
+            return redirect(url_for('index'))
+            
     except Exception as e:
         logger.error(f"Login exception: {str(e)}")
         import traceback
-        traceback.print_exc(file=open('/var/www/ai_dungeon_master/app.log', 'a'))
+        logger.error(traceback.format_exc())
         flash('An error occurred during login. Please try again.', 'error')
         return redirect(url_for('index'))
     finally:
@@ -438,90 +480,69 @@ def test_bcrypt():
 
 # User dashboard
 @app.route('/user_dashboard')
-@app.route('/dashboard')  # Add an alternative route
-@login_required
+@app.route('/dashboard')
 def user_dashboard():
     """User dashboard showing characters and drafts"""
-    # Get user's ID from session
+    # Check for user ID in session
     user_id = session.get('user_id')
     
-    logger.info(f"Dashboard accessed by user: {session.get('username', 'Unknown')} (ID: {user_id})")
-    logger.info(f"Session contents: {dict(session)}")
+    # Log detailed information about the request and session
+    logger.info(f"Dashboard accessed with session: {dict(session)}")
+    
+    # If no user_id in session, redirect to login
+    if user_id is None:
+        logger.error("Dashboard accessed without authentication")
+        flash('Please log in to access your dashboard', 'warning')
+        return redirect(url_for('index'))
+    
+    logger.info(f"Dashboard accessed by user ID: {user_id}")
     
     try:
+        # Get database connection
         db = get_db()
+        if db is None:
+            logger.error("Database connection failed in dashboard")
+            flash('Database connection error', 'error')
+            return render_template('user.html',
+                                  username=session.get('username', 'User'),
+                                  characters=[],
+                                  drafts=[])
         
-        # Get completed characters (not drafts)
+        # Get completed characters
         characters = list(db.characters.find({
             'user_id': user_id,
             '$or': [
                 {'isDraft': False},
-                {'isDraft': {'$exists': False}}  # For older characters without the field
+                {'isDraft': {'$exists': False}}
             ]
         }).sort('last_played', -1))
         
-        # Convert ObjectId to string for serialization
+        # Process characters for display
         for character in characters:
             character['_id'] = str(character['_id'])
-            
-            # Format dates for display
-            if 'updated_at' in character:
-                character['updated_at'] = character['updated_at'].strftime('%Y-%m-%d %H:%M') \
-                    if isinstance(character['updated_at'], datetime) \
-                    else character['updated_at']
-                    
-            if 'created_at' in character:
-                character['created_at'] = character['created_at'].strftime('%Y-%m-%d %H:%M') \
-                    if isinstance(character['created_at'], datetime) \
-                    else character['created_at']
-                    
-            if 'last_played' in character:
-                character['last_played'] = character['last_played'].strftime('%Y-%m-%d %H:%M') \
-                    if isinstance(character['last_played'], datetime) \
-                    else character['last_played']
         
-        # Get draft characters (only true drafts that don't have completed versions)
-        draft_query = {
-            'user_id': user_id,
-            'isDraft': True
-        }
+        # Get drafts
+        drafts = list(db.character_drafts.find({
+            'user_id': user_id
+        }).sort('lastUpdated', -1))
         
-        # Get character_ids of completed characters to exclude any drafts that were completed
-        completed_character_ids = [char['character_id'] for char in characters if 'character_id' in char]
-        if completed_character_ids:
-            draft_query['character_id'] = {'$nin': completed_character_ids}
-        
-        drafts = list(db.character_drafts.find(draft_query).sort('lastUpdated', -1))
-        
-        # Convert ObjectId to string for serialization
+        # Process drafts for display
         for draft in drafts:
             draft['_id'] = str(draft['_id'])
-            
-            # Format dates for display
-            if 'lastUpdated' in draft:
-                try:
-                    # Try to parse the ISO string if it's a string
-                    if isinstance(draft['lastUpdated'], str):
-                        from dateutil import parser
-                        draft['lastUpdated'] = parser.parse(draft['lastUpdated']).strftime('%Y-%m-%d %H:%M')
-                    # Or format it if it's already a datetime
-                    elif isinstance(draft['lastUpdated'], datetime):
-                        draft['lastUpdated'] = draft['lastUpdated'].strftime('%Y-%m-%d %H:%M')
-                except:
-                    # Keep as is if we can't parse it
-                    pass
         
-        logger.info(f"Found {len(characters)} completed characters and {len(drafts)} drafts")
+        logger.info(f"Rendering dashboard with {len(characters)} characters and {len(drafts)} drafts")
         
-        return render_template('user.html', 
+        # Render the template
+        return render_template('user.html',
                               username=session.get('username', 'User'),
                               characters=characters,
                               drafts=drafts)
-                              
+    
     except Exception as e:
-        logger.error(f"Error in user_dashboard: {e}")
+        logger.error(f"Error in dashboard: {str(e)}")
         import traceback
-        traceback.print_exc(file=open('/var/www/ai_dungeon_master/app.log', 'a'))
+        logger.error(traceback.format_exc())
+        
         flash('Error loading dashboard: ' + str(e), 'error')
         return render_template('user.html',
                               username=session.get('username', 'User'),
