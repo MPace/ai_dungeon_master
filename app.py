@@ -13,6 +13,15 @@ import bcrypt
 from bson.objectid import ObjectId
 import logging
 
+# Logging setup
+logging.basicConfig(
+    filename='/var/www/ai_dungeon_master/app.log',
+    level=logging.DEBUG,
+    format='%(asctime)s %(levelname)s: %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
 # Initialize Flask app
 app = Flask(__name__,
            static_folder='static',
@@ -81,13 +90,7 @@ except Exception as e:
 SESSIONS_DB = {}
 
 
-# Logging setup
-logging.basicConfig(
-    filename='/var/www/ai_dungeon_master/app.log',
-    level=logging.DEBUG,
-    format='%(asctime)s %(levelname)s: %(message)s'
-)
-logger = logging.getLogger(__name__)
+
 
 # User authentication decorator
 def login_required(f):
