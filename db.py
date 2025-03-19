@@ -178,7 +178,9 @@ def get_db():
     """Get the database instance"""
     global db
     if db is None:
-        init_db()
+        if init_db() and client:
+            # Explicitly specify the database name
+            db = client.ai_dungeon_master
     return db
 
 def close_db():

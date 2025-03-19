@@ -91,8 +91,12 @@ def login():
     username = request.form.get('username')
     password = request.form.get('password')
     
+    print(f"=============================================")
+    print(f"Login attempt for user: {username}")
+    
     # Validate inputs
     if not username or not password:
+        print("Missing username or password")
         flash('Username and password are required', 'error')
         return redirect(url_for('index'))
     
@@ -100,38 +104,64 @@ def login():
         # Get database connection
         db = get_db()
         if not db:
+            print("Database connection failed in login")
             flash('Database connection error', 'error')
             return redirect(url_for('index'))
         
         # Look up the user
-        user = db.users.find_one({'username': username})
+        print(f"Searching for user '{username}' in database...")
+        user_count = db.users.count_documents({})
+        print(f"Total users in database: {user_count}")
         
-        # Check if user exists and password is correct
-        if user and verify_password(password, user.get('password_hash', '')):
-            # Store user info in session
-            session['user_id'] = str(user.get('_id'))
-            session['username'] = user.get('username')
-            flash('Login successful!', 'success')
+        all_users = list(db.users.find({}, {"username": 1}))
+        print(f"All usernames in database: {[u.get('username') for u in all_users]}")
+        
+        user = db.users.find_one({'username': username})
+        print(f"User found in database: {user is not None}")
+        
+        if user:
+            # Print details about the found user
+            print(f"User details: id={user.get('_id')}, username={user.get('username')}")
             
-            # Log the successful login
-            print(f"User {username} logged in successfully")
+            # Debug password verification
+            stored_hash = user.get('password_hash', '')
+            password_bytes = password.encode('utf-8')
+            hash_type = "bcrypt" if stored_hash.startswith('$2') else "sha256"
             
-            return redirect(url_for('user_dashboard'))
+            print(f"Stored hash type: {hash_type}")
+            print(f"Attempting to verify password...")
+            
+            is_valid = verify_password(password, stored_hash)
+            print(f"Password verification result: {is_valid}")
+            
+            if is_valid:
+                print(f"Password valid, setting up session...")
+                # Store user info in session
+                session['user_id'] = str(user.get('_id'))
+                session['username'] = user.get('username')
+                print(f"Session data set: user_id={session.get('user_id')}, username={session.get('username')}")
+                
+                flash('Login successful!', 'success')
+                print(f"Redirecting to dashboard...")
+                return redirect(url_for('user_dashboard'))
+            else:
+                print(f"Password verification failed!")
         else:
-            # Log the failed login attempt
-            print(f"Failed login attempt for username: {username}")
-            
-            flash('Invalid username or password', 'error')
-            return redirect(url_for('index'))
+            print(f"No user found with username '{username}'")
+        
+        print("Login failed, redirecting to index")
+        flash('Invalid username or password', 'error')
+        return redirect(url_for('index'))
     
     except Exception as e:
-        # Log the error
-        print(f"Login error: {str(e)}")
+        print(f"Login exception: {str(e)}")
         import traceback
         traceback.print_exc()
         
         flash('An error occurred during login. Please try again.', 'error')
         return redirect(url_for('index'))
+    finally:
+        print("=============================================")
 
 
 # User registration endpoint
@@ -141,78 +171,105 @@ def register():
     password = request.form.get('password')
     email = request.form.get('email')
     
+    print("============ REGISTRATION ATTEMPT ============")
+    print(f"Attempting to register username: {username}, email: {email}")
+    
     # Validate inputs
     if not username or not password or not email:
+        print("Missing required fields")
         flash('All fields are required', 'error')
         return redirect(url_for('index'))
     
     # Validate username format (alphanumeric, no spaces)
     if not username.isalnum():
+        print("Username not alphanumeric")
         flash('Username must contain only letters and numbers', 'error')
         return redirect(url_for('index'))
     
     # Validate password strength (at least 8 characters)
     if len(password) < 8:
+        print("Password too short")
         flash('Password must be at least 8 characters long', 'error')
         return redirect(url_for('index'))
     
     try:
         # Get database connection
+        print("Getting database connection...")
         db = get_db()
-        if not db:
+        if db is None:
+            print("Database connection failed")
             flash('Database connection error', 'error')
             return redirect(url_for('index'))
         
+        print("Checking if username exists...")
         # Check if username already exists
         existing_user = db.users.find_one({'username': username})
         if existing_user:
+            print(f"Username {username} already exists")
             flash('Username already exists', 'error')
             return redirect(url_for('index'))
         
+        print("Checking if email exists...")
         # Check if email already exists
         existing_email = db.users.find_one({'email': email})
         if existing_email:
+            print(f"Email {email} already registered")
             flash('Email already registered', 'error')
             return redirect(url_for('index'))
         
         # Create new user
+        print("Creating new user...")
         user_id = str(uuid.uuid4())
         created_at = datetime.utcnow()
+        
+        print("Hashing password...")
+        try:
+            password_hash = hash_password(password)
+            print(f"Password hashed successfully. Hash type: {'bcrypt' if password_hash.startswith('$2') else 'sha256'}")
+        except Exception as hash_error:
+            print(f"Password hashing error: {hash_error}")
+            import traceback
+            traceback.print_exc()
+            raise  # Re-raise to be caught by outer exception handler
         
         new_user = {
             'user_id': user_id,
             'username': username,
             'email': email,
-            'password_hash': hash_password(password),
+            'password_hash': password_hash,
             'created_at': created_at,
             'last_login': created_at
         }
         
+        print(f"Inserting user into database: {new_user}")
         # Insert user into database
         result = db.users.insert_one(new_user)
         
+        print(f"Insert result: {result.inserted_id is not None}")
+        
         if result.inserted_id:
             # Log user in
+            print("Setting up session...")
             session['user_id'] = user_id
             session['username'] = username
             
-            # Log the successful registration
-            print(f"New user registered: {username}")
-            
+            print(f"User registered successfully: {username}")
             flash('Registration successful! Welcome to AI Dungeon Master.', 'success')
             return redirect(url_for('user_dashboard'))
         else:
+            print("Failed to insert user into database")
             flash('Failed to create user account', 'error')
             return redirect(url_for('index'))
             
     except Exception as e:
-        # Log the error
         print(f"Registration error: {str(e)}")
         import traceback
         traceback.print_exc()
         
         flash('An error occurred during registration. Please try again.', 'error')
         return redirect(url_for('index'))
+    finally:
+        print("============================================")
 
     
 
@@ -300,6 +357,39 @@ def test_db_connection():
             'success': False,
             'message': f'Database error: {str(e)}',
             'mongo_uri': os.getenv('MONGO_URI', 'Not set').replace('mongodb+srv://', 'mongodb+srv://****:****@')
+        })
+
+@app.route('/test-bcrypt')
+def test_bcrypt():
+    try:
+        import bcrypt
+        test_password = "test123"
+        
+        # Test encoding and hashing
+        password_bytes = test_password.encode('utf-8')
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password_bytes, salt)
+        hash_str = hashed.decode('utf-8')
+        
+        # Test verification
+        is_valid = bcrypt.checkpw(password_bytes, hashed)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Bcrypt is working correctly',
+            'password': test_password,
+            'hash': hash_str,
+            'verification': is_valid
+        })
+    except Exception as e:
+        import traceback
+        error_traceback = traceback.format_exc()
+        
+        return jsonify({
+            'success': False,
+            'message': 'Bcrypt test failed',
+            'error': str(e),
+            'traceback': error_traceback
         })
 
 
@@ -484,7 +574,50 @@ def play_game(character_id):
         return redirect(url_for('user_dashboard'))
     # Get character data
 
-
+@app.route('/test-mongo-insert')
+def test_mongo_insert():
+    try:
+        db = get_db()
+        if db is None:
+            return jsonify({
+                'success': False,
+                'message': 'Database connection failed'
+            })
+        
+        # Try a simple insert and query
+        test_doc = {
+            'test_id': str(uuid.uuid4()),
+            'timestamp': datetime.utcnow(),
+            'data': 'Test document'
+        }
+        
+        result = db.test_collection.insert_one(test_doc)
+        
+        if result.inserted_id:
+            # Try to retrieve the document
+            found = db.test_collection.find_one({'_id': result.inserted_id})
+            
+            return jsonify({
+                'success': True,
+                'message': 'MongoDB insert test successful',
+                'document_id': str(result.inserted_id),
+                'document_retrieved': found is not None
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to insert test document'
+            })
+    except Exception as e:
+        import traceback
+        error_traceback = traceback.format_exc()
+        
+        return jsonify({
+            'success': False,
+            'message': 'MongoDB test failed',
+            'error': str(e),
+            'traceback': error_traceback
+        })
 
 
 @app.route('/test-api', methods=['GET'])
@@ -1125,6 +1258,20 @@ def delete_draft_route(draft_id):
             'success': False,
             'error': str(e)
         }), 500
+
+@app.route('/test-session')
+def test_session():
+    if 'test_count' not in session:
+        session['test_count'] = 1
+    else:
+        session['test_count'] += 1
+    
+    return jsonify({
+        'success': True,
+        'message': f'Session is working! Count: {session["test_count"]}',
+        'session_data': {k: session[k] for k in session}
+    })
+
 
 def generate_dm_response(message, session):
     """
