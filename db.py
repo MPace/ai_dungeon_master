@@ -24,13 +24,12 @@ def init_db():
     try:
         #import SSL module
         import ssl
-
+        import certifi
 
         # Connect to MongoDB
         client = MongoClient(
             MONGO_URI,
-            ssl=True,
-            ssl_cert_reqs=ssl.CERT_NONE,
+            tlsCAFile=certifi.where(),
             serverSelectionTimeoutMS=5000
         )
         
@@ -39,7 +38,7 @@ def init_db():
         print("Successfully connected to MongoDB!")
         
         # Get the database
-        db = client.ai_dungeon_master  # You can change this to your preferred database name
+        db = client.get_database()  # You can change this to your preferred database name
         
         # Initialize collections if they don't exist
         if 'users' not in db.list_collection_names():
