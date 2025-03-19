@@ -21,39 +21,53 @@ def save_character(character_data, user_id=None):
     # If character doesn't have an ID, generate one
     if 'character_id' not in character_data:
         character_data['character_id'] = str(uuid.uuid4())
+        print(f"Generated new character_id: {character_data['character_id']}")
+    else:
+        print(f"Using existing character_id: {character_data['character_id']}")
     
     # Add metadata
     character_data['created_at'] = character_data.get('created_at', datetime.utcnow())
     character_data['updated_at'] = datetime.utcnow()
+    character_data['last_played'] = datetime.utcnow()  # Initialize last_played
     character_data['user_id'] = user_id
     
+    character_id = character_data['character_id']
+    
     try:
-        # Check if character already exists
-        existing_character = db.characters.find_one({'character_id': character_data['character_id']})
+        # First, check if this was a draft and delete it from the drafts collection
+        if 'isDraft' in character_data and character_data['isDraft'] == False:
+            print(f"Completed character (was draft): {character_id}")
+            draft_result = db.character_drafts.delete_one({'character_id': character_id})
+            print(f"Deleted {draft_result.deleted_count} draft entries")
+        
+        # Check if character already exists in characters collection
+        existing_character = db.characters.find_one({'character_id': character_id})
         
         if existing_character:
             # Update existing character
             result = db.characters.update_one(
-                {'character_id': character_data['character_id']},
+                {'character_id': character_id},
                 {'$set': character_data}
             )
             if result.modified_count > 0:
-                print(f"Character {character_data['name']} updated successfully")
+                print(f"Character {character_data.get('name', 'Unknown')} updated successfully")
             else:
-                print(f"No changes made to character {character_data['name']}")
+                print(f"No changes made to character {character_data.get('name', 'Unknown')}")
         else:
             # Insert new character
             result = db.characters.insert_one(character_data)
             if result.inserted_id:
-                print(f"Character {character_data['name']} saved with ID: {character_data['character_id']}")
+                print(f"Character {character_data.get('name', 'Unknown')} saved with ID: {character_id}")
             else:
                 print("Failed to save character")
                 return None
         
-        return character_data['character_id']
+        return character_id
     
     except Exception as e:
         print(f"Error saving character: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def get_character(character_id):
@@ -67,7 +81,7 @@ def get_character(character_id):
         dict: Character data if found, None otherwise
     """
     db = get_db()
-    if not db:
+    if db is None:
         print("Database not available, cannot retrieve character")
         return None
     
@@ -97,7 +111,7 @@ def list_characters(user_id=None, limit=10):
         list: List of character data dictionaries
     """
     db = get_db()
-    if not db:
+    if db is None:
         print("Database not available, cannot list characters")
         return []
     
@@ -131,7 +145,7 @@ def delete_character(character_id):
         bool: True if successful, False otherwise
     """
     db = get_db()
-    if not db:
+    if db is None:
         print("Database not available, cannot delete character")
         return False
     

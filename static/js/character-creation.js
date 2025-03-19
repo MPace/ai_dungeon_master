@@ -1,8 +1,18 @@
 /**
- * Character Creation Module for AI Dungeon Master
+ * Character Creation Module
+ * 
+ * This module handles the entire character creation process for the AI Dungeon Master
+ * application. It's designed to work with the create.html page and handles:
+ * - Multi-step character creation workflow
+ * - Form validation
+ * - Character data management
+ * - Draft saving and restoration
  */
 
-// Character data object
+// Import any required modules
+import { initStateTracking, saveProgress, completeCharacter } from './character-persistence.js';
+
+// Character data object - will be initialized with draft data if available
 let characterData = {
     name: '',
     race: '',
@@ -24,7 +34,11 @@ let characterData = {
     description: ''
 };
 
-// Updated Race data with sub-races
+// Current step tracking
+let currentStep = 1;
+
+// Reference data objects
+// Race data
 const raceData = {
     human: {
         name: 'Human',
@@ -118,9 +132,10 @@ const raceData = {
         hasSubraces: false,
         subraces: []
     }
+    // Rest of race data...
 };
 
-// Class data
+// Class data 
 const classData = {
     fighter: {
         name: 'Fighter',
@@ -162,6 +177,7 @@ const classData = {
         savingThrows: ['Dexterity', 'Charisma'],
         features: ['Spellcasting', 'Bardic Inspiration']
     }
+    // Rest of class data...
 };
 
 // Background data
@@ -196,8 +212,10 @@ const backgroundData = {
         skillProficiencies: ['Arcana', 'History'],
         feature: 'Researcher'
     }
+    // Rest of background data...
 };
 
+// Other data objects like skills, hitDieData, etc.
 // Skills object (global to prevent scope issues)
 const skills = {
     acrobatics: { name: 'Acrobatics', ability: 'dexterity' },
@@ -220,7 +238,6 @@ const skills = {
     survival: { name: 'Survival', ability: 'wisdom' }
 };
 
-// Define class skills object
 const classSkills = {
     fighter: ['acrobatics', 'animalHandling', 'athletics', 'history', 'insight', 'intimidation', 'perception', 'survival'],
     wizard: ['arcana', 'history', 'insight', 'investigation', 'medicine', 'religion'],
@@ -229,6 +246,14 @@ const classSkills = {
     bard: ['acrobatics', 'animalHandling', 'arcana', 'athletics', 'deception', 'history', 'insight', 'intimidation', 'investigation', 'medicine', 'nature', 'perception', 'performance', 'persuasion', 'religion', 'sleightOfHand', 'stealth', 'survival']
 };
 
+const hitDieData = {
+    fighter: { die: 'd10', average: 6 },
+    wizard: { die: 'd6', average: 4 },
+    cleric: { die: 'd8', average: 5 },
+    rogue: { die: 'd8', average: 5 },
+    bard: { die: 'd8', average: 5 },
+    // Add other classes as needed
+};
 
 // Class Features Data Structure
 const classFeatures = {
@@ -447,97 +472,6 @@ const classFeatures = {
     }
 };
 
-// Step indicator template - use this in each step function
-function getStepIndicatorHTML(currentStep) {
-    return `
-        <div class="step-indicator">
-            <div class="step ${currentStep >= 1 ? (currentStep === 1 ? 'active' : 'completed') : ''}">1</div>
-            <div class="step ${currentStep >= 2 ? (currentStep === 2 ? 'active' : 'completed') : ''}">2</div>
-            <div class="step ${currentStep >= 3 ? (currentStep === 3 ? 'active' : 'completed') : ''}">3</div>
-            <div class="step ${currentStep >= 4 ? (currentStep === 4 ? 'active' : 'completed') : ''}">4</div>
-            <div class="step ${currentStep >= 5 ? (currentStep === 5 ? 'active' : 'completed') : ''}">5</div>
-            <div class="step ${currentStep >= 6 ? (currentStep === 6 ? 'active' : 'completed') : ''}">6</div>
-            <div class="step ${currentStep >= 7 ? (currentStep === 7 ? 'active' : 'completed') : ''}">7</div>
-            <div class="step ${currentStep >= 8 ? (currentStep === 8 ? 'active' : 'completed') : ''}">8</div>
-        </div>
-    `;
-}
-
-// Hit Die data for each class
-const hitDieData = {
-    fighter: { die: 'd10', average: 6 },
-    wizard: { die: 'd6', average: 4 },
-    cleric: { die: 'd8', average: 5 },
-    rogue: { die: 'd8', average: 5 },
-    bard: { die: 'd8', average: 5 },
-    // Add other classes as needed
-};
-
-// Function to calculate starting hit points
-function calculateStartingHitPoints(characterClass, constitutionScore) {
-    if (!characterClass || !hitDieData[characterClass]) {
-        return 0;
-    }
-    
-    // Get hit die maximum value
-    const hitDie = hitDieData[characterClass].die;
-    const maxHitPoints = parseInt(hitDie.substring(1));
-    
-    // Calculate Constitution modifier
-    const constitutionModifier = Math.floor((constitutionScore - 10) / 2);
-    
-    // Starting hit points = max hit die + Constitution modifier
-    return maxHitPoints + constitutionModifier;
-}
-
-// Function to simulate rolling a hit die
-function rollHitDie(dieType) {
-    // Parse the die type (e.g., 'd10' -> 10)
-    const sides = parseInt(dieType.substring(1));
-    if (isNaN(sides) || sides <= 0) {
-        console.error('Invalid die type:', dieType);
-        return 1;
-    }
-    
-    // Roll the die (random number between 1 and sides)
-    return Math.floor(Math.random() * sides) + 1;
-}
-
-// Function to create animated dice roll effect
-function animateDiceRoll(elementId, dieType, finalValue, duration = 1000) {
-    const element = document.getElementById(elementId);
-    if (!element) return;
-    
-    const sides = parseInt(dieType.substring(1));
-    const fps = 10;
-    const frames = duration / (1000 / fps);
-    let frame = 0;
-    
-    // Show the dice element
-    element.style.display = 'flex';
-    
-    // Start animation
-    const intervalId = setInterval(() => {
-        // Generate random value for animation
-        if (frame < frames - 1) {
-            const randomValue = Math.floor(Math.random() * sides) + 1;
-            element.textContent = randomValue;
-        } else {
-            // Show final value on last frame
-            element.textContent = finalValue;
-            clearInterval(intervalId);
-            
-            // Add a flash effect when the final value is shown
-            element.classList.add('dice-result-flash');
-            setTimeout(() => {
-                element.classList.remove('dice-result-flash');
-            }, 500);
-        }
-        
-        frame++;
-    }, 1000 / fps);
-}
-
 // Equipment data for each class
 const equipmentData = {
     fighter: {
@@ -704,42 +638,146 @@ const equipmentData = {
     }
 };
 
-// Function to start character creation
-function startCharacterCreation() {
-    // Hide main menu and show character creation
-    document.getElementById('main-menu').style.display = 'none';
-    const characterCreation = document.getElementById('character-creation');
-    characterCreation.style.display = 'block';
+/**
+ * Initialize the character creation process
+ * This is the entry point for the module
+ */
+function initCharacterCreation() {
+    console.log('Initializing character creation module');
     
-    // Reset character data
-    characterData = {
-        name: '',
-        race: '',
-        class: '',
-        background: '',
-        level: 1,
-        abilities: {
-            strength: 10,
-            dexterity: 10,
-            constitution: 10,
-            intelligence: 10,
-            wisdom: 10,
-            charisma: 10
-        },
-        skills: [],
-        equipment: [],
-        spells: [],
-        features: [],
-        description: ''
-    };
+    // Initialize the state tracking system
+    initStateTracking();
     
-    // Load step 1 (Basic Info)
-    loadBasicInfoStep();
+    // Check if we have draft data passed from the server
+    if (typeof draftCharacter !== 'undefined' && draftCharacter) {
+        console.log('Found draft character data, restoring');
+        characterData = draftCharacter;
+        
+        // Determine which step to start from based on draft data
+        currentStep = determineStartingStep(characterData);
+    }
+    
+    // Load the appropriate step
+    loadStep(currentStep);
+    
+    // Set up global navigation events
+    setupNavigationEvents();
 }
 
-// Function to load basic info step with sub-race selection
+/**
+ * Determine which step to start from based on character data completeness
+ * @param {Object} data - Character data
+ * @returns {number} - Step number to start from
+ */
+function determineStartingStep(data) {
+    // Logic to determine starting step based on data completion
+    if (!data.race || !data.class || !data.background) {
+        return 1; // Basic info not complete
+    } else if (!data.abilities || Object.values(data.abilities).some(val => val === 10)) {
+        return 2; // Abilities not adjusted
+    } else if (!data.skills || data.skills.length === 0) {
+        return 3; // Skills not selected
+    } else if (!data.features || !data.features.required) {
+        return 4; // Features not selected
+    } else if ((data.class === 'wizard' || data.class === 'bard' || data.class === 'cleric') && (!data.spellcasting || !data.spellcasting.cantripsKnown)) {
+        return 5; // Spells not selected for spellcasters
+    } else if (!data.hitPoints) {
+        return 6; // Hit points not calculated
+    } else if (!data.equipment) {
+        return 7; // Equipment not selected
+    }
+    
+    return 8; // Everything is complete, go to final step
+}
+
+/**
+ * Set up global navigation event handlers
+ */
+function setupNavigationEvents() {
+    // Listen for browser back/forward navigation
+    window.addEventListener('popstate', (event) => {
+        if (event.state && event.state.step) {
+            // Load the step from browser history without pushing a new state
+            loadStep(event.state.step, false);
+        }
+    });
+}
+
+/**
+ * Navigate to a specific step
+ * @param {number} step - The step number to load
+ * @param {boolean} pushState - Whether to push to browser history (default: true)
+ */
+function loadStep(step, pushState = true) {
+    console.log(`Loading step ${step}`);
+    currentStep = step;
+    
+    // Update browser history if needed
+    if (pushState) {
+        const url = new URL(window.location);
+        url.searchParams.set('step', step);
+        window.history.pushState({ step }, '', url);
+    }
+    
+    // Save current progress
+    saveProgress(characterData, step);
+    
+    // Call the appropriate step function based on step number
+    switch (step) {
+        case 1:
+            loadBasicInfoStep();
+            break;
+        case 2:
+            loadAbilityScoresStep();
+            break;
+        case 3:
+            loadSkillsStep();
+            break;
+        case 4:
+            loadClassFeaturesStep();
+            break;
+        case 5:
+            loadSpellSelectionStep();
+            break;
+        case 6:
+            loadHitPointStep();
+            break;
+        case 7:
+            loadEquipmentStep();
+            break;
+        case 8:
+            loadFinishStep();
+            break;
+        default:
+            console.error('Invalid step number:', step);
+            loadBasicInfoStep(); // Default to first step
+    }
+}
+
+/**
+ * Function to proceed to the next step
+ */
+function nextStep() {
+    if (currentStep < 8) {
+        loadStep(currentStep + 1);
+    }
+}
+
+/**
+ * Function to go back to the previous step
+ */
+function previousStep() {
+    if (currentStep > 1) {
+        loadStep(currentStep - 1);
+    }
+}
+
+/**
+ * Load the basic info step (race, class, background)
+ */
 function loadBasicInfoStep() {
     const characterCreation = document.getElementById('character-creation');
+    
     characterCreation.innerHTML = `
         <div class="character-creation-container">
             <div class="col-md-10">
@@ -753,7 +791,7 @@ function loadBasicInfoStep() {
                     <form id="basic-info-form">
                         <div class="mb-3">
                             <label for="character-name" class="form-label">Character Name</label>
-                            <input type="text" class="form-control bg-dark text-light" id="character-name" required>
+                            <input type="text" class="form-control bg-dark text-light" id="character-name" value="${characterData.name || ''}" required>
                         </div>
                         
                         <!-- Race Selection -->
@@ -762,7 +800,7 @@ function loadBasicInfoStep() {
                             <div class="row race-selection">
                                 ${Object.keys(raceData).map(race => `
                                     <div class="col-md-4 mb-3">
-                                        <div class="card selection-card" data-race="${race}">
+                                        <div class="card selection-card ${characterData.race === race ? 'selected' : ''}" data-race="${race}">
                                             <div class="card-body">
                                                 <h5 class="card-title">${raceData[race].name}</h5>
                                                 <p class="card-text small">${raceData[race].description}</p>
@@ -779,16 +817,16 @@ function loadBasicInfoStep() {
                                     </div>
                                 `).join('')}
                             </div>
-                            <input type="hidden" id="selected-race" name="race" required>
+                            <input type="hidden" id="selected-race" name="race" value="${characterData.race || ''}" required>
                         </div>
                         
                         <!-- Sub-Race Selection (Initially Hidden) -->
-                        <div class="mb-4" id="subrace-section" style="display: none;">
+                        <div class="mb-4" id="subrace-section" style="display: ${characterData.race && raceData[characterData.race]?.hasSubraces ? 'block' : 'none'}">
                             <label class="form-label">Sub-Race</label>
                             <div class="row subrace-selection" id="subrace-options">
                                 <!-- Will be populated dynamically -->
                             </div>
-                            <input type="hidden" id="selected-subrace" name="subrace">
+                            <input type="hidden" id="selected-subrace" name="subrace" value="${characterData.subrace || ''}">
                         </div>
                         
                         <!-- Class Selection -->
@@ -797,7 +835,7 @@ function loadBasicInfoStep() {
                             <div class="row class-selection">
                                 ${Object.keys(classData).map(cls => `
                                     <div class="col-md-4 mb-3">
-                                        <div class="card selection-card" data-class="${cls}">
+                                        <div class="card selection-card ${characterData.class === cls ? 'selected' : ''}" data-class="${cls}">
                                             <div class="card-body">
                                                 <h5 class="card-title">${classData[cls].name}</h5>
                                                 <p class="card-text small">${classData[cls].description}</p>
@@ -815,7 +853,7 @@ function loadBasicInfoStep() {
                                     </div>
                                 `).join('')}
                             </div>
-                            <input type="hidden" id="selected-class" name="class" required>
+                            <input type="hidden" id="selected-class" name="class" value="${characterData.class || ''}" required>
                         </div>
                         
                         <!-- Background Selection -->
@@ -824,7 +862,7 @@ function loadBasicInfoStep() {
                             <div class="row background-selection">
                                 ${Object.keys(backgroundData).map(bg => `
                                     <div class="col-md-4 mb-3">
-                                        <div class="card selection-card" data-background="${bg}">
+                                        <div class="card selection-card ${characterData.background === bg ? 'selected' : ''}" data-background="${bg}">
                                             <div class="card-body">
                                                 <h5 class="card-title">${backgroundData[bg].name}</h5>
                                                 <p class="card-text small">${backgroundData[bg].description}</p>
@@ -842,7 +880,7 @@ function loadBasicInfoStep() {
                                     </div>
                                 `).join('')}
                             </div>
-                            <input type="hidden" id="selected-background" name="background" required>
+                            <input type="hidden" id="selected-background" name="background" value="${characterData.background || ''}" required>
                         </div>
                         
                         <div class="text-end">
@@ -854,41 +892,19 @@ function loadBasicInfoStep() {
         </div>
     `;
     
-    // Add event listener to form
-    document.getElementById('basic-info-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Verify all selections are made
-        const raceInput = document.getElementById('selected-race');
-        const classInput = document.getElementById('selected-class');
-        const backgroundInput = document.getElementById('selected-background');
-        
-        if (!raceInput.value || !classInput.value || !backgroundInput.value) {
-            alert('Please make all selections (Race, Class, and Background) before continuing.');
-            return;
-        }
-        
-        // Save data
-        characterData.name = document.getElementById('character-name').value;
-        characterData.race = raceInput.value;
-        characterData.class = classInput.value;
-        characterData.background = backgroundInput.value;
-        
-        // Save subrace if applicable
-        const subraceInput = document.getElementById('selected-subrace');
-        if (subraceInput && subraceInput.value) {
-            characterData.subrace = subraceInput.value;
-        } else {
-            // Ensure subrace is removed if not applicable
-            delete characterData.subrace;
-        }
-        
-        console.log("Character data updated:", characterData);
-        
-        // Move to next step
-        loadAbilityScoresStep();
-    });
+    // Set up event listeners
+    setupBasicInfoEvents();
     
+    // If race is selected and has subraces, populate and show subrace options
+    if (characterData.race && raceData[characterData.race]?.hasSubraces) {
+        updateSubraceOptions(characterData.race);
+    }
+}
+
+/**
+ * Set up event listeners for the basic info step
+ */
+function setupBasicInfoEvents() {
     // Set up card selection for Race
     const raceCards = document.querySelectorAll('.race-selection .selection-card');
     raceCards.forEach(card => {
@@ -940,30 +956,95 @@ function loadBasicInfoStep() {
         });
     });
     
-    // Function to update sub-race options based on selected race
-    function updateSubraceOptions(race) {
-        const subraceSection = document.getElementById('subrace-section');
-        const subraceOptions = document.getElementById('subrace-options');
-        const selectedSubraceInput = document.getElementById('selected-subrace');
+    // Form submission
+    document.getElementById('basic-info-form').addEventListener('submit', function(e) {
+        e.preventDefault();
         
-        // Clear any previous value
-        selectedSubraceInput.value = '';
+        // Verify all selections are made
+        const raceInput = document.getElementById('selected-race');
+        const classInput = document.getElementById('selected-class');
+        const backgroundInput = document.getElementById('selected-background');
         
-        // Check if the selected race has sub-races
-        if (raceData[race] && raceData[race].hasSubraces) {
-            // Show the sub-race section
-            subraceSection.style.display = 'block';
-            
-            // Generate sub-race options
-            let subraceHTML = '';
-            
-            // Add a "None" option
+        if (!raceInput.value || !classInput.value || !backgroundInput.value) {
+            alert('Please make all selections (Race, Class, and Background) before continuing.');
+            return;
+        }
+        
+        // Save data
+        characterData.name = document.getElementById('character-name').value;
+        characterData.race = raceInput.value;
+        characterData.class = classInput.value;
+        characterData.background = backgroundInput.value;
+        
+        // Save subrace if applicable
+        const subraceInput = document.getElementById('selected-subrace');
+        if (subraceInput && subraceInput.value && subraceInput.value !== 'none') {
+            characterData.subrace = subraceInput.value;
+        } else {
+            // Ensure subrace is removed if not applicable
+            delete characterData.subrace;
+        }
+        
+        console.log("Character data updated:", characterData);
+        
+        // Move to next step
+        nextStep();
+    });
+}
+
+/**
+ * Update subrace options based on selected race
+ * @param {string} race - The selected race
+ */
+function updateSubraceOptions(race) {
+    const subraceSection = document.getElementById('subrace-section');
+    const subraceOptions = document.getElementById('subrace-options');
+    const selectedSubraceInput = document.getElementById('selected-subrace');
+    
+    // Clear any previous value
+    selectedSubraceInput.value = '';
+    
+    // Check if the selected race has sub-races
+    if (raceData[race] && raceData[race].hasSubraces) {
+        // Show the sub-race section
+        subraceSection.style.display = 'block';
+        
+        // Generate sub-race options
+        let subraceHTML = '';
+        
+        // Add a "None" option
+        subraceHTML += `
+            <div class="col-md-4 mb-3">
+                <div class="card selection-card subrace-card ${characterData.subrace === 'none' ? 'selected' : ''}" data-subrace="none">
+                    <div class="card-body">
+                        <h5 class="card-title">None</h5>
+                        <p class="card-text small">Choose no sub-race and use the base race features only.</p>
+                    </div>
+                    <div class="card-footer">
+                        <div class="selected-indicator">
+                            <i class="bi bi-check-circle-fill"></i> Selected
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add each sub-race option
+        raceData[race].subraces.forEach(subrace => {
             subraceHTML += `
                 <div class="col-md-4 mb-3">
-                    <div class="card selection-card subrace-card" data-subrace="none">
+                    <div class="card selection-card subrace-card ${characterData.subrace === subrace.id ? 'selected' : ''}" data-subrace="${subrace.id}">
                         <div class="card-body">
-                            <h5 class="card-title">None</h5>
-                            <p class="card-text small">Choose no sub-race and use the base race features only.</p>
+                            <h5 class="card-title">${subrace.name}</h5>
+                            <p class="card-text small">${subrace.description}</p>
+                            <div class="card-traits small">
+                                <strong>Traits:</strong> ${subrace.traits.join(', ')}
+                            </div>
+                            <div class="small mt-1">
+                                <strong>Ability Bonuses:</strong> ${Object.entries(subrace.abilityScoreIncrease).map(([ability, value]) => 
+                                    `+${value} ${ability.charAt(0).toUpperCase() + ability.slice(1)}`
+                                ).join(', ')}
+                            </div>
                         </div>
                         <div class="card-footer">
                             <div class="selected-indicator">
@@ -973,108 +1054,236 @@ function loadBasicInfoStep() {
                     </div>
                 </div>
             `;
-            
-            // Add each sub-race option
-            raceData[race].subraces.forEach(subrace => {
-                subraceHTML += `
-                    <div class="col-md-4 mb-3">
-                        <div class="card selection-card subrace-card" data-subrace="${subrace.id}">
-                            <div class="card-body">
-                                <h5 class="card-title">${subrace.name}</h5>
-                                <p class="card-text small">${subrace.description}</p>
-                                <div class="card-traits small">
-                                    <strong>Traits:</strong> ${subrace.traits.join(', ')}
-                                </div>
-                                <div class="small mt-1">
-                                    <strong>Ability Bonuses:</strong> ${Object.entries(subrace.abilityScoreIncrease).map(([ability, value]) => 
-                                        `+${value} ${ability.charAt(0).toUpperCase() + ability.slice(1)}`
-                                    ).join(', ')}
-                                </div>
-                            </div>
-                            <div class="card-footer">
-                                <div class="selected-indicator">
-                                    <i class="bi bi-check-circle-fill"></i> Selected
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+        });
+        
+        // Update the sub-race options
+        subraceOptions.innerHTML = subraceHTML;
+        
+        // Set up card selection for sub-races
+        const subraceCards = document.querySelectorAll('.subrace-card');
+        subraceCards.forEach(card => {
+            card.addEventListener('click', function() {
+                // Remove selected class from all subrace cards
+                subraceCards.forEach(c => c.classList.remove('selected'));
+                
+                // Add selected class to clicked card
+                this.classList.add('selected');
+                
+                // Update hidden input
+                selectedSubraceInput.value = this.dataset.subrace;
             });
-            
-            // Update the sub-race options
-            subraceOptions.innerHTML = subraceHTML;
-            
-            // Set up card selection for sub-races
-            const subraceCards = document.querySelectorAll('.subrace-card');
-            subraceCards.forEach(card => {
-                card.addEventListener('click', function() {
-                    // Remove selected class from all subrace cards
-                    subraceCards.forEach(c => c.classList.remove('selected'));
-                    
-                    // Add selected class to clicked card
-                    this.classList.add('selected');
-                    
-                    // Update hidden input
-                    selectedSubraceInput.value = this.dataset.subrace;
-                });
-            });
-            
+        });
+        
+        // If a subrace was previously selected for this race, select it again
+        if (characterData.subrace) {
+            const previouslySelectedCard = document.querySelector(`.subrace-card[data-subrace="${characterData.subrace}"]`);
+            if (previouslySelectedCard) {
+                previouslySelectedCard.classList.add('selected');
+                selectedSubraceInput.value = characterData.subrace;
+            } else {
+                // Default to none if previously selected subrace not found
+                const noneCard = document.querySelector('.subrace-card[data-subrace="none"]');
+                if (noneCard) {
+                    noneCard.classList.add('selected');
+                    selectedSubraceInput.value = 'none';
+                }
+            }
+        } else {
             // Auto-select "None" as default
             const noneCard = document.querySelector('.subrace-card[data-subrace="none"]');
             if (noneCard) {
                 noneCard.classList.add('selected');
                 selectedSubraceInput.value = 'none';
             }
-        } else {
-            // Hide the sub-race section for races without sub-races
-            subraceSection.style.display = 'none';
-            selectedSubraceInput.value = '';
         }
-    }
-    
-    // If character data already exists, populate the form
-    if (characterData.name) {
-        document.getElementById('character-name').value = characterData.name;
-    }
-    
-    if (characterData.race) {
-        const raceCard = document.querySelector(`.race-selection .selection-card[data-race="${characterData.race}"]`);
-        if (raceCard) {
-            raceCard.classList.add('selected');
-            document.getElementById('selected-race').value = characterData.race;
-            
-            // Update sub-race options
-            updateSubraceOptions(characterData.race);
-            
-            // If sub-race was previously selected, select it again
-            if (characterData.subrace) {
-                setTimeout(() => {
-                    const subraceCard = document.querySelector(`.subrace-card[data-subrace="${characterData.subrace}"]`);
-                    if (subraceCard) {
-                        subraceCard.classList.add('selected');
-                        document.getElementById('selected-subrace').value = characterData.subrace;
-                    }
-                }, 100);
-            }
-        }
-    }
-    
-    if (characterData.class) {
-        const classCard = document.querySelector(`.class-selection .selection-card[data-class="${characterData.class}"]`);
-        if (classCard) {
-            classCard.classList.add('selected');
-            document.getElementById('selected-class').value = characterData.class;
-        }
-    }
-    
-    if (characterData.background) {
-        const backgroundCard = document.querySelector(`.background-selection .selection-card[data-background="${characterData.background}"]`);
-        if (backgroundCard) {
-            backgroundCard.classList.add('selected');
-            document.getElementById('selected-background').value = characterData.background;
-        }
+    } else {
+        // Hide the sub-race section for races without sub-races
+        subraceSection.style.display = 'none';
+        selectedSubraceInput.value = '';
     }
 }
+
+// Generate step indicator HTML
+function getStepIndicatorHTML(currentStep) {
+    return `
+        <div class="step-indicator">
+            <div class="step ${currentStep >= 1 ? (currentStep === 1 ? 'active' : 'completed') : ''}">1</div>
+            <div class="step ${currentStep >= 2 ? (currentStep === 2 ? 'active' : 'completed') : ''}">2</div>
+            <div class="step ${currentStep >= 3 ? (currentStep === 3 ? 'active' : 'completed') : ''}">3</div>
+            <div class="step ${currentStep >= 4 ? (currentStep === 4 ? 'active' : 'completed') : ''}">4</div>
+            <div class="step ${currentStep >= 5 ? (currentStep === 5 ? 'active' : 'completed') : ''}">5</div>
+            <div class="step ${currentStep >= 6 ? (currentStep === 6 ? 'active' : 'completed') : ''}">6</div>
+            <div class="step ${currentStep >= 7 ? (currentStep === 7 ? 'active' : 'completed') : ''}">7</div>
+            <div class="step ${currentStep >= 8 ? (currentStep === 8 ? 'active' : 'completed') : ''}">8</div>
+        </div>
+    `;
+}
+
+/**
+ * Handle character creation completion - preventing navigation warning
+ */
+function finishCharacterCreation() {
+    console.log("Starting character completion process...");
+    
+    // Get the finish button and disable it immediately
+    const finishButton = document.getElementById('finish-creation');
+    if (finishButton) {
+        finishButton.disabled = true;
+        finishButton.innerHTML = '<i class="bi bi-hourglass"></i> Saving Character...';
+    }
+    
+    // Get the form element
+    const form = finishButton ? finishButton.closest('form') : null;
+    
+    // Save final character description if any
+    const descriptionElement = document.getElementById('character-description');
+    if (descriptionElement) {
+        characterData.description = descriptionElement.value;
+    }
+    
+    // Mark character as complete (not a draft)
+    characterData.isDraft = false;
+    characterData.completedAt = new Date().toISOString();
+    
+    // Generate a unique submission ID to detect duplicates
+    characterData.submissionId = generateSubmissionId();
+    
+    // Show loading indicator
+    showSavingIndicator("Finalizing your character...");
+    
+    // IMPORTANT: Remove the beforeunload handler to prevent navigation warning
+    window.onbeforeunload = null;
+    
+    // Save the complete character to the server
+    fetch('/api/save-character', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(characterData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            console.error("Server returned error status:", response.status);
+            return response.text().then(text => {
+                throw new Error(`Server error: ${text}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log("Character saved successfully:", data);
+        
+        if (data.success && data.character_id) {
+            // Clean up draft data
+            if (typeof completeCharacter === 'function') {
+                completeCharacter(characterData);
+            }
+            
+            // Show success message
+            showSaveSuccessIndicator("Character created! Starting adventure...");
+            
+            // IMPORTANT: Mark the form as 'clean' so browser doesn't think it's dirty
+            if (form) {
+                // Reset the form to clear its "dirty" state
+                form.reset();
+                
+                // Also reset any data that might trigger form change detection
+                const allInputs = form.querySelectorAll('input, textarea, select');
+                allInputs.forEach(input => {
+                    input.defaultValue = input.value;
+                });
+            }
+            
+            // Use a slight delay to allow the success message to be seen
+            setTimeout(() => {
+                // IMPORTANT: Use window.location.replace instead of window.location.href
+                // This replaces the current page in history instead of adding a new entry
+                window.location.replace(`/play/${data.character_id}`);
+            }, 1500);
+        } else {
+            console.error("Server response missing success or character_id", data);
+            showSaveErrorIndicator("Error creating character: Incomplete server response");
+            
+            // Re-enable the button in case of error
+            if (finishButton) {
+                finishButton.disabled = false;
+                finishButton.innerHTML = 'Start Adventure!';
+            }
+        }
+    })
+    .catch(error => {
+        console.error("Error saving character:", error);
+        showSaveErrorIndicator(`Error creating character: ${error.message}`);
+        
+        // Re-enable the button in case of error
+        if (finishButton) {
+            finishButton.disabled = false;
+            finishButton.innerHTML = 'Start Adventure!';
+        }
+    });
+}
+
+/**
+ * Generate a unique submission ID to prevent duplicate saves
+ */
+function generateSubmissionId() {
+    return Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9);
+}
+
+/**
+ * Show saving indicator with custom message
+ */
+function showSavingIndicator(message = "Saving...") {
+    const existingIndicator = document.querySelector('.save-indicator');
+    if (existingIndicator) {
+        document.body.removeChild(existingIndicator);
+    }
+    
+    const indicator = document.createElement('div');
+    indicator.className = 'save-indicator saving';
+    indicator.textContent = message;
+    document.body.appendChild(indicator);
+}
+
+/**
+ * Show success indicator with custom message
+ */
+function showSaveSuccessIndicator(message = "Saved") {
+    const existingIndicator = document.querySelector('.save-indicator');
+    if (existingIndicator) {
+        document.body.removeChild(existingIndicator);
+    }
+    
+    const indicator = document.createElement('div');
+    indicator.className = 'save-indicator success';
+    indicator.textContent = message;
+    document.body.appendChild(indicator);
+}
+
+/**
+ * Show error indicator with custom message
+ */
+function showSaveErrorIndicator(message = "Error saving") {
+    const existingIndicator = document.querySelector('.save-indicator');
+    if (existingIndicator) {
+        document.body.removeChild(existingIndicator);
+    }
+    
+    const indicator = document.createElement('div');
+    indicator.className = 'save-indicator error';
+    indicator.textContent = message;
+    document.body.appendChild(indicator);
+    
+    // Error indicators stay visible longer
+    setTimeout(() => {
+        if (document.body.contains(indicator)) {
+            document.body.removeChild(indicator);
+        }
+    }, 5000);
+}
+
+// Here would follow implementations of all the other step functions:
 
 // Function to load ability scores step with proper centering
 function loadAbilityScoresStep() {
@@ -1264,170 +1473,6 @@ function loadAbilityScoresStep() {
             loadSkillsStep();
         });
     }, 100);
-}
-
-// Update the function that applies racial ability score bonuses to include sub-races
-function applyRacialAbilityBonuses() {
-    if (!characterData.race || !raceData[characterData.race]) {
-        console.log("No race selected, or race data not found");
-        return;
-    }
-    
-    const race = characterData.race;
-    const racialBonuses = raceData[race].abilityScoreIncrease;
-    
-    console.log(`Applying racial bonuses for ${raceData[race].name}:`, racialBonuses);
-    
-    // Apply base race bonuses
-    
-    // Apply bonuses to all abilities if the race has an "all" bonus (like humans)
-    if (racialBonuses.all) {
-        const allBonus = racialBonuses.all;
-        console.log(`Applying +${allBonus} to all abilities`);
-        
-        for (const ability in characterData.abilities) {
-            characterData.abilities[ability] += allBonus;
-            console.log(`${ability}: ${characterData.abilities[ability] - allBonus} + ${allBonus} = ${characterData.abilities[ability]}`);
-        }
-    } 
-    // Apply specific ability bonuses
-    else {
-        for (const ability in racialBonuses) {
-            const bonus = racialBonuses[ability];
-            
-            if (characterData.abilities[ability] !== undefined) {
-                console.log(`Applying +${bonus} to ${ability}`);
-                characterData.abilities[ability] += bonus;
-                console.log(`${ability}: ${characterData.abilities[ability] - bonus} + ${bonus} = ${characterData.abilities[ability]}`);
-            }
-        }
-    }
-    
-    // Apply sub-race bonuses if applicable
-    if (characterData.subrace && characterData.subrace !== 'none' && raceData[race].hasSubraces) {
-        // Find the selected sub-race
-        const subrace = raceData[race].subraces.find(sr => sr.id === characterData.subrace);
-        
-        if (subrace && subrace.abilityScoreIncrease) {
-            console.log(`Applying sub-race bonuses for ${subrace.name}:`, subrace.abilityScoreIncrease);
-            
-            // Apply sub-race ability score increases
-            for (const ability in subrace.abilityScoreIncrease) {
-                const bonus = subrace.abilityScoreIncrease[ability];
-                
-                if (characterData.abilities[ability] !== undefined) {
-                    console.log(`Applying +${bonus} to ${ability} from sub-race`);
-                    characterData.abilities[ability] += bonus;
-                    console.log(`${ability}: ${characterData.abilities[ability] - bonus} + ${bonus} = ${characterData.abilities[ability]}`);
-                }
-            }
-        }
-    }
-}
-
-// Update the function that displays racial bonuses in the UI
-function updateRacialBonuses() {
-    const race = characterData.race;
-    const racialBonusesElement = document.getElementById('racial-bonuses');
-    
-    if (!race || !raceData[race]) {
-        racialBonusesElement.textContent = 'Select a race to see bonuses';
-        return;
-    }
-    
-    const raceInfo = raceData[race];
-    let bonusText = '';
-    
-    if (raceInfo.abilityScoreIncrease.all) {
-        bonusText += `+${raceInfo.abilityScoreIncrease.all} to all ability scores. `;
-    } else {
-        for (const [ability, bonus] of Object.entries(raceInfo.abilityScoreIncrease)) {
-            bonusText += `+${bonus} ${ability.charAt(0).toUpperCase() + ability.slice(1)}. `;
-        }
-    }
-    
-    bonusText += 'Traits: ' + raceInfo.traits.join(', ');
-    racialBonusesElement.textContent = bonusText;
-    
-    // Optionally, show a preview of what the final scores would be
-    const abilities = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
-    abilities.forEach(ability => {
-        const abilityInput = document.getElementById(`ability-${ability}`);
-        const modifierElement = document.getElementById(`mod-${ability}`);
-        
-        if (abilityInput && modifierElement) {
-            // Get the base score
-            const baseScore = parseInt(abilityInput.value);
-            let racialBonus = 0;
-            
-            // Calculate the racial bonus
-            if (raceInfo.abilityScoreIncrease.all) {
-                racialBonus = raceInfo.abilityScoreIncrease.all;
-            } else if (raceInfo.abilityScoreIncrease[ability]) {
-                racialBonus = raceInfo.abilityScoreIncrease[ability];
-            }
-            
-            // Calculate the final score and modifier
-            const finalScore = baseScore + racialBonus;
-            const modifier = Math.floor((finalScore - 10) / 2);
-            
-            // Display the racial bonus and final modifier
-            if (racialBonus > 0) {
-                modifierElement.innerHTML = `<span class="text-success">${modifier >= 0 ? '+' : ''}${modifier}</span> <small class="text-light">(+${racialBonus} racial)</small>`;
-            } else {
-                modifierElement.textContent = modifier >= 0 ? `+${modifier}` : modifier;
-            }
-        }
-    });
-}
-
-// Function to handle ability score buttons
-function handleAbilityButtonClick(e) {
-    const ability = e.target.dataset.ability;
-    const action = e.target.dataset.action;
-    const inputElement = document.getElementById(`ability-${ability}`);
-    const modifierElement = document.getElementById(`mod-${ability}`);
-    const pointsElement = document.getElementById('points-count');
-    
-    let currentValue = parseInt(inputElement.value);
-    let pointsRemaining = parseInt(pointsElement.textContent);
-    
-    if (action === 'increase') {
-        // Calculate point cost (1 point from 8-13, 2 points from 14-15)
-        const pointCost = currentValue >= 13 ? 2 : 1;
-        
-        if (pointsRemaining >= pointCost && currentValue < 15) {
-            currentValue += 1;
-            pointsRemaining -= pointCost;
-        }
-    } else if (action === 'decrease' && currentValue > 8) {
-        // Refund points (1 point from 9-13, 2 points from 14-15)
-        const pointRefund = currentValue > 13 ? 2 : 1;
-        currentValue -= 1;
-        pointsRemaining += pointRefund;
-    }
-    
-    // Update values
-    inputElement.value = currentValue;
-    pointsElement.textContent = pointsRemaining;
-    
-    // Update modifier
-    const modifier = Math.floor((currentValue - 10) / 2);
-    modifierElement.textContent = modifier >= 0 ? `+${modifier}` : modifier;
-    
-    // Update UI based on points remaining
-    if (pointsRemaining <= 0) {
-        document.querySelectorAll('[data-action="increase"]').forEach(btn => {
-            btn.disabled = true;
-        });
-    } else {
-        document.querySelectorAll('[data-action="increase"]').forEach(btn => {
-            const abilVal = parseInt(document.getElementById(`ability-${btn.dataset.ability}`).value);
-            // Only enable if there are enough points and ability is < 15
-            const pointCost = abilVal >= 13 ? 2 : 1;
-            btn.disabled = (pointsRemaining < pointCost || abilVal >= 15);
-        });
-    }
 }
 
 // Function to load skills step with proper centering
@@ -1928,92 +1973,6 @@ function loadClassFeaturesStep() {
     }, 100);
 }
 
-// Function to check if character gets spells from their race
-function checkForRaceBasedSpells() {
-    // Check for High Elf
-    if (characterData.race === 'elf' && characterData.subrace === 'high-elf') {
-        return true;
-    }
-    
-    // Check for other races with innate spells
-    // Tiefling, Forest Gnome, etc. could be added here
-    
-    return false;
-}
-
-// Function to get all spell options for a character
-function getSpellOptionsForCharacter() {
-    const options = {
-        cantrips: {
-            fromClass: [],
-            fromRace: []
-        },
-        spells: {
-            fromClass: [],
-            fromRace: []
-        },
-        selections: {
-            // How many of each type to select
-            classCantrips: 0,
-            classSpells: 0,
-            raceCantrips: 0,
-            preparedSpells: 0
-        }
-    };
-    
-    // Add class-based spell options
-    if (['wizard', 'bard', 'cleric', 'sorcerer', 'warlock'].includes(characterData.class)) {
-        // Set selection counts
-        if (characterData.class === 'wizard') {
-            options.selections.classCantrips = 3;
-            options.selections.classSpells = 6; // Spellbook
-            
-            // Prepared spells = INT mod + level
-            const intMod = Math.floor((characterData.abilities.intelligence - 10) / 2);
-            options.selections.preparedSpells = Math.max(1, intMod + 1);
-        } 
-        else if (characterData.class === 'bard') {
-            options.selections.classCantrips = 2;
-            options.selections.classSpells = 4; // Known spells
-        }
-        // Add other classes as needed
-        
-        // Get cantrips available from class
-        options.cantrips.fromClass = getCantripsForClass(characterData.class);
-        
-        // Get 1st level spells available from class
-        options.spells.fromClass = getSpellsForClassAndLevel(characterData.class, 1);
-    }
-    
-    // Add race-based spell options
-    if (characterData.race === 'elf' && characterData.subrace === 'high-elf') {
-        // High Elves get one wizard cantrip
-        options.selections.raceCantrips = 1;
-        options.cantrips.fromRace = getCantripsForClass('wizard');
-    }
-    
-    return options;
-}
-
-// Function to check if character gets spells from their race
-function checkForRaceBasedSpells() {
-    console.log("Checking for race-based spells");
-    console.log("Character race:", characterData.race);
-    console.log("Character subrace:", characterData.subrace);
-    
-    // Check for High Elf
-    if (characterData.race === 'elf' && characterData.subrace === 'high-elf') {
-        console.log("High Elf detected - should have cantrip access");
-        return true;
-    }
-    
-    // Check for other races with innate spells
-    // Tiefling, Forest Gnome, etc. could be added here
-    
-    console.log("No race-based spells detected");
-    return false;
-}
-
 // Function to load spell selection step
 function loadSpellSelectionStep() {
     const characterCreation = document.getElementById('character-creation');
@@ -2241,6 +2200,916 @@ function loadSpellSelectionStep() {
     }, 100);
 }
 
+// Function to load hit point calculator step with proper dice rolling
+function loadHitPointStep() {
+    const characterCreation = document.getElementById('character-creation');
+    const characterClass = characterData.class;
+    const constitutionScore = characterData.abilities.constitution;
+    
+    // Calculate Constitution modifier
+    const constitutionModifier = Math.floor((constitutionScore - 10) / 2);
+    const modifierText = constitutionModifier >= 0 ? `+${constitutionModifier}` : constitutionModifier;
+    
+    // Get hit die information
+    const hitDie = hitDieData[characterClass]?.die || 'd8';
+    const hitDieMax = parseInt(hitDie.substring(1));
+    
+    // Calculate starting hit points (max hit die + CON modifier)
+    const maxHP = hitDieMax + constitutionModifier;
+    
+    // Build the HTML for the hit point calculator
+    characterCreation.innerHTML = `
+        <div class="character-creation-container">
+            <div class="col-md-8 mx-auto">
+                ${getStepIndicatorHTML(6)}
+                
+                <div class="card character-card">
+                    <div class="card-header bg-dark text-light">
+                        <h3 class="mb-0">Hit Points</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="hit-points-form">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h4>Starting Hit Points</h4>
+                                    <p class="text-light">At 1st level, you start with the maximum hit points from your class's hit die plus your Constitution modifier.</p>
+                                    
+                                    <div class="hit-points-calculator p-4 border rounded mb-4">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-4 text-center mb-3 mb-md-0">
+                                                <h5>${classData[characterClass]?.name || 'Class'} Hit Die</h5>
+                                                <div class="hit-die-display">
+                                                    ${hitDie}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-2 text-center mb-3 mb-md-0">
+                                                <h5>Maximum</h5>
+                                                <div class="hit-die-value">
+                                                    ${hitDieMax}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-2 text-center mb-3 mb-md-0">
+                                                <h5>CON Mod</h5>
+                                                <div class="con-modifier">
+                                                    ${modifierText}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-4 text-center">
+                                                <h5>Starting HP</h5>
+                                                <div class="starting-hp" id="final-hp-display">
+                                                    ${maxHP}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="dice-roller text-center mb-4">
+                                        <h4>Level 2 Preview</h4>
+                                        <p class="text-light">See what your hit points might be when you reach level 2.</p>
+                                        <p class="text-light">When you level up, you'll roll your hit die and add your Constitution modifier to your max HP.</p>
+                                        
+                                        <div class="dice-container mb-3">
+                                            <div id="dice-display" class="dice" style="display: none;">
+                                                1
+                                            </div>
+                                        </div>
+                                        
+                                        <button type="button" id="roll-hit-die" class="btn btn-primary" ${characterData.hitPoints?.levelUpRoll ? 'disabled' : ''}>
+                                            <i class="bi bi-dice-6"></i> Roll ${hitDie}
+                                        </button>
+                                        
+                                        <div id="roll-result" class="mt-3" ${characterData.hitPoints?.levelUpRoll ? '' : 'style="display: none;"'}>
+                                            <p class="mb-0">You rolled <span id="roll-value">${characterData.hitPoints?.levelUpRoll || 0}</span></p>
+                                            <p>With CON modifier: <span id="roll-total">${(characterData.hitPoints?.levelUpRoll || 0) + constitutionModifier}</span></p>
+                                            <p class="text-light">At level 2, your hit points would be <strong>${maxHP + (characterData.hitPoints?.levelUpRoll || 0) + constitutionModifier}</strong></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary" id="back-to-features">Back to Features</button>
+                                <button type="submit" class="btn btn-primary">Continue to Equipment</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add event listeners
+    setTimeout(() => {
+        // Back button
+        const backButton = document.getElementById('back-to-features');
+        if (backButton) {
+            backButton.addEventListener('click', loadSpellSelectionStep);
+        } else {
+            console.error("Back button not found!");
+        }
+        
+        // Hit die roll button
+        const rollButton = document.getElementById('roll-hit-die');
+        if (rollButton) {
+            rollButton.addEventListener('click', function() {
+                // Roll the hit die
+                const result = rollHitDie(hitDie);
+                
+                // Animate the dice roll
+                animateDiceRoll('dice-display', hitDie, result);
+                
+                // Calculate total with Constitution modifier
+                const total = result + constitutionModifier;
+                
+                // Save the roll to character data
+                if (!characterData.hitPoints) {
+                    characterData.hitPoints = {
+                        max: maxHP,
+                        current: maxHP
+                    };
+                }
+                
+                // Store the level-up roll
+                characterData.hitPoints.levelUpRoll = result;
+                
+                // Update result display
+                const rollResult = document.getElementById('roll-result');
+                const rollValue = document.getElementById('roll-value');
+                const rollTotal = document.getElementById('roll-total');
+                
+                rollValue.textContent = result;
+                rollTotal.textContent = total;
+                rollResult.style.display = 'block';
+                rollResult.querySelector('p:last-child').innerHTML = 
+                    `At level 2, your hit points would be <strong>${maxHP + result + constitutionModifier}</strong>`;
+                
+                // Disable the roll button after one roll
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-dice-6"></i> Roll Saved';
+                
+                console.log("Level up roll saved:", characterData.hitPoints.levelUpRoll);
+            });
+        } else {
+            console.error("Roll button not found!");
+        }
+        
+        // Form submission
+        const form = document.getElementById('hit-points-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Save hit points to character data if not already saved
+                if (!characterData.hitPoints) {
+                    characterData.hitPoints = {
+                        max: maxHP,
+                        current: maxHP,
+                        hitDie: hitDie,
+                        level: 1
+                    };
+                } else {
+                    // Update any missing properties
+                    characterData.hitPoints.max = maxHP;
+                    characterData.hitPoints.current = maxHP;
+                    characterData.hitPoints.hitDie = hitDie;
+                    characterData.hitPoints.level = 1;
+                }
+                
+                console.log("Hit points saved:", characterData.hitPoints);
+                
+                // Proceed to next step (Equipment)
+                loadEquipmentStep();
+            });
+        } else {
+            console.error("Hit points form not found!");
+        }
+        
+        // If we already have a level up roll, show it
+        if (characterData.hitPoints?.levelUpRoll) {
+            const rollResult = document.getElementById('roll-result');
+            if (rollResult) {
+                rollResult.style.display = 'block';
+                const rollValue = document.getElementById('roll-value');
+                if (rollValue) rollValue.textContent = characterData.hitPoints.levelUpRoll;
+                const rollTotal = document.getElementById('roll-total');
+                if (rollTotal) rollTotal.textContent = characterData.hitPoints.levelUpRoll + constitutionModifier;
+            }
+        }
+    }, 100);
+}
+
+// Function to load equipment selection step
+function loadEquipmentStep() {
+    const characterCreation = document.getElementById('character-creation');
+    const characterClass = characterData.class;
+    
+    // Get equipment options for the selected class
+    const classEquipment = equipmentData[characterClass] || { options: [], standardItems: [] };
+    
+    // Build the HTML for the equipment selection
+    characterCreation.innerHTML = `
+        <div class="character-creation-container">
+            <div class="col-md-8 mx-auto">
+                ${getStepIndicatorHTML(7)}
+                
+                <div class="card character-card">
+                    <div class="card-header bg-dark text-light">
+                        <h3 class="mb-0">Equipment Selection</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="equipment-form">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h4>Choose Your Equipment</h4>
+                                    <p class="text-light">Select one of the available equipment options for your ${classData[characterClass]?.name || 'character'}.</p>
+                                    
+                                    <div class="equipment-options">
+                                        ${classEquipment.options.length > 0 ? `
+                                            <div class="row equipment-selection mb-4">
+                                                ${classEquipment.options.map(option => `
+                                                    <div class="col-md-6 mb-3">
+                                                        <div class="selection-card equipment-card" data-equipment="${option.id}">
+                                                            <div class="card-body">
+                                                                <h5 class="card-title">${option.title}</h5>
+                                                                <ul class="equipment-list small">
+                                                                    ${option.items.map(item => `
+                                                                        <li>
+                                                                            <strong>${item.name}</strong>
+                                                                            <div class="text-light small">${item.description}</div>
+                                                                        </li>
+                                                                    `).join('')}
+                                                                </ul>
+                                                            </div>
+                                                            <div class="card-footer">
+                                                                <div class="selected-indicator">
+                                                                    <i class="bi bi-check-circle-fill"></i> Selected
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                            <input type="hidden" id="selected-equipment" name="equipment">
+                                        ` : '<p class="text-light">No equipment options available for this class.</p>'}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h4>Standard Equipment</h4>
+                                    <p class="text-light">Your ${classData[characterClass]?.name || 'character'} automatically starts with the following equipment:</p>
+                                    
+                                    <div class="standard-equipment">
+                                        <div class="row">
+                                            ${classEquipment.standardItems.map(item => `
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="standard-item p-2">
+                                                        <strong>${item.name}</strong>
+                                                        <div class="text-light small">${item.description}</div>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary" id="back-to-hit-points">Back to Hit Points</button>
+                                <button type="submit" class="btn btn-primary">Continue to Finish</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add event listeners
+    setTimeout(() => {
+        // Back button
+        const backButton = document.getElementById('back-to-hit-points');
+        if (backButton) {
+            backButton.addEventListener('click', loadHitPointStep);
+        } else {
+            console.error("Back button not found!");
+        }
+        
+        // Equipment selection
+        const equipmentCards = document.querySelectorAll('.equipment-card');
+        if (equipmentCards.length > 0) {
+            equipmentCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    // Remove selected class from all equipment cards
+                    equipmentCards.forEach(c => c.classList.remove('selected'));
+                    
+                    // Add selected class to clicked card
+                    this.classList.add('selected');
+                    
+                    // Update hidden input
+                    const selectedEquipmentInput = document.getElementById('selected-equipment');
+                    if (selectedEquipmentInput) {
+                        selectedEquipmentInput.value = this.dataset.equipment;
+                    }
+                });
+            });
+            
+            // Auto-select the first equipment option if available
+            if (equipmentCards.length > 0) {
+                equipmentCards[0].classList.add('selected');
+                const selectedEquipmentInput = document.getElementById('selected-equipment');
+                if (selectedEquipmentInput) {
+                    selectedEquipmentInput.value = equipmentCards[0].dataset.equipment;
+                }
+            }
+        }
+        
+        // Form submission
+        const form = document.getElementById('equipment-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Get selected equipment option
+                const selectedEquipmentInput = document.getElementById('selected-equipment');
+                const selectedEquipmentId = selectedEquipmentInput ? selectedEquipmentInput.value : null;
+                
+                // Find the selected equipment option
+                const selectedOption = classEquipment.options.find(option => option.id === selectedEquipmentId);
+                
+                // Save equipment to character data
+                characterData.equipment = {
+                    selected: selectedOption ? selectedOption.items : [],
+                    standard: classEquipment.standardItems || []
+                };
+                
+                console.log("Equipment saved:", characterData.equipment);
+                
+                // Proceed to finish step
+                loadFinishStep();
+            });
+        } else {
+            console.error("Equipment form not found!");
+        }
+    }, 100);
+}
+
+// Complete loadFinishStep function with spell section integration
+function loadFinishStep() {
+    const characterCreation = document.getElementById('character-creation');
+    
+    // Get class feature data for display
+    const classFeatureData = classFeatures[characterData.class]?.level1 || { required: [], optional: [] };
+    let featuresHTML = '';
+    
+    // Build features HTML with consistent card style
+    if (characterData.features) {
+        // Display required features
+        if (characterData.features.required && characterData.features.required.length > 0) {
+            featuresHTML += '<div class="mb-4"><h5>Class Features</h5><div class="row">';
+            
+            characterData.features.required.forEach(featureId => {
+                const feature = classFeatureData.required.find(f => f.id === featureId);
+                if (feature) {
+                    featuresHTML += `
+                        <div class="col-md-4 mb-3">
+                            <div class="selection-card">
+                                <div class="card-body">
+                                    <h5 class="card-title">${feature.name}</h5>
+                                    <p class="card-text small">${feature.description}</p>
+                                    <div class="small">
+                                        ${feature.type === 'active' ? 
+                                            `<div><strong>Type:</strong> Active</div>` : 
+                                            `<div><strong>Type:</strong> Passive</div>`
+                                        }
+                                        ${feature.usageLimit ? 
+                                            `<div><strong>Usage:</strong> ${feature.usageLimit}</div>` : 
+                                            ''
+                                        }
+                                        ${feature.actionType ? 
+                                            `<div><strong>Action:</strong> ${feature.actionType}</div>` : 
+                                            ''
+                                        }
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="feature-type-indicator">
+                                        <i class="bi ${feature.type === 'active' ? 'bi-lightning-fill' : 'bi-shield-fill'}"></i> 
+                                        ${feature.type === 'active' ? 'Active Ability' : 'Passive Ability'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            featuresHTML += '</div></div>';
+        }
+        
+        // Display optional features
+        if (characterData.features.optional && Object.keys(characterData.features.optional).length > 0) {
+            featuresHTML += '<div class="mb-4"><h5>Chosen Options</h5><div class="row">';
+            
+            for (const [featureId, choiceId] of Object.entries(characterData.features.optional)) {
+                const featureGroup = classFeatureData.optional.find(f => f.id === featureId);
+                
+                if (featureGroup) {
+                    if (featureGroup.choices) {
+                        // For single-choice features like Fighting Style
+                        const choice = featureGroup.choices.find(c => c.id === choiceId);
+                        if (choice) {
+                            featuresHTML += `
+                                <div class="col-md-4 mb-3">
+                                    <div class="selection-card selected">
+                                        <div class="card-body">
+                                            <h5 class="card-title">${choice.name}</h5>
+                                            <p class="card-text small">${choice.description}</p>
+                                            ${choice.benefit ? 
+                                                `<div class="small">
+                                                    <strong>Benefit:</strong> ${choice.benefit}
+                                                </div>` : 
+                                                ''
+                                            }
+                                        </div>
+                                        <div class="card-footer">
+                                            <div class="selected-indicator">
+                                                <i class="bi bi-check-circle-fill"></i> ${featureGroup.name} Option
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    } else if (Array.isArray(choiceId)) {
+                        // For multi-selection features like Expertise
+                        const skillNames = choiceId.map(skillId => skills[skillId]?.name).filter(Boolean);
+                        
+                        featuresHTML += `
+                            <div class="col-md-4 mb-3">
+                                <div class="selection-card selected">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${featureGroup.name}</h5>
+                                        <p class="card-text small">${featureGroup.description}</p>
+                                        <div class="small mt-2">
+                                            <strong>Selected Skills:</strong>
+                                            <ul class="mb-0 ps-3">
+                                                ${skillNames.map(name => `<li>${name}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="selected-indicator">
+                                            <i class="bi bi-check-circle-fill"></i> Skill Expertise
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            }
+            
+            featuresHTML += '</div></div>';
+        }
+    }
+    
+    characterCreation.innerHTML = `
+        <div class="character-creation-container">
+            <div class="col-md-8 mx-auto">
+                ${getStepIndicatorHTML(8)}
+                
+                <div class="card character-card">
+                    <div class="card-header bg-dark text-light">
+                        <h3 class="mb-0">Review & Finish</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h4>Character Details</h4>
+                                <table class="table table-dark table-sm">
+                                    <tr>
+                                        <td><strong>Name:</strong></td>
+                                        <td>${characterData.name}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Race:</strong></td>
+                                        <td>${raceData[characterData.race]?.name || '—'}
+                                            ${characterData.subrace && characterData.subrace !== 'none' ? 
+                                                `(${raceData[characterData.race]?.subraces.find(sr => sr.id === characterData.subrace)?.name || ''})` : 
+                                                ''}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Class:</strong></td>
+                                        <td>${classData[characterData.class]?.name || '—'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Background:</strong></td>
+                                        <td>${backgroundData[characterData.background]?.name || '—'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Level:</strong></td>
+                                        <td>${characterData.level}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+
+                            <div class="col-md-6">
+                                <h4>Ability Scores</h4>
+                                <div class="row">
+                                ${Object.entries(characterData.abilities).map(([ability, score]) => {
+                                    const modifier = Math.floor((score - 10) / 2);
+                                    const modText = modifier >= 0 ? `+${modifier}` : modifier;
+                                    
+                                    // Use standard D&D ability abbreviations instead of full names
+                                    let abilityAbbrev;
+                                    switch(ability) {
+                                        case 'strength': abilityAbbrev = 'STR'; break;
+                                        case 'dexterity': abilityAbbrev = 'DEX'; break;
+                                        case 'constitution': abilityAbbrev = 'CON'; break;
+                                        case 'intelligence': abilityAbbrev = 'INT'; break;
+                                        case 'wisdom': abilityAbbrev = 'WIS'; break;
+                                        case 'charisma': abilityAbbrev = 'CHA'; break;
+                                        default: abilityAbbrev = ability.substr(0, 3).toUpperCase();
+                                    }
+                                    
+                                    return `
+                                        <div class="col-md-4 col-6 mb-2">
+                                            <div class="ability-score">
+                                                <div class="ability-name">${abilityAbbrev}</div>
+                                                <div class="ability-value">${score}</div>
+                                                <div class="ability-modifier">${modText}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        
+                       
+
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4>Hit Points</h4>
+                                <div class="hp-summary-container">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6 text-center">
+                                            <div class="max-hp-display">
+                                                <div class="max-hp-title">Maximum HP</div>
+                                                <div class="max-hp-value">${characterData.hitPoints?.max || 0}</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-none d-md-block col-md-1">
+                                            <div class="hp-divider h-100"></div>
+                                        </div>
+                                        
+                                        <div class="col-md-5 text-center">
+                                            <div class="hit-die-display">
+                                                <div class="hit-die-title">Hit Die</div>
+                                                <div class="hit-die-label">${hitDieData[characterData.class]?.die || 'd8'}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4>Equipment</h4>
+                                <div class="equipment-summary-container">
+                                    ${generateEquipmentHTML()}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4>Skills</h4>
+                                <div class="row" id="skill-list">
+                                    <!-- Skill badges will be added here dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4>Features</h4>
+                                <div class="features-summary">
+                                    ${featuresHTML || '<p class="text-light">No features selected.</p>'}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${['wizard', 'bard', 'cleric'].includes(characterData.class) ? `
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4>Spells</h4>
+                                <div class="spells-summary-container">
+                                    ${characterData.spellcasting ? generateSpellsHTML() : '<p class="text-light">No spells available for this character.</p>'}
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4>Racial Features</h4>
+                                <div class="racial-features-summary">
+                                    ${generateRacialFeaturesHTML()}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h4>Character Description</h4>
+                                <textarea class="form-control bg-dark text-light" id="character-description" rows="3" placeholder="Add a brief description of your character..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-secondary" id="back-to-equipment">Back to Equipment</button>
+                            <button type="button" class="btn btn-success" id="finish-creation">Start Adventure!</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    setTimeout(() => {
+        // Set up back button
+        document.getElementById('back-to-equipment').addEventListener('click', loadEquipmentStep);
+        
+        // Populate skills list
+        const skillListDiv = document.getElementById('skill-list');
+        if (skillListDiv && characterData.skills && characterData.skills.length > 0) {
+            let skillsHtml = '';
+            
+            characterData.skills.forEach(skill => {
+                skillsHtml += `
+                    <div class="col-md-4 col-6 mb-2">
+                        <span class="badge bg-success">${skills[skill]?.name || skill}</span>
+                    </div>
+                `;
+            });
+            
+            skillListDiv.innerHTML = skillsHtml;
+        }
+        
+        // Save description when changed
+        document.getElementById('character-description').addEventListener('input', function(e) {
+            characterData.description = e.target.value;
+        });
+        
+        // Set up finish button
+        document.getElementById('finish-creation').addEventListener('click', finishCharacterCreation);
+    }, 100);
+}
+
+// And all their supporting functions for event handling, data processing, etc.
+// Ability Scores helpers
+// Update the function that displays racial bonuses in the UI
+function updateRacialBonuses() {
+    const race = characterData.race;
+    const racialBonusesElement = document.getElementById('racial-bonuses');
+    
+    if (!race || !raceData[race]) {
+        racialBonusesElement.textContent = 'Select a race to see bonuses';
+        return;
+    }
+    
+    const raceInfo = raceData[race];
+    let bonusText = '';
+    
+    if (raceInfo.abilityScoreIncrease.all) {
+        bonusText += `+${raceInfo.abilityScoreIncrease.all} to all ability scores. `;
+    } else {
+        for (const [ability, bonus] of Object.entries(raceInfo.abilityScoreIncrease)) {
+            bonusText += `+${bonus} ${ability.charAt(0).toUpperCase() + ability.slice(1)}. `;
+        }
+    }
+    
+    bonusText += 'Traits: ' + raceInfo.traits.join(', ');
+    racialBonusesElement.textContent = bonusText;
+    
+    // Optionally, show a preview of what the final scores would be
+    const abilities = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+    abilities.forEach(ability => {
+        const abilityInput = document.getElementById(`ability-${ability}`);
+        const modifierElement = document.getElementById(`mod-${ability}`);
+        
+        if (abilityInput && modifierElement) {
+            // Get the base score
+            const baseScore = parseInt(abilityInput.value);
+            let racialBonus = 0;
+            
+            // Calculate the racial bonus
+            if (raceInfo.abilityScoreIncrease.all) {
+                racialBonus = raceInfo.abilityScoreIncrease.all;
+            } else if (raceInfo.abilityScoreIncrease[ability]) {
+                racialBonus = raceInfo.abilityScoreIncrease[ability];
+            }
+            
+            // Calculate the final score and modifier
+            const finalScore = baseScore + racialBonus;
+            const modifier = Math.floor((finalScore - 10) / 2);
+            
+            // Display the racial bonus and final modifier
+            if (racialBonus > 0) {
+                modifierElement.innerHTML = `<span class="text-success">${modifier >= 0 ? '+' : ''}${modifier}</span> <small class="text-light">(+${racialBonus} racial)</small>`;
+            } else {
+                modifierElement.textContent = modifier >= 0 ? `+${modifier}` : modifier;
+            }
+        }
+    });
+}
+
+// Function to handle ability score buttons
+function handleAbilityButtonClick(e) {
+    const ability = e.target.dataset.ability;
+    const action = e.target.dataset.action;
+    const inputElement = document.getElementById(`ability-${ability}`);
+    const modifierElement = document.getElementById(`mod-${ability}`);
+    const pointsElement = document.getElementById('points-count');
+    
+    let currentValue = parseInt(inputElement.value);
+    let pointsRemaining = parseInt(pointsElement.textContent);
+    
+    if (action === 'increase') {
+        // Calculate point cost (1 point from 8-13, 2 points from 14-15)
+        const pointCost = currentValue >= 13 ? 2 : 1;
+        
+        if (pointsRemaining >= pointCost && currentValue < 15) {
+            currentValue += 1;
+            pointsRemaining -= pointCost;
+        }
+    } else if (action === 'decrease' && currentValue > 8) {
+        // Refund points (1 point from 9-13, 2 points from 14-15)
+        const pointRefund = currentValue > 13 ? 2 : 1;
+        currentValue -= 1;
+        pointsRemaining += pointRefund;
+    }
+    
+    // Update values
+    inputElement.value = currentValue;
+    pointsElement.textContent = pointsRemaining;
+    
+    // Update modifier
+    const modifier = Math.floor((currentValue - 10) / 2);
+    modifierElement.textContent = modifier >= 0 ? `+${modifier}` : modifier;
+    
+    // Update UI based on points remaining
+    if (pointsRemaining <= 0) {
+        document.querySelectorAll('[data-action="increase"]').forEach(btn => {
+            btn.disabled = true;
+        });
+    } else {
+        document.querySelectorAll('[data-action="increase"]').forEach(btn => {
+            const abilVal = parseInt(document.getElementById(`ability-${btn.dataset.ability}`).value);
+            // Only enable if there are enough points and ability is < 15
+            const pointCost = abilVal >= 13 ? 2 : 1;
+            btn.disabled = (pointsRemaining < pointCost || abilVal >= 15);
+        });
+    }
+}
+
+// Update the function that applies racial ability score bonuses to include sub-races
+function applyRacialAbilityBonuses() {
+    if (!characterData.race || !raceData[characterData.race]) {
+        console.log("No race selected, or race data not found");
+        return;
+    }
+    
+    const race = characterData.race;
+    const racialBonuses = raceData[race].abilityScoreIncrease;
+    
+    console.log(`Applying racial bonuses for ${raceData[race].name}:`, racialBonuses);
+    
+    // Apply base race bonuses
+    
+    // Apply bonuses to all abilities if the race has an "all" bonus (like humans)
+    if (racialBonuses.all) {
+        const allBonus = racialBonuses.all;
+        console.log(`Applying +${allBonus} to all abilities`);
+        
+        for (const ability in characterData.abilities) {
+            characterData.abilities[ability] += allBonus;
+            console.log(`${ability}: ${characterData.abilities[ability] - allBonus} + ${allBonus} = ${characterData.abilities[ability]}`);
+        }
+    } 
+    // Apply specific ability bonuses
+    else {
+        for (const ability in racialBonuses) {
+            const bonus = racialBonuses[ability];
+            
+            if (characterData.abilities[ability] !== undefined) {
+                console.log(`Applying +${bonus} to ${ability}`);
+                characterData.abilities[ability] += bonus;
+                console.log(`${ability}: ${characterData.abilities[ability] - bonus} + ${bonus} = ${characterData.abilities[ability]}`);
+            }
+        }
+    }
+    
+    // Apply sub-race bonuses if applicable
+    if (characterData.subrace && characterData.subrace !== 'none' && raceData[race].hasSubraces) {
+        // Find the selected sub-race
+        const subrace = raceData[race].subraces.find(sr => sr.id === characterData.subrace);
+        
+        if (subrace && subrace.abilityScoreIncrease) {
+            console.log(`Applying sub-race bonuses for ${subrace.name}:`, subrace.abilityScoreIncrease);
+            
+            // Apply sub-race ability score increases
+            for (const ability in subrace.abilityScoreIncrease) {
+                const bonus = subrace.abilityScoreIncrease[ability];
+                
+                if (characterData.abilities[ability] !== undefined) {
+                    console.log(`Applying +${bonus} to ${ability} from sub-race`);
+                    characterData.abilities[ability] += bonus;
+                    console.log(`${ability}: ${characterData.abilities[ability] - bonus} + ${bonus} = ${characterData.abilities[ability]}`);
+                }
+            }
+        }
+    }
+}
+
+// Spells helpers
+// Function to check if character gets spells from their race
+function checkForRaceBasedSpells() {
+    // Check for High Elf
+    if (characterData.race === 'elf' && characterData.subrace === 'high-elf') {
+        return true;
+    }
+    
+    // Check for other races with innate spells
+    // Tiefling, Forest Gnome, etc. could be added here
+    
+    return false;
+}
+
+// Function to get all spell options for a character
+function getSpellOptionsForCharacter() {
+    const options = {
+        cantrips: {
+            fromClass: [],
+            fromRace: []
+        },
+        spells: {
+            fromClass: [],
+            fromRace: []
+        },
+        selections: {
+            // How many of each type to select
+            classCantrips: 0,
+            classSpells: 0,
+            raceCantrips: 0,
+            preparedSpells: 0
+        }
+    };
+    
+    // Add class-based spell options
+    if (['wizard', 'bard', 'cleric', 'sorcerer', 'warlock'].includes(characterData.class)) {
+        // Set selection counts
+        if (characterData.class === 'wizard') {
+            options.selections.classCantrips = 3;
+            options.selections.classSpells = 6; // Spellbook
+            
+            // Prepared spells = INT mod + level
+            const intMod = Math.floor((characterData.abilities.intelligence - 10) / 2);
+            options.selections.preparedSpells = Math.max(1, intMod + 1);
+        } 
+        else if (characterData.class === 'bard') {
+            options.selections.classCantrips = 2;
+            options.selections.classSpells = 4; // Known spells
+        }
+        // Add other classes as needed
+        
+        // Get cantrips available from class
+        options.cantrips.fromClass = getCantripsForClass(characterData.class);
+        
+        // Get 1st level spells available from class
+        options.spells.fromClass = getSpellsForClassAndLevel(characterData.class, 1);
+    }
+    
+    // Add race-based spell options
+    if (characterData.race === 'elf' && characterData.subrace === 'high-elf') {
+        // High Elves get one wizard cantrip
+        options.selections.raceCantrips = 1;
+        options.cantrips.fromRace = getCantripsForClass('wizard');
+    }
+    
+    return options;
+}
+
 // Function to generate HTML for class-based spellcasting sections
 function generateClassSpellcasterHTML() {
     let html = '';
@@ -2361,49 +3230,6 @@ function generateClassSpellcasterHTML() {
     return html;
 }
 
-// Function to generate HTML for race-based spellcasting
-function generateRaceSpellcasterHTML() {
-    let html = '';
-    
-    // Check for High Elf
-    if (characterData.race === 'elf' && characterData.subrace === 'high-elf') {
-        // Get spell options
-        const spellOptions = getSpellOptionsForCharacter();
-        const raceCantripsCount = spellOptions.selections.raceCantrips;
-        
-        html += `
-            <div class="mb-4 mt-4 pt-3 border-top">
-                <h4 class="mb-3">High Elf Cantrip</h4>
-                <p class="text-light">As a High Elf, you know one cantrip of your choice from the wizard spell list:</p>
-                <div id="race-cantrips-container">
-                    <!-- Will be populated dynamically -->
-                </div>
-            </div>
-        `;
-    }
-    
-    // Add other races with innate spellcasting here
-    
-    return html;
-}
-
-// Spell helper functions
-function getCantripsForClass(className) {
-    return Object.values(spellData).filter(spell => 
-        spell.level === 0 && spell.classes.includes(className)
-    );
-}
-
-function getSpellsForClassAndLevel(className, level) {
-    return Object.values(spellData).filter(spell => 
-        spell.level === level && spell.classes.includes(className)
-    );
-}
-
-function getSpellById(spellId) {
-    return spellData[spellId] || null;
-}
-
 // Function to populate the cantrips section
 function populateCantrips(cantrips, maxSelections, containerId, selectionName) {
     const container = document.getElementById(containerId);
@@ -2517,15 +3343,6 @@ function populateCantrips(cantrips, maxSelections, containerId, selectionName) {
         });
         updateSelection();
     }
-}
-
-// Helper function to get selected spells from a hidden input
-function getSelectedSpells(selectionName) {
-    const hiddenInput = document.getElementById(`${selectionName}-selected`);
-    if (!hiddenInput || !hiddenInput.value) {
-        return [];
-    }
-    return hiddenInput.value.split(',');
 }
 
 // Function to populate bard spells
@@ -2902,13 +3719,53 @@ function populateWizardSpells(spells, spellbookMax, preparedMax) {
     }
 }
 
-// Main function to populate spells based on character class
-function populateSpells(spells, characterClass, knownCount, spellbookCount, preparedCount) {
-    if (characterClass === 'bard') {
-        populateSpellsForBard(spells, knownCount);
-    } else if (characterClass === 'wizard') {
-        populateSpellsForWizard(spells, spellbookCount, preparedCount);
+// Helper function to get selected spells from a hidden input
+function getSelectedSpells(selectionName) {
+    const hiddenInput = document.getElementById(`${selectionName}-selected`);
+    if (!hiddenInput || !hiddenInput.value) {
+        return [];
     }
+    return hiddenInput.value.split(',');
+}
+
+// Helper function to get cantrips from class
+function getCantripsForClass(className) {
+    return Object.values(spellData).filter(spell => 
+        spell.level === 0 && spell.classes.includes(className)
+    );
+}
+
+// Helper function to get spells for class and level
+function getSpellsForClassAndLevel(className, level) {
+    return Object.values(spellData).filter(spell => 
+        spell.level === level && spell.classes.includes(className)
+    );
+}
+
+// Function to generate HTML for race-based spellcasting
+function generateRaceSpellcasterHTML() {
+    let html = '';
+    
+    // Check for High Elf
+    if (characterData.race === 'elf' && characterData.subrace === 'high-elf') {
+        // Get spell options
+        const spellOptions = getSpellOptionsForCharacter();
+        const raceCantripsCount = spellOptions.selections.raceCantrips;
+        
+        html += `
+            <div class="mb-4 mt-4 pt-3 border-top">
+                <h4 class="mb-3">High Elf Cantrip</h4>
+                <p class="text-light">As a High Elf, you know one cantrip of your choice from the wizard spell list:</p>
+                <div id="race-cantrips-container">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+        `;
+    }
+    
+    // Add other races with innate spellcasting here
+    
+    return html;
 }
 
 // Add a function to generate the spells HTML for the finish step
@@ -2950,7 +3807,7 @@ function generateSpellsHTML() {
                 <div class="col-md-4 mb-2">
                     <div class="spell-summary p-2">
                         <strong>${cantrip.name}</strong>
-                        <div class="small text-muted">${cantrip.school} cantrip</div>
+                        <div class="small text-light">${cantrip.school} cantrip</div>
                     </div>
                 </div>
             `;
@@ -2992,7 +3849,7 @@ function generateSpellsHTML() {
                 <div class="col-md-4 mb-2">
                     <div class="spell-summary p-2">
                         <strong>${spell.name}</strong>
-                        <div class="small text-muted">${spell.level}st level ${spell.school.toLowerCase()}</div>
+                        <div class="small text-light">${spell.level}st level ${spell.school.toLowerCase()}</div>
                     </div>
                 </div>
             `;
@@ -3029,7 +3886,7 @@ function generateSpellsHTML() {
                         <div class="col-md-4 mb-2">
                             <div class="spell-summary p-2 unprepared">
                                 <strong>${spell.name}</strong>
-                                <div class="small text-muted">${spell.level}st level ${spell.school.toLowerCase()}</div>
+                                <div class="small text-light">${spell.level}st level ${spell.school.toLowerCase()}</div>
                             </div>
                         </div>
                     `;
@@ -3073,608 +3930,52 @@ function generateSpellsHTML() {
         </div>` : '';
 }
 
-function generateSpellsHTML() {
-    if (!characterData.spellcasting) {
-        return '';
+// Function to simulate rolling a hit die
+function rollHitDie(dieType) {
+    // Parse the die type (e.g., 'd10' -> 10)
+    const sides = parseInt(dieType.substring(1));
+    if (isNaN(sides) || sides <= 0) {
+        console.error('Invalid die type:', dieType);
+        return 1;
     }
     
-    const characterClass = characterData.class;
-    
-    // If character isn't a spellcaster, don't display anything
-    if (!['wizard', 'bard', 'cleric'].includes(characterClass)) {
-        return '';
-    }
-    
-    // Get the spellcasting ability and stats
-    const spellcastingAbility = characterData.spellcasting.ability;
-    const abilityScore = characterData.abilities[spellcastingAbility];
-    const abilityModifier = Math.floor((abilityScore - 10) / 2);
-    
-    let spellsHTML = '';
-    
-    // Spellcasting information
-    spellsHTML += `
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <div class="selection-card">
-                    <div class="card-body">
-                        <h5 class="card-title">Spellcasting</h5>
-                        <div class="small">
-                            <p>Your spellcasting ability is <strong>${spellcastingAbility.charAt(0).toUpperCase() + spellcastingAbility.slice(1)}</strong>.</p>
-                            <ul class="list-unstyled">
-                                <li><strong>Spell Save DC:</strong> ${characterData.spellcasting.spellSaveDC}</li>
-                                <li><strong>Spell Attack Bonus:</strong> +${characterData.spellcasting.spellAttackBonus}</li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <div class="feature-type-indicator">
-                            <i class="bi bi-magic"></i> ${classData[characterClass]?.name || 'Class'} Spellcasting
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-6">
-                <div class="selection-card">
-                    <div class="card-body">
-                        <h5 class="card-title">Spell Slots</h5>
-                        <div class="spell-slots-display">
-                            ${Object.entries(characterData.spellcasting.spellSlots || {}).map(([level, slots]) => `
-                                <div class="spell-slot-level mb-2">
-                                    <div class="slot-level-label">Level ${level}</div>
-                                    <div class="slot-bubbles">
-                                        ${Array(slots).fill('<span class="slot-bubble filled"></span>').join('')}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <div class="feature-type-indicator">
-                            <i class="bi bi-lightning"></i> Spell Energy
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Display cantrips
-    if (characterData.spellcasting.cantripsKnown && characterData.spellcasting.cantripsKnown.length > 0) {
-        spellsHTML += `
-            <div class="row mb-3">
-                <div class="col-12">
-                    <h5>Cantrips</h5>
-                    <div class="row">
-        `;
-        
-        const cantrips = characterData.spellcasting.cantripsKnown.map(id => getSpellById(id)).filter(Boolean);
-        
-        cantrips.forEach(cantrip => {
-            spellsHTML += `
-                <div class="col-md-4 mb-2">
-                    <div class="selection-card">
-                        <div class="card-body">
-                            <h5 class="card-title">${cantrip.name}</h5>
-                            <div class="spell-properties small">
-                                <div><strong>School:</strong> ${cantrip.school}</div>
-                                <div><strong>Casting Time:</strong> ${cantrip.castingTime}</div>
-                                <div><strong>Range:</strong> ${cantrip.range}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        spellsHTML += `
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Display prepared/known spells
-    const preparedSpells = characterClass === 'wizard' ? 
-        (characterData.spellcasting.spellsPrepared || []) : 
-        (characterData.spellcasting.spellsKnown || []);
-    
-    if (preparedSpells.length > 0) {
-        spellsHTML += `
-            <div class="row mb-3">
-                <div class="col-12">
-                    <h5>${characterClass === 'wizard' ? 'Prepared Spells' : 'Known Spells'}</h5>
-                    <div class="row">
-        `;
-        
-        const spells = preparedSpells.map(id => getSpellById(id)).filter(Boolean);
-        
-        spells.forEach(spell => {
-            spellsHTML += `
-                <div class="col-md-4 mb-2">
-                    <div class="selection-card">
-                        <div class="card-body">
-                            <h5 class="card-title">${spell.name}</h5>
-                            <div class="spell-properties small">
-                                <div><strong>Level:</strong> ${spell.level}</div>
-                                <div><strong>School:</strong> ${spell.school}</div>
-                                <div><strong>Casting Time:</strong> ${spell.castingTime}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        spellsHTML += `
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    // For wizards, show unprepared spellbook spells
-    if (characterClass === 'wizard' && characterData.spellcasting.spellsPreparable) {
-        const unpreparedSpells = characterData.spellcasting.spellsPreparable
-            .filter(id => !characterData.spellcasting.spellsPrepared.includes(id))
-            .map(id => getSpellById(id))
-            .filter(Boolean);
-        
-        if (unpreparedSpells.length > 0) {
-            spellsHTML += `
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <h5>Spellbook (Unprepared)</h5>
-                        <div class="row">
-            `;
-            
-            unpreparedSpells.forEach(spell => {
-                spellsHTML += `
-                    <div class="col-md-4 mb-2">
-                        <div class="selection-card">
-                            <div class="card-body">
-                                <h5 class="card-title">${spell.name}</h5>
-                                <div class="spell-properties small">
-                                    <div><strong>Level:</strong> ${spell.level}</div>
-                                    <div><strong>School:</strong> ${spell.school}</div>
-                                </div>
-                            </div>
-                            <div class="card-footer">
-                                <div class="feature-type-indicator text-muted">
-                                    <i class="bi bi-book"></i> Not Prepared
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            spellsHTML += `
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-    }
-    
-    return spellsHTML;
+    // Roll the die (random number between 1 and sides)
+    return Math.floor(Math.random() * sides) + 1;
 }
 
-function updateSpellsInCharacterSheet() {
-    const characterSheet = document.getElementById('characterSheet');
-    if (!characterSheet || !characterData.spellcasting) return;
+// Function to create animated dice roll effect
+function animateDiceRoll(elementId, dieType, finalValue, duration = 1000) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
     
-    // Find where to insert the spells section
-    let spellsSection = `
-        <div class="spells-section mt-3">
-            <h5>Spellcasting</h5>
-            <div class="small mb-2">
-                <div><strong>Ability:</strong> ${characterData.spellcasting.ability.charAt(0).toUpperCase() + characterData.spellcasting.ability.slice(1)}</div>
-                <div><strong>DC:</strong> ${characterData.spellcasting.spellSaveDC}</div>
-                <div><strong>Attack:</strong> ${characterData.spellcasting.spellAttackBonus >= 0 ? '+' : ''}${characterData.spellcasting.spellAttackBonus}</div>
-            </div>
-    `;
+    const sides = parseInt(dieType.substring(1));
+    const fps = 10;
+    const frames = duration / (1000 / fps);
+    let frame = 0;
     
-    // Add cantrips
-    if (characterData.spellcasting.cantripsKnown && characterData.spellcasting.cantripsKnown.length > 0) {
-        spellsSection += `<div class="mt-2"><strong>Cantrips:</strong> `;
-        const cantrips = characterData.spellcasting.cantripsKnown.map(id => {
-            const spell = getSpellById(id);
-            return spell ? spell.name : id;
-        });
-        spellsSection += cantrips.join(', ');
-        spellsSection += `</div>`;
-    }
+    // Show the dice element
+    element.style.display = 'flex';
     
-    // Add known/prepared spells
-    const preparedSpells = characterData.class === 'wizard' ? 
-        (characterData.spellcasting.spellsPrepared || []) : 
-        (characterData.spellcasting.spellsKnown || []);
-    
-    if (preparedSpells.length > 0) {
-        spellsSection += `<div class="mt-1"><strong>${characterData.class === 'wizard' ? 'Prepared' : 'Known'} Spells:</strong> `;
-        const spells = preparedSpells.map(id => {
-            const spell = getSpellById(id);
-            return spell ? spell.name : id;
-        });
-        spellsSection += spells.join(', ');
-        spellsSection += `</div>`;
-    }
-    
-    // Add spell slots
-    if (characterData.spellcasting.spellSlots) {
-        spellsSection += `<div class="mt-1"><strong>Spell Slots:</strong> `;
-        for (const [level, slots] of Object.entries(characterData.spellcasting.spellSlots)) {
-            if (slots > 0) {
-                spellsSection += `Level ${level} (${slots}) `;
-            }
-        }
-        spellsSection += `</div>`;
-    }
-    
-    spellsSection += `</div>`;
-    
-    // Insert the spells section into the character sheet
-    characterSheet.innerHTML += spellsSection;
-}
-
-// Function to load hit point calculator step with proper dice rolling
-function loadHitPointStep() {
-    const characterCreation = document.getElementById('character-creation');
-    const characterClass = characterData.class;
-    const constitutionScore = characterData.abilities.constitution;
-    
-    // Calculate Constitution modifier
-    const constitutionModifier = Math.floor((constitutionScore - 10) / 2);
-    const modifierText = constitutionModifier >= 0 ? `+${constitutionModifier}` : constitutionModifier;
-    
-    // Get hit die information
-    const hitDie = hitDieData[characterClass]?.die || 'd8';
-    const hitDieMax = parseInt(hitDie.substring(1));
-    
-    // Calculate starting hit points (max hit die + CON modifier)
-    const maxHP = hitDieMax + constitutionModifier;
-    
-    // Build the HTML for the hit point calculator
-    characterCreation.innerHTML = `
-        <div class="character-creation-container">
-            <div class="col-md-8 mx-auto">
-                ${getStepIndicatorHTML(6)}
-                
-                <div class="card character-card">
-                    <div class="card-header bg-dark text-light">
-                        <h3 class="mb-0">Hit Points</h3>
-                    </div>
-                    <div class="card-body">
-                        <form id="hit-points-form">
-                            <div class="row mb-4">
-                                <div class="col-12">
-                                    <h4>Starting Hit Points</h4>
-                                    <p class="text-light">At 1st level, you start with the maximum hit points from your class's hit die plus your Constitution modifier.</p>
-                                    
-                                    <div class="hit-points-calculator p-4 border rounded mb-4">
-                                        <div class="row align-items-center">
-                                            <div class="col-md-4 text-center mb-3 mb-md-0">
-                                                <h5>${classData[characterClass]?.name || 'Class'} Hit Die</h5>
-                                                <div class="hit-die-display">
-                                                    ${hitDie}
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="col-md-2 text-center mb-3 mb-md-0">
-                                                <h5>Maximum</h5>
-                                                <div class="hit-die-value">
-                                                    ${hitDieMax}
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="col-md-2 text-center mb-3 mb-md-0">
-                                                <h5>CON Mod</h5>
-                                                <div class="con-modifier">
-                                                    ${modifierText}
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="col-md-4 text-center">
-                                                <h5>Starting HP</h5>
-                                                <div class="starting-hp" id="final-hp-display">
-                                                    ${maxHP}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="dice-roller text-center mb-4">
-                                        <h4>Level 2 Preview</h4>
-                                        <p class="text-light">See what your hit points might be when you reach level 2.</p>
-                                        <p class="text-light">When you level up, you'll roll your hit die and add your Constitution modifier to your max HP.</p>
-                                        
-                                        <div class="dice-container mb-3">
-                                            <div id="dice-display" class="dice" style="display: none;">
-                                                1
-                                            </div>
-                                        </div>
-                                        
-                                        <button type="button" id="roll-hit-die" class="btn btn-primary" ${characterData.hitPoints?.levelUpRoll ? 'disabled' : ''}>
-                                            <i class="bi bi-dice-6"></i> Roll ${hitDie}
-                                        </button>
-                                        
-                                        <div id="roll-result" class="mt-3" ${characterData.hitPoints?.levelUpRoll ? '' : 'style="display: none;"'}>
-                                            <p class="mb-0">You rolled <span id="roll-value">${characterData.hitPoints?.levelUpRoll || 0}</span></p>
-                                            <p>With CON modifier: <span id="roll-total">${(characterData.hitPoints?.levelUpRoll || 0) + constitutionModifier}</span></p>
-                                            <p class="text-light">At level 2, your hit points would be <strong>${maxHP + (characterData.hitPoints?.levelUpRoll || 0) + constitutionModifier}</strong></p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="d-flex justify-content-between">
-                                <button type="button" class="btn btn-secondary" id="back-to-features">Back to Features</button>
-                                <button type="submit" class="btn btn-primary">Continue to Equipment</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Add event listeners
-    setTimeout(() => {
-        // Back button
-        const backButton = document.getElementById('back-to-features');
-        if (backButton) {
-            backButton.addEventListener('click', loadSpellSelectionStep);
+    // Start animation
+    const intervalId = setInterval(() => {
+        // Generate random value for animation
+        if (frame < frames - 1) {
+            const randomValue = Math.floor(Math.random() * sides) + 1;
+            element.textContent = randomValue;
         } else {
-            console.error("Back button not found!");
-        }
-        
-        // Hit die roll button
-        const rollButton = document.getElementById('roll-hit-die');
-        if (rollButton) {
-            rollButton.addEventListener('click', function() {
-                // Roll the hit die
-                const result = rollHitDie(hitDie);
-                
-                // Animate the dice roll
-                animateDiceRoll('dice-display', hitDie, result);
-                
-                // Calculate total with Constitution modifier
-                const total = result + constitutionModifier;
-                
-                // Save the roll to character data
-                if (!characterData.hitPoints) {
-                    characterData.hitPoints = {
-                        max: maxHP,
-                        current: maxHP
-                    };
-                }
-                
-                // Store the level-up roll
-                characterData.hitPoints.levelUpRoll = result;
-                
-                // Update result display
-                const rollResult = document.getElementById('roll-result');
-                const rollValue = document.getElementById('roll-value');
-                const rollTotal = document.getElementById('roll-total');
-                
-                rollValue.textContent = result;
-                rollTotal.textContent = total;
-                rollResult.style.display = 'block';
-                rollResult.querySelector('p:last-child').innerHTML = 
-                    `At level 2, your hit points would be <strong>${maxHP + result + constitutionModifier}</strong>`;
-                
-                // Disable the roll button after one roll
-                this.disabled = true;
-                this.innerHTML = '<i class="bi bi-dice-6"></i> Roll Saved';
-                
-                console.log("Level up roll saved:", characterData.hitPoints.levelUpRoll);
-            });
-        } else {
-            console.error("Roll button not found!");
-        }
-        
-        // Form submission
-        const form = document.getElementById('hit-points-form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Save hit points to character data if not already saved
-                if (!characterData.hitPoints) {
-                    characterData.hitPoints = {
-                        max: maxHP,
-                        current: maxHP,
-                        hitDie: hitDie,
-                        level: 1
-                    };
-                } else {
-                    // Update any missing properties
-                    characterData.hitPoints.max = maxHP;
-                    characterData.hitPoints.current = maxHP;
-                    characterData.hitPoints.hitDie = hitDie;
-                    characterData.hitPoints.level = 1;
-                }
-                
-                console.log("Hit points saved:", characterData.hitPoints);
-                
-                // Proceed to next step (Equipment)
-                loadEquipmentStep();
-            });
-        } else {
-            console.error("Hit points form not found!");
-        }
-        
-        // If we already have a level up roll, show it
-        if (characterData.hitPoints?.levelUpRoll) {
-            const rollResult = document.getElementById('roll-result');
-            if (rollResult) {
-                rollResult.style.display = 'block';
-                const rollValue = document.getElementById('roll-value');
-                if (rollValue) rollValue.textContent = characterData.hitPoints.levelUpRoll;
-                const rollTotal = document.getElementById('roll-total');
-                if (rollTotal) rollTotal.textContent = characterData.hitPoints.levelUpRoll + constitutionModifier;
-            }
-        }
-    }, 100);
-}
-
-// Function to load equipment selection step
-function loadEquipmentStep() {
-    const characterCreation = document.getElementById('character-creation');
-    const characterClass = characterData.class;
-    
-    // Get equipment options for the selected class
-    const classEquipment = equipmentData[characterClass] || { options: [], standardItems: [] };
-    
-    // Build the HTML for the equipment selection
-    characterCreation.innerHTML = `
-        <div class="character-creation-container">
-            <div class="col-md-8 mx-auto">
-                ${getStepIndicatorHTML(7)}
-                
-                <div class="card character-card">
-                    <div class="card-header bg-dark text-light">
-                        <h3 class="mb-0">Equipment Selection</h3>
-                    </div>
-                    <div class="card-body">
-                        <form id="equipment-form">
-                            <div class="row mb-4">
-                                <div class="col-12">
-                                    <h4>Choose Your Equipment</h4>
-                                    <p class="text-light">Select one of the available equipment options for your ${classData[characterClass]?.name || 'character'}.</p>
-                                    
-                                    <div class="equipment-options">
-                                        ${classEquipment.options.length > 0 ? `
-                                            <div class="row equipment-selection mb-4">
-                                                ${classEquipment.options.map(option => `
-                                                    <div class="col-md-6 mb-3">
-                                                        <div class="selection-card equipment-card" data-equipment="${option.id}">
-                                                            <div class="card-body">
-                                                                <h5 class="card-title">${option.title}</h5>
-                                                                <ul class="equipment-list small">
-                                                                    ${option.items.map(item => `
-                                                                        <li>
-                                                                            <strong>${item.name}</strong>
-                                                                            <div class="text-light small">${item.description}</div>
-                                                                        </li>
-                                                                    `).join('')}
-                                                                </ul>
-                                                            </div>
-                                                            <div class="card-footer">
-                                                                <div class="selected-indicator">
-                                                                    <i class="bi bi-check-circle-fill"></i> Selected
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                `).join('')}
-                                            </div>
-                                            <input type="hidden" id="selected-equipment" name="equipment">
-                                        ` : '<p class="text-light">No equipment options available for this class.</p>'}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-4">
-                                <div class="col-12">
-                                    <h4>Standard Equipment</h4>
-                                    <p class="text-light">Your ${classData[characterClass]?.name || 'character'} automatically starts with the following equipment:</p>
-                                    
-                                    <div class="standard-equipment">
-                                        <div class="row">
-                                            ${classEquipment.standardItems.map(item => `
-                                                <div class="col-md-6 mb-2">
-                                                    <div class="standard-item p-2">
-                                                        <strong>${item.name}</strong>
-                                                        <div class="text-light small">${item.description}</div>
-                                                    </div>
-                                                </div>
-                                            `).join('')}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="d-flex justify-content-between">
-                                <button type="button" class="btn btn-secondary" id="back-to-hit-points">Back to Hit Points</button>
-                                <button type="submit" class="btn btn-primary">Continue to Finish</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Add event listeners
-    setTimeout(() => {
-        // Back button
-        const backButton = document.getElementById('back-to-hit-points');
-        if (backButton) {
-            backButton.addEventListener('click', loadHitPointStep);
-        } else {
-            console.error("Back button not found!");
-        }
-        
-        // Equipment selection
-        const equipmentCards = document.querySelectorAll('.equipment-card');
-        if (equipmentCards.length > 0) {
-            equipmentCards.forEach(card => {
-                card.addEventListener('click', function() {
-                    // Remove selected class from all equipment cards
-                    equipmentCards.forEach(c => c.classList.remove('selected'));
-                    
-                    // Add selected class to clicked card
-                    this.classList.add('selected');
-                    
-                    // Update hidden input
-                    const selectedEquipmentInput = document.getElementById('selected-equipment');
-                    if (selectedEquipmentInput) {
-                        selectedEquipmentInput.value = this.dataset.equipment;
-                    }
-                });
-            });
+            // Show final value on last frame
+            element.textContent = finalValue;
+            clearInterval(intervalId);
             
-            // Auto-select the first equipment option if available
-            if (equipmentCards.length > 0) {
-                equipmentCards[0].classList.add('selected');
-                const selectedEquipmentInput = document.getElementById('selected-equipment');
-                if (selectedEquipmentInput) {
-                    selectedEquipmentInput.value = equipmentCards[0].dataset.equipment;
-                }
-            }
+            // Add a flash effect when the final value is shown
+            element.classList.add('dice-result-flash');
+            setTimeout(() => {
+                element.classList.remove('dice-result-flash');
+            }, 500);
         }
         
-        // Form submission
-        const form = document.getElementById('equipment-form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Get selected equipment option
-                const selectedEquipmentInput = document.getElementById('selected-equipment');
-                const selectedEquipmentId = selectedEquipmentInput ? selectedEquipmentInput.value : null;
-                
-                // Find the selected equipment option
-                const selectedOption = classEquipment.options.find(option => option.id === selectedEquipmentId);
-                
-                // Save equipment to character data
-                characterData.equipment = {
-                    selected: selectedOption ? selectedOption.items : [],
-                    standard: classEquipment.standardItems || []
-                };
-                
-                console.log("Equipment saved:", characterData.equipment);
-                
-                // Proceed to finish step
-                loadFinishStep();
-            });
-        } else {
-            console.error("Equipment form not found!");
-        }
-    }, 100);
+        frame++;
+    }, 1000 / fps);
 }
 
 // Function to generate equipment HTML for the finish step
@@ -3724,736 +4025,6 @@ function generateEquipmentHTML() {
     
     equipmentHTML += '</div>';
     return equipmentHTML;
-}
-
-// Complete loadFinishStep function with spell section integration
-function loadFinishStep() {
-    const characterCreation = document.getElementById('character-creation');
-    
-    // Get class feature data for display
-    const classFeatureData = classFeatures[characterData.class]?.level1 || { required: [], optional: [] };
-    let featuresHTML = '';
-    
-    // Build features HTML with consistent card style
-    if (characterData.features) {
-        // Display required features
-        if (characterData.features.required && characterData.features.required.length > 0) {
-            featuresHTML += '<div class="mb-4"><h5>Class Features</h5><div class="row">';
-            
-            characterData.features.required.forEach(featureId => {
-                const feature = classFeatureData.required.find(f => f.id === featureId);
-                if (feature) {
-                    featuresHTML += `
-                        <div class="col-md-4 mb-3">
-                            <div class="selection-card">
-                                <div class="card-body">
-                                    <h5 class="card-title">${feature.name}</h5>
-                                    <p class="card-text small">${feature.description}</p>
-                                    <div class="small">
-                                        ${feature.type === 'active' ? 
-                                            `<div><strong>Type:</strong> Active</div>` : 
-                                            `<div><strong>Type:</strong> Passive</div>`
-                                        }
-                                        ${feature.usageLimit ? 
-                                            `<div><strong>Usage:</strong> ${feature.usageLimit}</div>` : 
-                                            ''
-                                        }
-                                        ${feature.actionType ? 
-                                            `<div><strong>Action:</strong> ${feature.actionType}</div>` : 
-                                            ''
-                                        }
-                                    </div>
-                                </div>
-                                <div class="card-footer">
-                                    <div class="feature-type-indicator">
-                                        <i class="bi ${feature.type === 'active' ? 'bi-lightning-fill' : 'bi-shield-fill'}"></i> 
-                                        ${feature.type === 'active' ? 'Active Ability' : 'Passive Ability'}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-            
-            featuresHTML += '</div></div>';
-        }
-        
-        // Display optional features
-        if (characterData.features.optional && Object.keys(characterData.features.optional).length > 0) {
-            featuresHTML += '<div class="mb-4"><h5>Chosen Options</h5><div class="row">';
-            
-            for (const [featureId, choiceId] of Object.entries(characterData.features.optional)) {
-                const featureGroup = classFeatureData.optional.find(f => f.id === featureId);
-                
-                if (featureGroup) {
-                    if (featureGroup.choices) {
-                        // For single-choice features like Fighting Style
-                        const choice = featureGroup.choices.find(c => c.id === choiceId);
-                        if (choice) {
-                            featuresHTML += `
-                                <div class="col-md-4 mb-3">
-                                    <div class="selection-card selected">
-                                        <div class="card-body">
-                                            <h5 class="card-title">${choice.name}</h5>
-                                            <p class="card-text small">${choice.description}</p>
-                                            ${choice.benefit ? 
-                                                `<div class="small">
-                                                    <strong>Benefit:</strong> ${choice.benefit}
-                                                </div>` : 
-                                                ''
-                                            }
-                                        </div>
-                                        <div class="card-footer">
-                                            <div class="selected-indicator">
-                                                <i class="bi bi-check-circle-fill"></i> ${featureGroup.name} Option
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    } else if (Array.isArray(choiceId)) {
-                        // For multi-selection features like Expertise
-                        const skillNames = choiceId.map(skillId => skills[skillId]?.name).filter(Boolean);
-                        
-                        featuresHTML += `
-                            <div class="col-md-4 mb-3">
-                                <div class="selection-card selected">
-                                    <div class="card-body">
-                                        <h5 class="card-title">${featureGroup.name}</h5>
-                                        <p class="card-text small">${featureGroup.description}</p>
-                                        <div class="small mt-2">
-                                            <strong>Selected Skills:</strong>
-                                            <ul class="mb-0 ps-3">
-                                                ${skillNames.map(name => `<li>${name}</li>`).join('')}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <div class="card-footer">
-                                        <div class="selected-indicator">
-                                            <i class="bi bi-check-circle-fill"></i> Skill Expertise
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
-            }
-            
-            featuresHTML += '</div></div>';
-        }
-    }
-    
-    characterCreation.innerHTML = `
-        <div class="character-creation-container">
-            <div class="col-md-8 mx-auto">
-                ${getStepIndicatorHTML(8)}
-                
-                <div class="card character-card">
-                    <div class="card-header bg-dark text-light">
-                        <h3 class="mb-0">Review & Finish</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <h4>Character Details</h4>
-                                <table class="table table-dark table-sm">
-                                    <tr>
-                                        <td><strong>Name:</strong></td>
-                                        <td>${characterData.name}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Race:</strong></td>
-                                        <td>${raceData[characterData.race]?.name || '—'}
-                                            ${characterData.subrace && characterData.subrace !== 'none' ? 
-                                                `(${raceData[characterData.race]?.subraces.find(sr => sr.id === characterData.subrace)?.name || ''})` : 
-                                                ''}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Class:</strong></td>
-                                        <td>${classData[characterData.class]?.name || '—'}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Background:</strong></td>
-                                        <td>${backgroundData[characterData.background]?.name || '—'}</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Level:</strong></td>
-                                        <td>${characterData.level}</td>
-                                    </tr>
-                                </table>
-                            </div>
-                            
-
-                            <div class="col-md-6">
-                                <h4>Ability Scores</h4>
-                                <div class="row">
-                                ${Object.entries(characterData.abilities).map(([ability, score]) => {
-                                    const modifier = Math.floor((score - 10) / 2);
-                                    const modText = modifier >= 0 ? `+${modifier}` : modifier;
-                                    
-                                    // Use standard D&D ability abbreviations instead of full names
-                                    let abilityAbbrev;
-                                    switch(ability) {
-                                        case 'strength': abilityAbbrev = 'STR'; break;
-                                        case 'dexterity': abilityAbbrev = 'DEX'; break;
-                                        case 'constitution': abilityAbbrev = 'CON'; break;
-                                        case 'intelligence': abilityAbbrev = 'INT'; break;
-                                        case 'wisdom': abilityAbbrev = 'WIS'; break;
-                                        case 'charisma': abilityAbbrev = 'CHA'; break;
-                                        default: abilityAbbrev = ability.substr(0, 3).toUpperCase();
-                                    }
-                                    
-                                    return `
-                                        <div class="col-md-4 col-6 mb-2">
-                                            <div class="ability-score">
-                                                <div class="ability-name">${abilityAbbrev}</div>
-                                                <div class="ability-value">${score}</div>
-                                                <div class="ability-modifier">${modText}</div>
-                                            </div>
-                                        </div>
-                                    `;
-                                }).join('')}
-                                </div>
-                            </div>
-                        </div>
-                        
-                       
-
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <h4>Hit Points</h4>
-                                <div class="hp-summary-container">
-                                    <div class="row align-items-center">
-                                        <div class="col-md-6 text-center">
-                                            <div class="max-hp-display">
-                                                <div class="max-hp-title">Maximum HP</div>
-                                                <div class="max-hp-value">${characterData.hitPoints?.max || 0}</div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="d-none d-md-block col-md-1">
-                                            <div class="hp-divider h-100"></div>
-                                        </div>
-                                        
-                                        <div class="col-md-5 text-center">
-                                            <div class="hit-die-display">
-                                                <div class="hit-die-title">Hit Die</div>
-                                                <div class="hit-die-label">${hitDieData[characterData.class]?.die || 'd8'}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <h4>Equipment</h4>
-                                <div class="equipment-summary-container">
-                                    ${generateEquipmentHTML()}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <h4>Skills</h4>
-                                <div class="row" id="skill-list">
-                                    <!-- Skill badges will be added here dynamically -->
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <h4>Features</h4>
-                                <div class="features-summary">
-                                    ${featuresHTML || '<p class="text-light">No features selected.</p>'}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        ${['wizard', 'bard', 'cleric'].includes(characterData.class) ? `
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <h4>Spells</h4>
-                                <div class="spells-summary-container">
-                                    ${characterData.spellcasting ? generateSpellsHTML() : '<p class="text-muted">No spells available for this character.</p>'}
-                                </div>
-                            </div>
-                        </div>
-                        ` : ''}
-                        
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <h4>Racial Features</h4>
-                                <div class="racial-features-summary">
-                                    ${generateRacialFeaturesHTML()}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <h4>Character Description</h4>
-                                <textarea class="form-control bg-dark text-light" id="character-description" rows="3" placeholder="Add a brief description of your character..."></textarea>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between">
-                            <button type="button" class="btn btn-secondary" id="back-to-equipment">Back to Equipment</button>
-                            <button type="button" class="btn btn-success" id="finish-creation">Start Adventure!</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    setTimeout(() => {
-        // Set up back button
-        document.getElementById('back-to-equipment').addEventListener('click', loadEquipmentStep);
-        
-        // Populate skills list
-        const skillListDiv = document.getElementById('skill-list');
-        if (skillListDiv && characterData.skills && characterData.skills.length > 0) {
-            let skillsHtml = '';
-            
-            characterData.skills.forEach(skill => {
-                skillsHtml += `
-                    <div class="col-md-4 col-6 mb-2">
-                        <span class="badge bg-success">${skills[skill]?.name || skill}</span>
-                    </div>
-                `;
-            });
-            
-            skillListDiv.innerHTML = skillsHtml;
-        }
-        
-        // Save description when changed
-        document.getElementById('character-description').addEventListener('input', function(e) {
-            characterData.description = e.target.value;
-        });
-        
-        // Set up finish button
-        document.getElementById('finish-creation').addEventListener('click', finishCharacterCreation);
-    }, 100);
-}
-
-// Function to save character to the database via the API
-function saveCharacterToDatabase() {
-    console.log("Attempting to save character to database...");
-    
-    // Create a clean copy of the character data to avoid any circular references
-    // and remove any functions or complex objects that might cause serialization issues
-    const cleanCharacterData = JSON.parse(JSON.stringify(characterData));
-    
-    // Log the data being sent for debugging
-    console.log("Character data being sent:", cleanCharacterData);
-    
-    return new Promise((resolve, reject) => {
-        // Make API call to the server endpoint
-        fetch('/api/save-character', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(cleanCharacterData)
-        })
-        .then(response => {
-            console.log("Server response status:", response.status);
-            
-            // Even if response is not OK, get the response body for debugging
-            return response.text().then(text => {
-                if (response.ok) {
-                    try {
-                        return JSON.parse(text);
-                    } catch (e) {
-                        console.error("Error parsing successful response:", e);
-                        console.log("Raw response text:", text);
-                        throw new Error("Could not parse server response");
-                    }
-                } else {
-                    console.error("Server error response:", text);
-                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-                }
-            });
-        })
-        .then(data => {
-            if (data.success) {
-                console.log(`Character saved successfully with ID: ${data.character_id}`);
-                // Store the character_id in the characterData object
-                characterData.character_id = data.character_id;
-                resolve(data.character_id);
-            } else {
-                console.error("Error saving character:", data.error);
-                reject(new Error(data.error || "Unknown error saving character"));
-            }
-        })
-        .catch(error => {
-            console.error("Network or server error saving character:", error);
-            reject(error);
-        });
-    });
-}
-
-// Updated finishCharacterCreation function that continues even if database save fails
-async function finishCharacterCreation() {
-    // Save final character description if any
-    const descriptionElement = document.getElementById('character-description');
-    if (descriptionElement) {
-        characterData.description = descriptionElement.value;
-    }
-    
-    try {
-        // Attempt to save character to database
-        await saveCharacterToDatabase();
-        console.log("Character successfully saved to database");
-    } catch (error) {
-        console.error("Error saving character to database:", error);
-        
-        // Continue with the game even if database save fails
-        // Show a notification to the user, but don't block progress
-        const errorMessage = document.createElement('div');
-        errorMessage.style.position = 'fixed';
-        errorMessage.style.bottom = '20px';
-        errorMessage.style.right = '20px';
-        errorMessage.style.padding = '10px 20px';
-        errorMessage.style.backgroundColor = 'rgba(200,50,50,0.9)';
-        errorMessage.style.color = 'white';
-        errorMessage.style.borderRadius = '5px';
-        errorMessage.style.zIndex = '9999';
-        errorMessage.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-        errorMessage.textContent = "Character saved locally but couldn't be saved to the server.";
-        
-        document.body.appendChild(errorMessage);
-        
-        // Remove the notification after 5 seconds
-        setTimeout(() => {
-            document.body.removeChild(errorMessage);
-        }, 5000);
-    }
-    
-    // Set the active character for the chat interface
-    if (window.setActiveCharacter) {
-        window.setActiveCharacter(characterData);
-        console.log('Set active character for adventure:', characterData.name);
-    } else {
-        console.warn('setActiveCharacter function not available, falling back to localStorage');
-        // Fallback: store in localStorage directly
-        localStorage.setItem('activeCharacter', JSON.stringify(characterData));
-    }
-    
-    // Update the character sheet with all data including spells
-    updateCharacterSheet();
-    
-    // Hide character creation and show game interface
-    document.getElementById('character-creation').style.display = 'none';
-    document.getElementById('game-interface').style.display = 'flex';
-    
-    // Clear the chat window and add introduction message
-    const chatWindow = document.getElementById('chatWindow');
-    chatWindow.innerHTML = '';
-    
-    // Add welcome message
-    const welcomeMessage = document.createElement('div');
-    welcomeMessage.classList.add('message', 'dm-message');
-    
-    // Include spellcasting information in the welcome message if applicable
-    let spellcastingInfo = '';
-    if (characterData.spellcasting && ['wizard', 'bard', 'cleric'].includes(characterData.class)) {
-        spellcastingInfo = ` As a ${classData[characterData.class]?.name || 'spellcaster'}, you have access to powerful magic.`;
-    }
-    
-    welcomeMessage.innerHTML = `
-        <p>Welcome, brave ${characterData.name}! Your adventure as a ${raceData[characterData.race]?.name || ''} 
-        ${classData[characterData.class]?.name || ''} is about to begin.${spellcastingInfo} What would you like to do first?</p>
-    `;
-    chatWindow.appendChild(welcomeMessage);
-    
-    // Scroll to bottom of chat
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-    
-    // Send initial message to the AI to start the adventure with this character
-    sendInitialMessageToAI(characterData);
-}
-
-// Function to generate an introduction for the AI to understand the character
-function getCharacterIntroForAI() {
-    let intro = `I am ${characterData.name}, a level ${characterData.level} ${raceData[characterData.race]?.name || ''} ${classData[characterData.class]?.name || ''} with a ${backgroundData[characterData.background]?.name || ''} background.`;
-    
-    // Add ability scores
-    intro += ` My ability scores are: `;
-    for (const [ability, score] of Object.entries(characterData.abilities)) {
-        const modifier = Math.floor((score - 10) / 2);
-        const modText = modifier >= 0 ? `+${modifier}` : `${modifier}`;
-        intro += `${ability.charAt(0).toUpperCase() + ability.slice(1)} ${score} (${modText}), `;
-    }
-    
-    // Add skills
-    if (characterData.skills && characterData.skills.length > 0) {
-        intro += ` I am proficient in the following skills: `;
-        const skillNames = characterData.skills.map(skill => skills[skill]?.name || skill);
-        intro += skillNames.join(', ') + '.';
-    }
-    
-    // Add class features
-    const featuresSummary = getFeaturesSummary(characterData);
-    intro += featuresSummary;
-    
-    // Add spellcasting information if applicable
-    if (characterData.spellcasting && ['wizard', 'bard', 'cleric'].includes(characterData.class)) {
-        intro += ` I am a spellcaster with ${characterData.spellcasting.ability} as my spellcasting ability. `;
-        
-        // Add cantrips
-        if (characterData.spellcasting.cantripsKnown && characterData.spellcasting.cantripsKnown.length > 0) {
-            intro += `I know the following cantrips: `;
-            const cantrips = characterData.spellcasting.cantripsKnown.map(id => {
-                const spell = getSpellById(id);
-                return spell ? spell.name : id;
-            });
-            intro += cantrips.join(', ') + '. ';
-        }
-        
-        // Add known/prepared spells
-        const preparedSpells = characterData.class === 'wizard' ? 
-            (characterData.spellcasting.spellsPrepared || []) : 
-            (characterData.spellcasting.spellsKnown || []);
-        
-        if (preparedSpells.length > 0) {
-            intro += `I ${characterData.class === 'wizard' ? 'have prepared' : 'know'} the following spells: `;
-            const spells = preparedSpells.map(id => {
-                const spell = getSpellById(id);
-                return spell ? spell.name : id;
-            });
-            intro += spells.join(', ') + '. ';
-        }
-    }
-    
-    // Add character description if available
-    if (characterData.description) {
-        intro += ` ${characterData.description}`;
-    }
-    
-    intro += ` Please start my adventure!`;
-    
-    return intro;
-}
-
-// Function to update the character sheet in the sidebar
-function updateCharacterSheet() {
-    const characterSheet = document.getElementById('characterSheet');
-    
-    if (!characterSheet) return;
-    
-    let html = `
-        <div class="character-header mb-3">
-            <h4 class="text-center">${characterData.name}</h4>
-            <p class="text-center text-light">Level ${characterData.level} ${raceData[characterData.race]?.name || ''} ${classData[characterData.class]?.name || ''}</p>
-        </div>
-    `;
-    
-    // Add ability scores
-    html += '<div class="ability-scores mb-3"><div class="row">';
-    
-    Object.entries(characterData.abilities).forEach(([ability, score]) => {
-        const modifier = Math.floor((score - 10) / 2);
-        const modText = modifier >= 0 ? `+${modifier}` : modifier;
-        
-        // Use standard D&D ability abbreviations
-        let abilityAbbrev;
-        switch(ability) {
-            case 'strength': abilityAbbrev = 'STR'; break;
-            case 'dexterity': abilityAbbrev = 'DEX'; break;
-            case 'constitution': abilityAbbrev = 'CON'; break;
-            case 'intelligence': abilityAbbrev = 'INT'; break;
-            case 'wisdom': abilityAbbrev = 'WIS'; break;
-            case 'charisma': abilityAbbrev = 'CHA'; break;
-            default: abilityAbbrev = ability.substr(0, 3).toUpperCase();
-        }
-        
-        html += `
-            <div class="col-4 mb-2">
-                <div class="ability-score">
-                    <div class="ability-name">${abilityAbbrev}</div>
-                    <div class="ability-value">${score}</div>
-                    <div class="ability-modifier">${modText}</div>
-                </div>
-            </div>
-        `;
-    });
-    
-    html += '</div></div>';
-    
-    // Add hit points display
-    if (characterData.hitPoints) {
-        html += `
-            <div class="hit-points-display mb-3">
-                <div class="hp-header d-flex justify-content-between align-items-center">
-                    <span>Hit Points</span>
-                    <span class="hit-die-small">${hitDieData[characterData.class]?.die || 'd8'}</span>
-                </div>
-                <div class="hp-bar">
-                    <div class="current-hp">${characterData.hitPoints.current}/${characterData.hitPoints.max}</div>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Add spellcasting information
-    if (characterData.spellcasting && ['wizard', 'bard', 'cleric'].includes(characterData.class)) {
-        html += `
-            <div class="spellcasting-display mb-3">
-                <h5>Spellcasting</h5>
-                <div class="spellcasting-info small">
-                    <div><strong>Ability:</strong> ${characterData.spellcasting.ability.charAt(0).toUpperCase() + characterData.spellcasting.ability.slice(1)}</div>
-                    <div><strong>Save DC:</strong> ${characterData.spellcasting.spellSaveDC}</div>
-                    <div><strong>Attack:</strong> ${characterData.spellcasting.spellAttackBonus >= 0 ? '+' : ''}${characterData.spellcasting.spellAttackBonus}</div>
-                </div>
-                
-                <!-- Cantrips -->
-                ${characterData.spellcasting.cantripsKnown && characterData.spellcasting.cantripsKnown.length > 0 ? `
-                    <div class="spell-section mt-2">
-                        <span class="spell-type">Cantrips:</span>
-                        <span class="spell-list">
-                            ${characterData.spellcasting.cantripsKnown.map(id => {
-                                const spell = getSpellById(id);
-                                return spell ? spell.name : id;
-                            }).join(', ')}
-                        </span>
-                    </div>
-                ` : ''}
-                
-                <!-- Known/Prepared Spells -->
-                ${(() => {
-                    const preparedSpells = characterData.class === 'wizard' ? 
-                        (characterData.spellcasting.spellsPrepared || []) : 
-                        (characterData.spellcasting.spellsKnown || []);
-                    
-                    if (preparedSpells.length > 0) {
-                        return `
-                            <div class="spell-section">
-                                <span class="spell-type">${characterData.class === 'wizard' ? 'Prepared' : 'Known'} Spells:</span>
-                                <span class="spell-list">
-                                    ${preparedSpells.map(id => {
-                                        const spell = getSpellById(id);
-                                        return spell ? spell.name : id;
-                                    }).join(', ')}
-                                </span>
-                            </div>
-                        `;
-                    }
-                    return '';
-                })()}
-                
-                <!-- Spell Slots -->
-                ${characterData.spellcasting.spellSlots ? `
-                    <div class="spell-slots mt-2">
-                        <div class="slot-item">
-                            <span class="slot-level">Level 1:</span>
-                            <span class="slot-count">${characterData.spellcasting.spellSlots[1] || 0} slots</span>
-                        </div>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    }
-    
-    // Add skills
-    if (characterData.skills && characterData.skills.length > 0) {
-        html += `
-            <h5>Skills</h5>
-            <div class="mb-3">
-        `;
-        
-        characterData.skills.forEach(skill => {
-            html += `<span class="badge bg-success me-1 mb-1">${skills[skill]?.name || skill}</span> `;
-        });
-        
-        html += `
-            </div>
-        `;
-    }
-    
-    // Add features
-    let featuresHTML = '';
-    if (characterData.features) {
-        // Get class feature data
-        const classFeatureData = classFeatures[characterData.class]?.level1 || { required: [], optional: [] };
-        
-        // Handle required features
-        if (characterData.features.required && characterData.features.required.length > 0) {
-            featuresHTML += '<h5>Features</h5><ul class="list-unstyled small">';
-            
-            characterData.features.required.forEach(featureId => {
-                const feature = classFeatureData.required.find(f => f.id === featureId);
-                if (feature) {
-                    featuresHTML += `<li><span class="text-light">${feature.name}</span>`;
-                    
-                    // For active features with usage limits, show usage tracking
-                    if (feature.type === 'active' && feature.usageLimit) {
-                        featuresHTML += ` <span class="badge bg-secondary">${feature.usageLimit}</span>`;
-                    }
-                    
-                    featuresHTML += `</li>`;
-                }
-            });
-            
-            featuresHTML += '</ul>';
-        }
-        
-        // Handle optional features
-        if (characterData.features.optional && Object.keys(characterData.features.optional).length > 0) {
-            if (!featuresHTML.includes('Features')) {
-                featuresHTML += '<h5>Features</h5>';
-            }
-            featuresHTML += '<ul class="list-unstyled small">';
-            
-            for (const [featureId, choiceId] of Object.entries(characterData.features.optional)) {
-                const featureGroup = classFeatureData.optional.find(f => f.id === featureId);
-                
-                if (featureGroup) {
-                    if (featureGroup.choices) {
-                        // For single-choice features like Fighting Style
-                        const choice = featureGroup.choices.find(c => c.id === choiceId);
-                        if (choice) {
-                            featuresHTML += `<li><span class="text-success">${choice.name}</span>`;
-                            if (choice.benefit) {
-                                featuresHTML += ` <small class="text-light">${choice.benefit}</small>`;
-                            }
-                            featuresHTML += `</li>`;
-                        }
-                    } else if (Array.isArray(choiceId)) {
-                        // For multi-selection features like Expertise
-                        const skillNames = choiceId.map(skillId => skills[skillId]?.name).filter(Boolean);
-                        featuresHTML += `<li><span class="text-success">${featureGroup.name}:</span> <small>${skillNames.join(', ')}</small></li>`;
-                    }
-                }
-            }
-            
-            featuresHTML += '</ul>';
-        }
-    }
-    
-    html += `
-    <div class="character-features mb-3">
-        ${featuresHTML}
-    </div>
-    `;
-    
-    // Add description if available
-    if (characterData.description) {
-        html += `
-            <h5 class="mt-3">Description</h5>
-            <p class="small">${characterData.description}</p>
-        `;
-    }
-    
-    characterSheet.innerHTML = html;
 }
 
 // Add a function to generate racial features HTML
@@ -4538,163 +4109,14 @@ function generateRacialFeaturesHTML() {
     return racialFeaturesHTML;
 }
 
-// Function to get a readable summary of character features
-function getFeaturesSummary(characterData) {
-    if (!characterData.features) return '';
-    
-    const classFeatureData = classFeatures[characterData.class]?.level1 || { required: [], optional: [] };
-    let summary = '';
-    
-    // Add required features
-    if (characterData.features.required && characterData.features.required.length > 0) {
-        summary += ' I have the following class features: ';
-        
-        const featureNames = characterData.features.required.map(featureId => {
-            const feature = classFeatureData.required.find(f => f.id === featureId);
-            return feature ? feature.name : '';
-        }).filter(Boolean);
-        
-        summary += featureNames.join(', ') + '.';
-    }
-    
-    // Add optional features
-    if (characterData.features.optional && Object.keys(characterData.features.optional).length > 0) {
-        summary += ' I\'ve chosen ';
-        
-        const choiceSummaries = [];
-        
-        for (const [featureId, choiceId] of Object.entries(characterData.features.optional)) {
-            const featureGroup = classFeatureData.optional.find(f => f.id === featureId);
-            
-            if (featureGroup) {
-                if (featureGroup.choices) {
-                    // For single-choice features like Fighting Style
-                    const choice = featureGroup.choices.find(c => c.id === choiceId);
-                    if (choice) {
-                        choiceSummaries.push(`the ${choice.name} ${featureGroup.name.toLowerCase()}`);
-                    }
-                } else if (Array.isArray(choiceId)) {
-                    // For multi-selection features like Expertise
-                    const skillNames = choiceId.map(skillId => skills[skillId]?.name).filter(Boolean);
-                    if (skillNames.length > 0) {
-                        choiceSummaries.push(`${featureGroup.name} in ${skillNames.join(' and ')}`);
-                    }
-                }
-            }
-        }
-        
-        if (choiceSummaries.length > 0) {
-            summary += choiceSummaries.join(', ') + '.';
-        }
-    }
-    
-    return summary;
-}
+// Initialize the module when the page loads
+document.addEventListener('DOMContentLoaded', initCharacterCreation);
 
-// Function to send the initial message to the AI with the full character data
-function sendInitialMessageToAI(characterData) {
-    // Show "typing" indicator
-    const chatWindow = document.getElementById('chatWindow');
-    const typingDiv = document.createElement('div');
-    typingDiv.classList.add('message', 'dm-message', 'typing-indicator');
-    typingDiv.innerHTML = '<p>The DM is preparing your adventure...</p>';
-    chatWindow.appendChild(typingDiv);
-    
-    // Scroll to make typing indicator visible
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-    
-    // Get a detailed character introduction for the AI
-    const introMessage = getCharacterIntroForAI();
-    
-    // Prepare the data to send
-    const data = {
-        message: introMessage,
-        character_data: characterData,
-        session_id: null  // New session
-    };
-    
-    // Send the API request
-    fetch('/api/send-message', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Received AI response for new adventure:', data);
-        
-        // Remove typing indicator
-        try {
-            chatWindow.removeChild(typingDiv);
-        } catch (e) {
-            console.log('Could not remove typing indicator', e);
-        }
-        
-        // Add AI response to chat
-        const responseDiv = document.createElement('div');
-        responseDiv.classList.add('message', 'dm-message');
-        responseDiv.innerHTML = `<p>${data.response}</p>`;
-        chatWindow.appendChild(responseDiv);
-        
-        // Scroll to bottom of chat
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-        
-        // Save session ID for future messages
-        if (data.session_id) {
-            window.sessionId = data.session_id;
-            console.log('New adventure session created with ID:', data.session_id);
-        }
-        
-        // Update game state if provided
-        if (data.game_state) {
-            window.gameState = data.game_state;
-            console.log('Game state set to:', data.game_state);
-            
-            // Update UI based on game state if a function exists
-            if (typeof updateUIForGameState === 'function') {
-                updateUIForGameState(data.game_state);
-            }
-        }
-    })
-    .catch(error => {
-        console.error('Error starting adventure with AI:', error);
-        
-        // Remove typing indicator
-        try {
-            chatWindow.removeChild(typingDiv);
-        } catch (e) {
-            console.log('Could not remove typing indicator', e);
-        }
-        
-        // Add error message
-        const errorDiv = document.createElement('div');
-        errorDiv.classList.add('message', 'dm-message');
-        errorDiv.innerHTML = `
-            <p>There was a problem starting your adventure. The Dungeon Master seems to be taking a short break. 
-            Please try again in a moment. (Error: ${error.message})</p>
-        `;
-        chatWindow.appendChild(errorDiv);
-        
-        // Scroll to bottom of chat
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-    });
-}
+// Export any functions that might be needed by other modules
+export {
+    characterData,
+    loadStep,
+    finishCharacterCreation
+};
 
-
-
-
-// Initialize the character creation process when "New Game" is clicked
-document.addEventListener('DOMContentLoaded', function() {
-    const newGameBtn = document.getElementById('new-game-btn');
-    if (newGameBtn) {
-        newGameBtn.addEventListener('click', startCharacterCreation);
-    }
-});
 
