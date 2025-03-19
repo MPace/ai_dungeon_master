@@ -9,6 +9,8 @@ from xai_handler import XAIHandler
 from db import init_db, close_db, get_db
 from character_data import save_character, get_character, list_characters, delete_character
 import functools
+import bcrypt
+from bson.objectid import ObjectId
 
 # Initialize Flask app
 app = Flask(__name__,
@@ -60,6 +62,9 @@ except Exception as e:
 # In-memory database for sessions
 SESSIONS_DB = {}
 
+
+
+
 # User authentication decorator
 def login_required(f):
     @functools.wraps(f)
@@ -70,6 +75,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
 # Landing page with login form
 @app.route('/')
 def index():
@@ -78,25 +84,55 @@ def index():
         return redirect(url_for('user_dashboard'))
     return render_template('index.html')
 
+
 # User login endpoint
 @app.route('/login', methods=['POST'])
 def login():
     username = request.form.get('username')
     password = request.form.get('password')
     
-    # Simplified authentication (replace with proper authentication)
-    db = get_db()
-    user = db.users.find_one({'username': username})
-    
-    if user and verify_password(password, user['password_hash']):
-        # Store user info in session
-        session['user_id'] = str(user['_id'])
-        session['username'] = user['username']
-        flash('Login successful!', 'success')
-        return redirect(url_for('user_dashboard'))
-    else:
-        flash('Invalid username or password', 'error')
+    # Validate inputs
+    if not username or not password:
+        flash('Username and password are required', 'error')
         return redirect(url_for('index'))
+    
+    try:
+        # Get database connection
+        db = get_db()
+        if not db:
+            flash('Database connection error', 'error')
+            return redirect(url_for('index'))
+        
+        # Look up the user
+        user = db.users.find_one({'username': username})
+        
+        # Check if user exists and password is correct
+        if user and verify_password(password, user.get('password_hash', '')):
+            # Store user info in session
+            session['user_id'] = str(user.get('_id'))
+            session['username'] = user.get('username')
+            flash('Login successful!', 'success')
+            
+            # Log the successful login
+            print(f"User {username} logged in successfully")
+            
+            return redirect(url_for('user_dashboard'))
+        else:
+            # Log the failed login attempt
+            print(f"Failed login attempt for username: {username}")
+            
+            flash('Invalid username or password', 'error')
+            return redirect(url_for('index'))
+    
+    except Exception as e:
+        # Log the error
+        print(f"Login error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        flash('An error occurred during login. Please try again.', 'error')
+        return redirect(url_for('index'))
+
 
 # User registration endpoint
 @app.route('/register', methods=['POST'])
@@ -105,43 +141,168 @@ def register():
     password = request.form.get('password')
     email = request.form.get('email')
     
-    # Validate inputs (simplified)
+    # Validate inputs
     if not username or not password or not email:
         flash('All fields are required', 'error')
         return redirect(url_for('index'))
     
-    # Check if user already exists
-    db = get_db()
-    existing_user = db.users.find_one({'username': username})
-    if existing_user:
-        flash('Username already exists', 'error')
+    # Validate username format (alphanumeric, no spaces)
+    if not username.isalnum():
+        flash('Username must contain only letters and numbers', 'error')
         return redirect(url_for('index'))
     
-    # Create new user
-    user_id = str(uuid.uuid4())
-    new_user = {
-        'user_id': user_id,
-        'username': username,
-        'email': email,
-        'password_hash': hash_password(password),  # Use proper password hashing
-        'created_at': datetime.utcnow()
-    }
+    # Validate password strength (at least 8 characters)
+    if len(password) < 8:
+        flash('Password must be at least 8 characters long', 'error')
+        return redirect(url_for('index'))
     
-    db.users.insert_one(new_user)
+    try:
+        # Get database connection
+        db = get_db()
+        if not db:
+            flash('Database connection error', 'error')
+            return redirect(url_for('index'))
+        
+        # Check if username already exists
+        existing_user = db.users.find_one({'username': username})
+        if existing_user:
+            flash('Username already exists', 'error')
+            return redirect(url_for('index'))
+        
+        # Check if email already exists
+        existing_email = db.users.find_one({'email': email})
+        if existing_email:
+            flash('Email already registered', 'error')
+            return redirect(url_for('index'))
+        
+        # Create new user
+        user_id = str(uuid.uuid4())
+        created_at = datetime.utcnow()
+        
+        new_user = {
+            'user_id': user_id,
+            'username': username,
+            'email': email,
+            'password_hash': hash_password(password),
+            'created_at': created_at,
+            'last_login': created_at
+        }
+        
+        # Insert user into database
+        result = db.users.insert_one(new_user)
+        
+        if result.inserted_id:
+            # Log user in
+            session['user_id'] = user_id
+            session['username'] = username
+            
+            # Log the successful registration
+            print(f"New user registered: {username}")
+            
+            flash('Registration successful! Welcome to AI Dungeon Master.', 'success')
+            return redirect(url_for('user_dashboard'))
+        else:
+            flash('Failed to create user account', 'error')
+            return redirect(url_for('index'))
+            
+    except Exception as e:
+        # Log the error
+        print(f"Registration error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        flash('An error occurred during registration. Please try again.', 'error')
+        return redirect(url_for('index'))
+
     
-    # Log user in
-    session['user_id'] = user_id
-    session['username'] = username
-    
-    flash('Registration successful!', 'success')
-    return redirect(url_for('user_dashboard'))
 
 # User logout endpoint
 @app.route('/logout')
 def logout():
+    # Clear the session
     session.clear()
     flash('You have been logged out', 'info')
     return redirect(url_for('index'))
+
+# Helper functions for authentication
+# Better password hashing with bcrypt
+def hash_password(password):
+    """
+    Hash a password with bcrypt for secure storage
+    """
+    try:
+        # Generate a salt and hash the password
+        password_bytes = password.encode('utf-8')
+        salt = bcrypt.gensalt()
+        password_hash = bcrypt.hashpw(password_bytes, salt)
+        
+        # Return the hash as a string
+        return password_hash.decode('utf-8')
+    except Exception as e:
+        print(f"Error hashing password: {e}")
+        # Fallback to a less secure method if bcrypt is unavailable
+        import hashlib
+        return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(password, password_hash):
+    """
+    Verify a password against a stored hash
+    """
+    try:
+        # Check if this is a bcrypt hash
+        if password_hash.startswith('$2'):
+            # Bcrypt password check
+            password_bytes = password.encode('utf-8')
+            hash_bytes = password_hash.encode('utf-8')
+            return bcrypt.checkpw(password_bytes, hash_bytes)
+        else:
+            # Fallback SHA-256 check for legacy passwords
+            import hashlib
+            return hashlib.sha256(password.encode()).hexdigest() == password_hash
+    except Exception as e:
+        print(f"Error verifying password: {e}")
+        return False
+
+# Test database connection
+@app.route('/test-db-connection')
+def test_db_connection():
+    """
+    Test endpoint to verify database connection
+    Only accessible in development mode
+    """
+    if os.getenv('FLASK_ENV') != 'development':
+        return jsonify({
+            'success': False,
+            'message': 'This endpoint is only available in development mode'
+        }), 403
+    
+    try:
+        db = get_db()
+        if not db:
+            return jsonify({
+                'success': False,
+                'message': 'Database connection failed',
+                'mongo_uri': os.getenv('MONGO_URI', 'Not set').replace('mongodb+srv://', 'mongodb+srv://****:****@')
+            })
+        
+        # Try to get collections and count documents
+        collections = db.list_collection_names()
+        users_count = db.users.count_documents({})
+        
+        return jsonify({
+            'success': True,
+            'message': 'Database connection successful',
+            'collections': collections,
+            'users_count': users_count
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Database error: {str(e)}',
+            'mongo_uri': os.getenv('MONGO_URI', 'Not set').replace('mongodb+srv://', 'mongodb+srv://****:****@')
+        })
+
+
 
 # User dashboard
 @app.route('/dashboard')
@@ -322,31 +483,7 @@ def play_game(character_id):
         flash('Error loading character: ' + str(e), 'error')
         return redirect(url_for('user_dashboard'))
     # Get character data
-    db = get_db()
-    character = db.characters.find_one({
-        'character_id': character_id,
-        'user_id': session['user_id']
-    })
-    
-    if not character:
-        flash('Character not found', 'error')
-        return redirect(url_for('user_dashboard'))
-    
-    # Convert ObjectId to string for serialization
-    character['_id'] = str(character['_id'])
-    
-    return render_template('dm.html', character=character)
 
-# Helper functions for authentication
-def hash_password(password):
-    # Replace with proper password hashing (e.g., using bcrypt)
-    import hashlib
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def verify_password(password, password_hash):
-    # Replace with proper password verification
-    import hashlib
-    return hashlib.sha256(password.encode()).hexdigest() == password_hash
 
 
 
