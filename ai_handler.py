@@ -67,13 +67,6 @@ class AIHandler:
                 json=payload
             )
             
-            # Send request to the LLM API
-            response = requests.post(
-                self.api_url,
-                headers=self.headers,
-                json=payload
-            )
-            
             # Check if the request was successful
             response.raise_for_status()
             

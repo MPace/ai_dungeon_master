@@ -170,7 +170,7 @@
 
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Check login form submission
@@ -192,5 +192,45 @@
             }
         });
         </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Check login form submission
+                const loginForm = document.querySelector('form[action="/login"]');
+                
+                if (loginForm) {
+                    loginForm.addEventListener('submit', function(event) {
+                        // Prevent the default form submission temporarily
+                        event.preventDefault();
+                        
+                        const username = document.getElementById('login-username').value;
+                        const password = document.getElementById('login-password').value;
+                        
+                        console.log('Login form submitted for user:', username);
+                        
+                        // Add a timestamp to help correlate with server logs
+                        console.log('Form submission time:', new Date().toISOString());
+                        
+                        // Show a loading indicator (optional)
+                        const submitBtn = this.querySelector('button[type="submit"]');
+                        if (submitBtn) {
+                            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
+                            submitBtn.disabled = true;
+                        }
+                        
+                        // Now actually submit the form
+                        console.log('Submitting form...');
+                        this.submit();
+                        
+                        // Log after submission to see if we get here
+                        console.log('Form submitted, waiting for response...');
+                    });
+                }
+                
+                // Add event listener for page unload to see if navigation starts
+                window.addEventListener('beforeunload', function() {
+                    console.log('Page is being unloaded at:', new Date().toISOString());
+                });
+            });
+            </script>
 </body>
 </html>

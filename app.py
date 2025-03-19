@@ -26,24 +26,41 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__,
            static_folder='static',
            template_folder='templates')
-app.secret_key = os.urandom(24)  # For session management
 
-## Configure session handling
+
+# Use a consistent secret key - either from environment or a file
+secret_key_file = os.path.join(os.getcwd(), 'secret_key.txt')
+
+if os.getenv('FLASK_SECRET_KEY'):
+    # Use environment variable if set
+    app.secret_key = os.getenv('FLASK_SECRET_KEY')
+    logger.info("Using secret key from environment variable")
+else:
+    # Otherwise, try to load from file or create a persistent one
+    try:
+        if os.path.exists(secret_key_file):
+            with open(secret_key_file, 'rb') as f:
+                app.secret_key = f.read()
+                logger.info("Using secret key from file")
+        else:
+            # Generate a new key and save it
+            new_key = os.urandom(24)
+            with open(secret_key_file, 'wb') as f:
+                f.write(new_key)
+            app.secret_key = new_key
+            logger.info("Generated and saved new secret key to file")
+    except Exception as e:
+        # Fallback to random key if file operations fail
+        app.secret_key = os.urandom(24)
+        logger.warning(f"Failed to use persistent key file: {e}. Using temporary key instead.")
+
+# Configure session handling
 app.config.update(
     SESSION_COOKIE_SECURE=False,  # Set to True only if using HTTPS
     SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript access
     SESSION_COOKIE_SAMESITE='Lax',  # Controls cross-site request behavior
     PERMANENT_SESSION_LIFETIME=timedelta(days=1)  # Session expires after 1 day
 )
-
-# Ensure the secret key is consistent across app restarts
-if not os.getenv('FLASK_SECRET_KEY'):
-    # Generate a secret key if not in environment variables
-    app.secret_key = os.urandom(24)
-    logger.warning("Using temporary secret key - sessions will be invalidated on restart")
-else:
-    app.secret_key = os.getenv('FLASK_SECRET_KEY')
-    logger.info("Using persistent secret key from environment variables")
 
 # Initialize database connection
 print("Initializing database connection...")
@@ -141,28 +158,18 @@ def login():
             return redirect(url_for('index'))
         
         logger.info(f"Searching for user '{username}' in database...")
-        user_count = db.users.count_documents({})
-        logger.info(f"Total users in database: {user_count}")
-        
-        all_users = list(db.users.find({}, {"username": 1}))
-        logger.info(f"All usernames in database: {[u.get('username') for u in all_users]}")
         
         user = db.users.find_one({'username': username})
         logger.info(f"User found in database: {user is not None}")
         
         if user:
-            logger.info(f"User details: id={user.get('_id')}, username={user.get('username')}")
             stored_hash = user.get('password_hash', '')
-            password_bytes = password.encode('utf-8')
-            hash_type = "bcrypt" if stored_hash.startswith('$2') else "sha256"
-            logger.info(f"Stored hash type: {hash_type}")
-            logger.info("Attempting to verify password...")
-            
             is_valid = verify_password(password, stored_hash)
             logger.info(f"Password verification result: {is_valid}")
             
             if is_valid:
                 logger.info("Password valid, setting up session...")
+                # Store user data in session
                 session['user_id'] = str(user.get('_id'))
                 session['username'] = user.get('username')
                 session['authenticated'] = True
@@ -171,30 +178,21 @@ def login():
                 # Force session save
                 session.modified = True
                 
-                logger.info(f"Session data set: user_id={session.get('user_id')}, username={session.get('username')}")
-                logger.info(f"Session object type: {type(session)}")
-                logger.info(f"Session contents: {dict(session)}")
+                logger.info(f"Session data set: {dict(session)}")
+                logger.info("Login successful, redirecting to dashboard...")
                 
+                # Set a simple flash message
                 flash('Login successful!', 'success')
-                logger.info("Redirecting to dashboard...")
                 
-                try:
-                    # Set a response cookie explicitly as a backup
-                    response = make_response(redirect(url_for('user_dashboard')))
-                    response.set_cookie('username', user.get('username'), max_age=86400)
-                    logger.info("Created redirect response with explicit cookie")
-                    return response
-                except Exception as redirect_error:
-                    logger.error(f"Redirect error: {str(redirect_error)}")
-                    # Fallback to direct URL
-                    logger.info("Trying fallback redirect to /dashboard")
-                    return redirect('/dashboard')
+                # SIMPLIFIED REDIRECTION - Direct return of redirect
+                logger.info("Returning redirect to /dashboard")
+                return redirect('/dashboard')
             else:
-                logger.error("Password verification failed!")
+                logger.error("Password verification failed")
         else:
             logger.error(f"No user found with username '{username}'")
         
-        logger.error("Login failed, redirecting to index")
+        # If we get here, login failed
         flash('Invalid username or password', 'error')
         return redirect(url_for('index'))
     
@@ -206,6 +204,7 @@ def login():
         return redirect(url_for('index'))
     finally:
         logger.info("=============================================")
+
 
 # User registration endpoint
 @app.route('/register', methods=['POST'])
