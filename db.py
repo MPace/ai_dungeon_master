@@ -22,8 +22,16 @@ def init_db():
         return False
     
     try:
+        #import SSL module
+        import ssl
+
+
         # Connect to MongoDB
-        client = MongoClient(MONGO_URI)
+        client = MongoClient(
+            MONGO_URI,
+            ssl_cert_reqs=ssl.CERT_NONE,
+            serverSelectionTimeoutMS=5000
+        )
         
         # Ping the database to verify connection
         client.admin.command('ping')
