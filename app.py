@@ -103,7 +103,7 @@ def login():
     try:
         # Get database connection
         db = get_db()
-        if not db:
+        if db is None:
             print("Database connection failed in login")
             flash('Database connection error', 'error')
             return redirect(url_for('index'))
