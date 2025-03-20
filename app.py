@@ -15,7 +15,7 @@ import logging
 
 # Logging setup
 logging.basicConfig(
-    filename='/var/www/ai_dungeon_master/app.log',
+    filename=' app.log',
     level=logging.DEBUG,
     format='%(asctime)s %(levelname)s: %(message)s'
 )
