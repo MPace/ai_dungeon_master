@@ -1,5 +1,7 @@
 # Environment variables and secrets
 .env
+app.log
+secret_key.txt
 
 # Python virtual environment
 venv/
