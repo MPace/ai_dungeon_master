@@ -227,12 +227,13 @@ def login():
             
             # Set flash message
             flash('Login successful!', 'success')
-            
-            # Log the redirect attempt
-            logger.info("Attempting redirect to dashboard")
-            
-            # Explicitly return a redirect response
-            return redirect('/dashboard')
+            logger.info(f"Redirecting to dashboard for user '{username}'...")
+            redirect_url = url_for('user_dashboard')
+            logger.info(f"Generated redirect URL: {redirect_url}")
+            response = redirect(redirect_url)
+            logger.info(f"Redirect response prepared: {response}")
+            return response
+        
         else:
             logger.error("Invalid username or password")
             flash('Invalid username or password', 'error')
