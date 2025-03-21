@@ -144,7 +144,7 @@ def save_character_route():
             })
         
         # Delete any existing drafts with this ID
-        CharacterService.delete_character_draft(character_id)
+        CharacterService.delete_character_draft(character_id, user_id)
         
         # Now save the character
         saved_id = CharacterService.save_character(character_data, user_id)
