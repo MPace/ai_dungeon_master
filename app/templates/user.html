@@ -112,7 +112,7 @@
                                         <td class="align-middle">{{ character.last_played|default(character.updated_at|default('Never')) }}</td>
                                         <td>
                                             <div class="btn-group">
-                                                <a href="{{ url_for('play_game', character_id=character.character_id) }}" class="btn btn-sm btn-success">
+                                                <a href="{{ url_for('game.play_game', character_id=character.character_id) }}" class="btn btn-sm btn-success">
                                                     <i class="bi bi-play-fill"></i> Play
                                                 </a>
                                                 <button type="button" class="btn btn-sm btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown"></button>
