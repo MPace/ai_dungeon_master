@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 # Initialize MongoDB client
 mongo_client = None
 mongo_db = None
+db = None
+login_manager = None
 
 # Login manager functionality (simplified version of Flask-Login)
 def login_required(f):
@@ -317,9 +319,11 @@ def delete_character(character_id, user_id=None):
 
 def init_extensions(app):
     """Initialize extensions"""
+    global db, mongo_db
     # Initialize database
     with app.app_context():
         init_db()
+        db = mongo_db
     
     # Register close_db to be called when a request ends
     app.teardown_appcontext(close_db)
