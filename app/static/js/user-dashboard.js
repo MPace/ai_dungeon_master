@@ -82,7 +82,7 @@ function deleteCharacter(characterId) {
     showLoadingIndicator();
     
     // Send delete request to the server
-    fetch(`/api/delete-character/${characterId}`, {
+    fetch(`/character/api/delete-character/${characterId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -138,7 +138,7 @@ function deleteDraft(draftId) {
     showLoadingIndicator();
     
     // Send delete request to the server
-    fetch(`/api/delete-draft/${draftId}`, {
+    fetch(`/character/api/delete-draft/${draftId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

@@ -70,7 +70,8 @@ def play_game(character_id):
             return redirect(url_for('game.dashboard'))
         
         # Check if this character belongs to the current user
-        if character.get('user_id') != user_id:
+        if str(character.get('user_id')) != str(user_id):
+            logger.error(f"User ID mismatch: character user_id={character.get('user_id')}, session user_id={user_id}")
             flash('You do not have permission to access this character', 'error')
             return redirect(url_for('game.dashboard'))
         
