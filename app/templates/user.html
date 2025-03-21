@@ -172,7 +172,7 @@
                                     <td class="align-middle">{{ draft.lastUpdated|default('Unknown') }}</td>
                                     <td>
                                         <div class="btn-group">
-                                            <a href="{{ url_for('characters.create_character', draft_id=draft.character_id) }}" class="btn btn-sm btn-warning text-dark">
+                                            <a href="{{ url_for('characters.create', draft_id=draft.character_id) }}" class="btn btn-sm btn-warning text-dark">
                                                 <i class="bi bi-pencil-fill"></i> Continue
                                             </a>
                                             <button type="button" class="btn btn-sm btn-warning text-dark dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown"></button>
