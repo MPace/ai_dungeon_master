@@ -1,5 +1,13 @@
 import os
 from flask import Flask, render_template, redirect, url_for
+import logging
+
+logging.basicConfig(
+    filename='app.log',
+    level=logging.DEBUG,
+    format='%(asctime)s %(levelname)s: %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 def create_app(config_name='default'):
     app = Flask(__name__)   
@@ -19,7 +27,6 @@ def create_app(config_name='default'):
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(characters_bp, url_prefix='/characters')
     app.register_blueprint(game_bp)  # No prefix to maintain compatibility with original URLs
-    app.register_blueprint(debug_bp, url_prefix='/debug')
     
     # Add a route for the root URL to maintain backward compatibility
     @app.route('/')
