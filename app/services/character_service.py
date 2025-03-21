@@ -26,7 +26,7 @@ class CharacterService:
         """
         try:
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed when creating character")
                 return {'success': False, 'error': 'Database connection error'}
             
@@ -70,7 +70,7 @@ class CharacterService:
         """
         try:
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed when saving character draft")
                 return {'success': False, 'error': 'Database connection error'}
             
@@ -122,7 +122,7 @@ class CharacterService:
         """
         try:
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed when getting character")
                 return {'success': False, 'error': 'Database connection error'}
             
@@ -162,7 +162,7 @@ class CharacterService:
         """
         try:
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed when listing characters")
                 return {'success': False, 'error': 'Database connection error'}
             
@@ -196,7 +196,7 @@ class CharacterService:
         """
         try:
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed when listing character drafts")
                 return {'success': False, 'error': 'Database connection error'}
             
@@ -226,7 +226,7 @@ class CharacterService:
         """
         try:
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed when deleting character")
                 return {'success': False, 'error': 'Database connection error'}
             
@@ -279,7 +279,7 @@ class CharacterService:
         """
         try:
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed when deleting character draft")
                 return {'success': False, 'error': 'Database connection error'}
             
@@ -324,7 +324,7 @@ class CharacterService:
             bool: Success status
         """
         db = get_db()
-        if not db:
+        if db is None:
             logger.error("Database connection failed when saving character")
             return False
         
