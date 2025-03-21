@@ -147,7 +147,8 @@ def save_character_route():
         CharacterService.delete_character_draft(character_id, user_id)
         
         # Now save the character
-        saved_id = CharacterService.save_character(character_data, user_id)
+        result = CharacterService.create_character(character_data, user_id)
+        saved_id = character_id if result ['succes'] else None
 
         if saved_id is not None:
             # Log this submission to prevent future duplicates
