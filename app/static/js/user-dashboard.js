@@ -140,7 +140,7 @@ function deleteDraft(draftId) {
     showLoadingIndicator();
     
     // Send delete request to the server
-    fetch(`/character/api/delete-draft/${draftId}`, {
+    fetch(`/characters/api/delete-draft/${draftId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
