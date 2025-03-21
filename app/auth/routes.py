@@ -46,7 +46,7 @@ def login():
         logging.info(f"Session after login: {dict(session)}")
         
         flash('Login successful!', 'success')
-        return redirect(url_for('game.dashboard'))
+        return redirect(url_for('game.user_dashboard'))
     
     flash('Invalid username or password', 'error')
     return redirect(url_for('auth.index'))
@@ -86,7 +86,7 @@ def register():
         session['username'] = username
         
         flash('Registration successful! Welcome to AI Dungeon Master.', 'success')
-        return redirect(url_for('game.dashboard'))
+        return redirect(url_for('game.user_dashboard'))
     
     flash('Failed to create user account', 'error')
     return redirect(url_for('auth.index'))
