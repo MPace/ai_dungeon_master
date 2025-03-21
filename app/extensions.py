@@ -9,6 +9,9 @@ import os
 import logging
 from datetime import datetime, timedelta
 import uuid
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Setup logging
 logging.basicConfig(
@@ -68,6 +71,13 @@ def close_db(e=None):
     db = g.pop('db', None)
     # MongoDB doesn't need explicit connection closing per request
     # But we keep this function for consistency and future proofing
+
+logger.info(f"Current working directory: {os.getcwd()}")
+logger.info(f".env file exists: {os.path.exists('.env')}")
+mongo_uri = os.getenv("MONGO_URI")
+logger.info(f"MONGO_URI found: {'Yes' if mongo_uri else 'No'}")
+if mongo_uri:
+    logger.info(f"MONGO_URI starts with: {mongo_uri[:10]}...")
 
 def init_db():
     """Initialize the database connection"""
