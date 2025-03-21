@@ -37,7 +37,7 @@ def dashboard():
     try:
         # Get characters and drafts from services
         characters = CharacterService.list_characters(user_id)
-        drafts = CharacterService.list_drafts(user_id)
+        drafts = CharacterService.list_character_drafts(user_id)
         
         # Render the template
         return render_template('user.html',
