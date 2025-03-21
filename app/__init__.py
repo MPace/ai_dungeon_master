@@ -12,20 +12,11 @@ logger = logging.getLogger(__name__)
 
 def create_app(config_name='default'):
     app = Flask(__name__)   
-    
+    configure_app(app, config_name)
+
     # Load configuration
     app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
     logger.info(f"SECRET_KEY set to: {app.config['SECRET_KEY']}")
-
-    # Configure session
-    app.config.update(
-        SESSION_COOKIE_SECURE=False,  # Set to True only if using HTTPS
-        SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript access
-        SESSION_COOKIE_SAMESITE='Lax',  # Controls cross-site request behavior
-        PERMANENT_SESSION_LIFETIME=timedelta(days=1),  # Session expires after 1 day
-        SESSION_COOKIE_PATH='/',
-        SESSION_COOKIE_NAME='session'
-    )
 
     # Initialize extensions
     from app.extensions import init_extensions
@@ -65,6 +56,16 @@ def configure_app(app, config_name):
     # Load config from config.py
     app.config.from_object(f'app.config.{config_name.capitalize()}Config')
     
+    # Configure session
+    app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
+    app.config['SESSION_COOKIE_SECURE'] = False
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
+    app.config['SESSION_COOKIE_PATH'] = '/'
+    app.config['SESSION_COOKIE_NAME'] = 'session_aidm'
+
+
     # Load .env file if exists
     if os.path.exists('.env'):
         from dotenv import load_dotenv

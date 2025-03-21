@@ -39,15 +39,11 @@ def login():
         # Force session to be saved
         session.permanent = True
         session.modified = True
-        
-        # Update last_login in user record
-        AuthService.update_last_login(user.get('_id'))
 
         logging.info(f"Session after login: {dict(session)}")
         
         flash('Login successful!', 'success')
         resp = redirect(url_for('game.dashboard'))
-        resp.set_cookie('session', session.sid if hasattr(session, 'sid') else 'test_sid')
         logger.info(f"Response headers:{dict(resp.headers)}")
         return resp
     

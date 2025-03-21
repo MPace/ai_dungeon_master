@@ -6,12 +6,6 @@ from datetime import timedelta
 
 class Config:
     """Base configuration"""
-    # Security
-    SECRET_KEY = os.environ.get('FLASK_SECRET_KEY') or os.urandom(24)
-    SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
-    SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access
-    SESSION_COOKIE_SAMESITE = 'Lax'  # Controls cross-site request behavior
-    PERMANENT_SESSION_LIFETIME = timedelta(days=1)  # Session expires after 1 day
     
     # Database
     MONGO_URI = os.environ.get('MONGO_URI', '')
