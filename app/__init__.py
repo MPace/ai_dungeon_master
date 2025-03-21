@@ -50,8 +50,8 @@ def create_app(config_name='default'):
 def configure_app(app, config_name):
     """Configure the app with the appropriate settings"""
     # Default to development if not specified
-    if not config_name:
-        config_name = os.getenv('FLASK_ENV', 'development')
+    if not config_name or config_name == 'default':
+        config_name = 'development'
     
     # Load config from config.py
     app.config.from_object(f'app.config.{config_name.capitalize()}Config')
