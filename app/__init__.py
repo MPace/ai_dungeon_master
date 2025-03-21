@@ -15,7 +15,8 @@ def create_app(config_name='default'):
     
     # Load configuration
     app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
-    
+    logger.info(f"SECRET_KEY set to: {app.config['SECRET_KEY']}")
+
     # Configure session
     app.config.update(
         SESSION_COOKIE_SECURE=False,  # Set to True only if using HTTPS

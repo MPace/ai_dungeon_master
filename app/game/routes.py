@@ -16,7 +16,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         logger.info(f"Checking authentication for route: {request.path}")
-        
+        logger.info(f"Session contents: {dict(session)}")
         if 'user_id' not in session:
             logger.error(f"AUTHENTICATION FAILED: No user_id in session for {request.path}")
             flash('Please log in to access this page', 'warning')
