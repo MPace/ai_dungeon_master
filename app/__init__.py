@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, render_template
 from app.extensions import init_extensions
 
 def create_app(config_name=None):
