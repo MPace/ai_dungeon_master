@@ -1155,7 +1155,7 @@ function finishCharacterCreation() {
     window.onbeforeunload = null;
     
     // Save the complete character to the server
-    fetch('/api/save-character', {
+    fetch('/characters/api/save-character', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1199,7 +1199,7 @@ function finishCharacterCreation() {
             setTimeout(() => {
                 // IMPORTANT: Use window.location.replace instead of window.location.href
                 // This replaces the current page in history instead of adding a new entry
-                window.location.replace(`/play/${data.character_id}`);
+                window.location.replace(`/game/play/${data.character_id}`);
             }, 1500);
         } else {
             console.error("Server response missing success or character_id", data);
