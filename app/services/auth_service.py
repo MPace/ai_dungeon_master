@@ -24,7 +24,26 @@ class AuthService:
         if user is not None and verify_password(password, user.get('password_hash', '')):
             return user
         return None
-
+    
+    @staticmethod
+    def update_last_login(user_id):
+        """Update the last_login timestamp for a user"""
+        db = get_db()
+        if db is None:
+            return False
+        
+        try:
+            db.users.update_one(
+                {'_id': user_id},
+                {'$set': {'last_login': datetime.utcnow()}}
+            )
+            return True
+        except Exception as e:
+            # Log the error but don't raise it to prevent breaking authentication flow
+            import logging
+            logging.error(f"Failed to update last_login: {e}")
+            return False
+        
     @staticmethod
     def register_user(username, email, password):
         """
