@@ -3,7 +3,7 @@ Authentication Service
 """
 from flask import session
 from app.models.user import User
-from app.extensions import get_db
+from app.extensions import get_db, verify_password
 from datetime import datetime
 import logging
 
@@ -12,6 +12,19 @@ logger = logging.getLogger(__name__)
 class AuthService:
     """Service for handling authentication operations"""
     
+    @staticmethod
+    def authenticate_user(username, password):
+        """Authenticate a user with username and password"""
+        db = get_db()
+        if db is None:
+            return None
+        
+        user = db.users.find_one({'username': username})
+        
+        if user is not None and verify_password(password, user.get('password_hash', '')):
+            return user
+        return None
+
     @staticmethod
     def register_user(username, email, password):
         """
