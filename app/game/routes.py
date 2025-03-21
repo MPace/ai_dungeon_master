@@ -27,31 +27,63 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@game_bp.route('/user_dashboard')
+@game_bp.route('/dashboard')
+@login_required
+def dashboard():
+    # Get user ID from session
+    user_id = session.get('user_id')
+    
+    try:
+        # Get characters and drafts from services
+        characters = CharacterService.list_completed_characters(user_id)
+        drafts = CharacterService.list_drafts(user_id)
+        
+        # Render the template
+        return render_template('user.html',
+                              username=session.get('username', 'User'),
+                              characters=characters,
+                              drafts=drafts)
+    
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        
+        flash('Error loading dashboard: ' + str(e), 'error')
+        return render_template('user.html',
+                              username=session.get('username', 'User'),
+                              characters=[],
+                              drafts=[])
+
 @game_bp.route('/play/<character_id>')
 @login_required
-def play(character_id):
-    """Game interface page for playing with a specific character"""
+def play_game(character_id):
+    # Get user_id from session
     user_id = session.get('user_id')
     
     try:
         # Get character data
-        character_result = CharacterService.get_character(character_id, user_id)
+        character = CharacterService.get_character(character_id, user_id)
         
-        if not character_result['success']:
+        if not character:
             flash('Character not found', 'error')
-            return redirect(url_for('characters.dashboard'))
+            return redirect(url_for('game.dashboard'))
         
-        character = character_result['character']
+        # Check if this character belongs to the current user
+        if character.get('user_id') != user_id:
+            flash('You do not have permission to access this character', 'error')
+            return redirect(url_for('game.dashboard'))
         
-        # Render game interface
-        return render_template('dm.html', character=character.to_dict())
+        # Update last played timestamp
+        CharacterService.update_last_played(character_id)
+        
+        return render_template('dm.html', character=character)
     
     except Exception as e:
-        logger.error(f"Error in play_game route: {e}")
         import traceback
-        logger.error(traceback.format_exc())
+        traceback.print_exc()
         flash('Error loading character: ' + str(e), 'error')
-        return redirect(url_for('characters.dashboard'))
+        return redirect(url_for('game.dashboard'))
 
 @game_bp.route('/api/send-message', methods=['POST'])
 @login_required

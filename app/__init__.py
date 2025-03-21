@@ -1,29 +1,46 @@
 import os
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, url_for
 from app.extensions import init_extensions
 
-def create_app(config_name=None):
-    """
-    Application factory function that creates and configures the Flask app
-    """
-    # Create the Flask application instance
+def create_app(config_name='default'):
     app = Flask(__name__)
     
-    # Configure the application
-    configure_app(app, config_name)
+    # Load configuration based on environment
+    if config_name == 'production':
+        app.config.from_object('app.config.ProductionConfig')
+    elif config_name == 'testing':
+        app.config.from_object('app.config.TestingConfig')
+    else:
+        app.config.from_object('app.config.DevelopmentConfig')
     
     # Initialize extensions
-    init_extensions(app)
+    from app.extensions import db, login_manager
+    db.init_app(app)
+    login_manager.init_app(app)
     
     # Register blueprints
-    register_blueprints(app)
+    from app.auth.routes import auth_bp
+    from app.characters.routes import characters_bp
+    from app.game.routes import game_bp
+    
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(characters_bp, url_prefix='/characters')
+    app.register_blueprint(game_bp)  # No prefix to maintain compatibility with original URLs
+    app.register_blueprint(debug_bp, url_prefix='/debug')
+    
+    # Add a route for the root URL to maintain backward compatibility
+    @app.route('/')
+    def index():
+        return redirect(url_for('auth.index'))
     
     # Register error handlers
-    register_error_handlers(app)
+    @app.errorhandler(404)
+    def page_not_found(e):
+        return render_template('errors/404.html'), 404
     
-    # Additional setup needed at app startup
-    # Setup directories that might be needed
-    setup_directories(app)
+    @app.errorhandler(500)
+    def internal_server_error(e):
+        return render_template('errors/500.html'), 500
     
     return app
 

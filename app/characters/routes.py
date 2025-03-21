@@ -1,12 +1,15 @@
 """
 Characters routes
 """
-from flask import render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from app.characters import characters_bp
 from app.services.character_service import CharacterService
 from app.services.auth_service import AuthService
 from functools import wraps
+from datetime import datetime
+from app.extensions import login_required
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -72,14 +75,12 @@ def create():
     return render_template('create.html', draft=draft)
 
 @characters_bp.route('/api/save-character', methods=['POST'])
-@login_required
-def save_character():
-    """API endpoint to save a character"""
+def save_character_route():
     try:
         # Get character data from request
         character_data = request.json
         
-        if not character_data:
+        if character_data is None:
             return jsonify({
                 'success': False,
                 'error': 'No character data provided'
@@ -88,31 +89,85 @@ def save_character():
         # Get user_id from session
         user_id = session.get('user_id')
         
+        if user_id is None:
+            return jsonify({
+                'success': False,
+                'error': 'User not logged in'
+            }), 401
+        
         # Check for submission ID to prevent duplicate saves
         submission_id = character_data.get('submissionId')
         
-        # Save the character
-        result = CharacterService.create_character(character_data, user_id)
-        
-        if result['success']:
-            character = result['character']
+        if submission_id is not None:
+            # Check if we've seen this submission before
+            recent_submission = CharacterService.check_submission(submission_id, user_id)
             
-            # If successful, return the character ID
+            if recent_submission is not None:
+                # This is a duplicate submission
+                return jsonify({
+                    'success': True,
+                    'character_id': recent_submission.get('character_id'),
+                    'message': 'Character already saved (duplicate submission)',
+                    'isDuplicate': True
+                })
+        
+        # Add user_id to character data
+        character_data['user_id'] = user_id
+        
+        # Mark as complete (not a draft)
+        character_data['isDraft'] = False
+        character_data['completedAt'] = datetime.utcnow().isoformat()
+        
+        # Get the character_id
+        character_id = character_data.get('character_id')
+        
+        if character_id is None:
+            # Generate a new ID if none exists
+            character_id = str(uuid.uuid4())
+            character_data['character_id'] = character_id
+        
+        # Check if character already exists
+        existing_character = CharacterService.get_character(character_id, user_id)
+        
+        if existing_character is not None and existing_character.get('isDraft') is not True:
+            # This character already exists as a completed character
+            # Log this submission to prevent future duplicates
+            if submission_id is not None:
+                CharacterService.log_submission(submission_id, character_id, user_id)
+            
+            # Return success but don't save again
             return jsonify({
                 'success': True,
-                'character_id': character.character_id,
+                'character_id': character_id,
+                'message': 'Character already exists',
+                'alreadyExists': True
+            })
+        
+        # Delete any existing drafts with this ID
+        CharacterService.delete_drafts(character_id)
+        
+        # Now save the character
+        saved_id = CharacterService.save_character(character_data, user_id)
+        
+        if saved_id is not None:
+            # Log this submission to prevent future duplicates
+            if submission_id is not None:
+                CharacterService.log_submission(submission_id, saved_id, user_id)
+            
+            return jsonify({
+                'success': True,
+                'character_id': saved_id,
                 'message': 'Character saved successfully'
             })
         else:
             return jsonify({
                 'success': False,
-                'error': result.get('error', 'Failed to save character')
+                'error': 'Failed to save character'
             }), 500
     
     except Exception as e:
-        logger.error(f"Error in save_character route: {e}")
         import traceback
-        logger.error(traceback.format_exc())
+        traceback.print_exc()
         return jsonify({
             'success': False,
             'error': str(e)
@@ -162,42 +217,121 @@ def save_character_draft():
             'error': str(e)
         }), 500
 
-@characters_bp.route('/api/character/<character_id>', methods=['GET'])
-@login_required
-def get_character(character_id):
-    """API endpoint to retrieve a character"""
+@characters_bp.route('/api/characters', methods=['GET'])
+def list_characters_route():
+    # Get user_id from session
     user_id = session.get('user_id')
     
-    result = CharacterService.get_character(character_id, user_id)
+    if user_id is None:
+        return jsonify({
+            'success': False,
+            'error': 'User not logged in'
+        }), 401
     
-    if result['success']:
-        character = result['character']
+    characters = CharacterService.list_characters(user_id)
+    
+    return jsonify({
+        'success': True,
+        'characters': characters
+    })
+
+@characters_bp.route('/api/character/<character_id>', methods=['GET'])
+def get_character_route(character_id):
+    # Get user_id from session
+    user_id = session.get('user_id')
+    
+    if user_id is None:
+        return jsonify({
+            'success': False,
+            'error': 'User not logged in'
+        }), 401
+    
+    character = CharacterService.get_character(character_id, user_id)
+    
+    if character:
         return jsonify({
             'success': True,
-            'character': character.to_dict()
+            'character': character
         })
     else:
         return jsonify({
             'success': False,
-            'error': result.get('error', 'Character not found')
-        }), 404
+            'error': 'Character not found'
+        })
 
 @characters_bp.route('/api/delete-character/<character_id>', methods=['POST'])
 @login_required
-def delete_character(character_id):
-    """API endpoint to delete a character"""
-    user_id = session.get('user_id')
+def delete_character_route(character_id):
+    try:
+        # Get user_id from session
+        user_id = session.get('user_id')
+        
+        # Check if character exists and belongs to the user
+        character = CharacterService.get_character(character_id, user_id)
+        
+        if not character:
+            return jsonify({
+                'success': False,
+                'error': 'Character not found or access denied'
+            }), 404
+        
+        # Delete the character
+        result = CharacterService.delete_character(character_id, user_id)
+        
+        if result:
+            return jsonify({
+                'success': True,
+                'message': f"Character '{character.get('name', 'Unknown')}' deleted successfully"
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to delete character'
+            }), 500
     
-    result = CharacterService.delete_character(character_id, user_id)
-    
-    return jsonify(result)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @characters_bp.route('/api/delete-draft/<draft_id>', methods=['POST'])
 @login_required
-def delete_draft(draft_id):
-    """API endpoint to delete a character draft"""
-    user_id = session.get('user_id')
+def delete_draft_route(draft_id):
+    try:
+        # Get user_id from session
+        user_id = session.get('user_id')
+        
+        # Check if draft exists and belongs to the user
+        draft = CharacterService.get_draft(draft_id, user_id)
+        
+        if not draft:
+            return jsonify({
+                'success': False,
+                'error': 'Draft not found or access denied'
+            }), 404
+        
+        # Delete the draft
+        result = CharacterService.delete_draft(draft_id, user_id)
+        
+        if result:
+            draft_name = draft.get('name', 'Unnamed draft')
+            return jsonify({
+                'success': True,
+                'message': f"Draft '{draft_name}' deleted successfully"
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to delete draft'
+            }), 500
     
-    result = CharacterService.delete_character_draft(draft_id, user_id)
-    
-    return jsonify(result)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
