@@ -304,7 +304,7 @@ class CharacterService:
             return {'success': False, 'error': str(e)}
     
     @staticmethod
-    def _save_character(character):
+    def save_character(character):
         """
         Internal method to save a character to the database
         

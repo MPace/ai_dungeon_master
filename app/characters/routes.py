@@ -144,11 +144,11 @@ def save_character_route():
             })
         
         # Delete any existing drafts with this ID
-        CharacterService.delete_drafts(character_id)
+        CharacterService.delete_character_draft(character_id)
         
         # Now save the character
         saved_id = CharacterService.save_character(character_data, user_id)
-        
+
         if saved_id is not None:
             # Log this submission to prevent future duplicates
             if submission_id is not None:
