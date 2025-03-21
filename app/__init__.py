@@ -1,22 +1,15 @@
 import os
 from flask import Flask, render_template, redirect, url_for
-from app.extensions import init_extensions
 
 def create_app(config_name='default'):
-    app = Flask(__name__)
+    app = Flask(__name__)   
     
-    # Load configuration based on environment
-    if config_name == 'production':
-        app.config.from_object('app.config.ProductionConfig')
-    elif config_name == 'testing':
-        app.config.from_object('app.config.TestingConfig')
-    else:
-        app.config.from_object('app.config.DevelopmentConfig')
+    # Load configuration
+    app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
     
     # Initialize extensions
-    from app.extensions import db, login_manager
-    db.init_app(app)
-    login_manager.init_app(app)
+    from app.extensions import init_extensions
+    init_extensions(app)
     
     # Register blueprints
     from app.auth.routes import auth_bp
