@@ -1,34 +1,41 @@
 """
-Specialized handler for the xAI (Grok) API
+AI Service
 """
-
-import os
+from app.models.ai_response import AIResponse
 import requests
+import os
+import logging
 import json
-from typing import Dict, List, Any, Optional
+from flask import current_app
 
-class XAIHandler:
-    """
-    Handles communication with xAI/Grok API for generating D&D game responses
-    """
-    def __init__(self, api_key: str, model: str = None):
+logger = logging.getLogger(__name__)
+
+class AIService:
+    """Service for handling AI interactions"""
+    
+    def __init__(self):
+        """Initialize the AI service"""
+        self.api_key = current_app.config.get('AI_API_KEY')
+        self.model = current_app.config.get('AI_MODEL', 'grok-1')
         self.api_url = "https://api.x.ai/v1/chat/completions"
-        self.api_key = api_key
-        self.model = model or "grok-1"  # Default to grok-1 if no model specified
         self.headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"Bearer {self.api_key}",
             "Accept": "application/json"
         }
-        
-    def generate_response(self, 
-                         player_message: str, 
-                         conversation_history: List[Dict[str, Any]],
-                         character_data: Optional[Dict[str, Any]] = None,
-                         game_state: str = "intro") -> str:
+    
+    def generate_response(self, player_message, conversation_history, character_data, game_state="intro"):
         """
-        Generate a response from the xAI API based on the player's message,
-        conversation history, character data, and game state.
+        Generate a response from the AI based on the player's message and context
+        
+        Args:
+            player_message (str): The message from the player
+            conversation_history (list): List of previous messages
+            character_data (dict): Character data
+            game_state (str): Current game state
+            
+        Returns:
+            AIResponse: The AI-generated response
         """
         try:
             # Format conversation history for the API
@@ -46,10 +53,10 @@ class XAIHandler:
                     {"role": "user", "content": player_message}
                 ],
                 "temperature": 0.7,
-                "stream": False  # Important for xAI API
+                "stream": False
             }
             
-            print(f"Sending request to xAI API with model: {self.model}")
+            logger.info(f"Sending request to AI API with model: {self.model}")
             
             # Send request to the API
             response = requests.post(
@@ -66,37 +73,67 @@ class XAIHandler:
             
             # Extract the generated text
             if "choices" in result and len(result["choices"]) > 0:
-                return result["choices"][0]["message"]["content"]
+                response_text = result["choices"][0]["message"]["content"]
+                
+                # Create AIResponse object
+                session_id = character_data.get('session_id')
+                character_id = character_data.get('character_id')
+                user_id = character_data.get('user_id')
+                
+                ai_response = AIResponse(
+                    response_text=response_text,
+                    session_id=session_id,
+                    character_id=character_id,
+                    user_id=user_id,
+                    prompt=player_message,
+                    model_used=self.model,
+                    tokens_used=result.get('usage', {}).get('total_tokens')
+                )
+                
+                return ai_response
             else:
-                print(f"Unexpected response format: {result}")
-                return "The Dungeon Master ponders your request. (Unexpected API response format)"
+                logger.error(f"Unexpected response format: {result}")
+                error_msg = "The Dungeon Master ponders your request. (Unexpected API response format)"
+                return AIResponse(response_text=error_msg)
                 
         except requests.exceptions.RequestException as e:
-            print(f"Error communicating with xAI API: {e}")
+            logger.error(f"Error communicating with AI API: {e}")
+            
             # For 422 errors, try to get more information from the response
             if hasattr(e, 'response') and e.response is not None:
                 try:
                     error_detail = e.response.json()
-                    print(f"API error details: {error_detail}")
+                    logger.error(f"API error details: {error_detail}")
                 except:
-                    print(f"Could not parse error response. Status code: {e.response.status_code}")
+                    logger.error(f"Could not parse error response. Status code: {e.response.status_code}")
                     
                 # Check for common errors
                 if e.response.status_code == 422:
-                    print("This is likely due to invalid request format or missing required fields")
+                    logger.error("This is likely due to invalid request format or missing required fields")
                 elif e.response.status_code == 401:
-                    print("Authentication error - check your API key")
+                    logger.error("Authentication error - check your API key")
                     
-            return "The Dungeon Master seems to be taking a short break. Please try again in a moment."
+            error_msg = "The Dungeon Master seems to be taking a short break. Please try again in a moment."
+            return AIResponse(response_text=error_msg)
         
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error in AI service: {e}")
             import traceback
-            traceback.print_exc()
-            return "The magical connection to the realm seems unstable. The Dungeon Master will return shortly."
+            logger.error(traceback.format_exc())
+            
+            error_msg = "The magical connection to the realm seems unstable. The Dungeon Master will return shortly."
+            return AIResponse(response_text=error_msg)
     
-    def _format_conversation_history(self, history: List[Dict[str, Any]]) -> List[Dict[str, str]]:
-        """Format conversation history to match API requirements"""
+    def _format_conversation_history(self, history):
+        """
+        Format conversation history to match API requirements
+        
+        Args:
+            history (list): Conversation history
+            
+        Returns:
+            list: Formatted history
+        """
         formatted = []
         
         for entry in history[-10:]:  # Only use the last 10 messages to avoid context overflow
@@ -108,8 +145,17 @@ class XAIHandler:
             
         return formatted
     
-    def _create_system_prompt(self, game_state: str, character_data: Optional[Dict[str, Any]]) -> str:
-        """Create a system prompt based on the current game state and character data"""
+    def _create_system_prompt(self, game_state, character_data):
+        """
+        Create a system prompt based on the current game state and character data
+        
+        Args:
+            game_state (str): Current game state
+            character_data (dict): Character data
+            
+        Returns:
+            str: System prompt
+        """
         base_prompt = (
             "You are an expert Dungeon Master for a Dungeons & Dragons 5th Edition game. "
             "Create immersive, engaging responses that follow D&D 5e rules. "
@@ -159,7 +205,6 @@ class XAIHandler:
             if character_data.get("race"):
                 race_key = character_data["race"]
                 race_name = race_key.capitalize()
-                # Add special race info if available from the frontend (not passed directly)
                 base_prompt += f"\nRace: {race_name}"
             if character_data.get("class"):
                 class_key = character_data["class"]
