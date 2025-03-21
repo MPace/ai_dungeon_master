@@ -40,8 +40,5 @@ class ProductionConfig(Config):
     # In production, SECRET_KEY should always be set from environment
     SECRET_KEY = os.environ.get('FLASK_SECRET_KEY')
     
-    # Security settings for production
-    SESSION_COOKIE_SECURE = True  # Require HTTPS
-    
     # Set stricter SameSite policy in production
     SESSION_COOKIE_SAMESITE = 'Strict'
