@@ -23,7 +23,8 @@ def create_app(config_name='default'):
         SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript access
         SESSION_COOKIE_SAMESITE='Lax',  # Controls cross-site request behavior
         PERMANENT_SESSION_LIFETIME=timedelta(days=1),  # Session expires after 1 day
-        SESSION_COOKIE_PATH='/'
+        SESSION_COOKIE_PATH='/',
+        SESSION_COOKIE_NAME='session'
     )
 
     # Initialize extensions
