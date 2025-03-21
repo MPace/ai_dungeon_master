@@ -315,7 +315,7 @@ function sendToServer(message) {
     };
     
     // Send API request
-    fetch('/api/send-message', {
+    fetch('/game/api/send-message', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -391,7 +391,7 @@ function setupDiceEvents() {
  */
 function rollDice(diceType) {
     // Send API request
-    fetch('/api/roll-dice', {
+    fetch('/game/api/roll-dice', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
