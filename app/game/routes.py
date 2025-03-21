@@ -86,7 +86,7 @@ def play_game(character_id):
     except Exception as e:
         logger.error(f"Error in play_game route: {e}")
         import traceback
-        logger.error(traceback.format_exec())
+        logger.error(traceback.format_exc())
         flash('Error loading character: ' + str(e), 'error')
         return redirect(url_for('game.dashboard'))
 
