@@ -46,7 +46,9 @@ def login():
         logging.info(f"Session after login: {dict(session)}")
         
         flash('Login successful!', 'success')
-        return redirect(url_for('game.dashboard'))
+        resp = redirect(url_for('game.dashboard'))
+        logger.info(f"Response headers:{resp.headers}")
+        return resp
     
     flash('Invalid username or password', 'error')
     return redirect(url_for('auth.index'))
