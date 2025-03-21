@@ -148,7 +148,7 @@ def save_character_route():
         
         # Now save the character
         result = CharacterService.create_character(character_data, user_id)
-        saved_id = character_id if result ['succes'] else None
+        saved_id = character_id if result ['success'] else None
 
         if saved_id is not None:
             # Log this submission to prevent future duplicates
