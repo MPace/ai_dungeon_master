@@ -265,29 +265,12 @@ def delete_character_route(character_id):
     try:
         # Get user_id from session
         user_id = session.get('user_id')
+        logger.info(f"Deleting character {character_id} for user {user_id}")
         
-        # Check if character exists and belongs to the user
-        character = CharacterService.get_character(character_id, user_id)
-        
-        if not character:
-            return jsonify({
-                'success': False,
-                'error': 'Character not found or access denied'
-            }), 404
-        
-        # Delete the character
+        # Use service to delete character
         result = CharacterService.delete_character(character_id, user_id)
         
-        if result:
-            return jsonify({
-                'success': True,
-                'message': f"Character '{character.get('name', 'Unknown')}' deleted successfully"
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to delete character'
-            }), 500
+        return jsonify(result)
     
     except Exception as e:
         import traceback
@@ -303,34 +286,17 @@ def delete_draft_route(draft_id):
     try:
         # Get user_id from session
         user_id = session.get('user_id')
+        logger.info(f"Deleting draft {draft_id} for user {user_id}")
         
-        # Check if draft exists and belongs to the user
-        draft = CharacterService.get_draft(draft_id, user_id)
+        # Use service to delete draft
+        result = CharacterService.delete_character_draft(draft_id, user_id)
         
-        if not draft:
-            return jsonify({
-                'success': False,
-                'error': 'Draft not found or access denied'
-            }), 404
-        
-        # Delete the draft
-        result = CharacterService.delete_draft(draft_id, user_id)
-        
-        if result:
-            draft_name = draft.get('name', 'Unnamed draft')
-            return jsonify({
-                'success': True,
-                'message': f"Draft '{draft_name}' deleted successfully"
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to delete draft'
-            }), 500
+        return jsonify(result)
     
     except Exception as e:
+        logger.error(f"Error in delete_draft_route: {e}")
         import traceback
-        traceback.print_exc()
+        logger.error(traceback.format_exc())
         return jsonify({
             'success': False,
             'error': str(e)

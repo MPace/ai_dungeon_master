@@ -102,7 +102,8 @@ function deleteCharacter(characterId) {
         if (data.success) {
             // Show success message
             showAlert('success', data.message || 'Character deleted successfully');
-            
+            console.log(data.message);
+        
             // Remove the character from the UI
             const characterRow = document.querySelector(`tr[data-character-id="${characterId}"]`);
             if (characterRow) {
@@ -115,6 +116,7 @@ function deleteCharacter(characterId) {
                 window.location.reload();
             }
         } else {
+            console.error(data.error);
             showAlert('danger', data.error || 'Failed to delete character');
         }
     })
@@ -157,8 +159,9 @@ function deleteDraft(draftId) {
         
         if (data.success) {
             // Show success message
+            console.log(data.message);
             showAlert('success', data.message || 'Draft deleted successfully');
-            
+    
             // Remove the draft from the UI
             const draftRow = document.querySelector(`tr[data-draft-id="${draftId}"]`);
             if (draftRow) {
@@ -171,6 +174,7 @@ function deleteDraft(draftId) {
                 window.location.reload();
             }
         } else {
+            console.error('Error:', error);
             showAlert('danger', data.error || 'Failed to delete draft');
         }
     })

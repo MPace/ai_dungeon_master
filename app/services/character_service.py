@@ -110,44 +110,35 @@ class CharacterService:
     
     @staticmethod
     def get_character(character_id, user_id=None):
-        """
-        Get a character by ID
-        
-        Args:
-            character_id (str): Character ID
-            user_id (str, optional): User ID for permission check
-            
-        Returns:
-            dict: Result with success status and character
-        """
-        try:
-            db = get_db()
-            if db is None:
-                logger.error("Database connection failed when getting character")
-                return {'success': False, 'error': 'Database connection error'}
-            
-            # Build query
-            query = {'character_id': character_id}
-            if user_id:
-                query['user_id'] = user_id
-            
-            # Try to find in main characters collection
-            character_data = db.characters.find_one(query)
-            
-            # If not found, try drafts
-            if not character_data:
-                character_data = db.character_drafts.find_one(query)
-            
-            if not character_data:
-                logger.warning(f"Character not found: {character_id}")
-                return {'success': False, 'error': 'Character not found'}
-            
-            character = Character.from_dict(character_data)
-            return {'success': True, 'character': character}
-            
-        except Exception as e:
-            logger.error(f"Error getting character: {str(e)}")
-            return {'success': False, 'error': str(e)}
+        """Get a character from the database"""
+        db = get_db()
+        if db is not None:
+            try:
+                # Build query
+                query = {'character_id': character_id}
+                if user_id is not None:
+                    query['user_id'] = user_id
+                    
+                # Log what we're looking for
+                import logging
+                logging.info(f"Searching for character with: {query}")
+                
+                # Find the character
+                character = db.characters.find_one(query)
+                
+                if character:
+                    # Convert ObjectId to string for JSON serialization
+                    character['_id'] = str(character['_id'])
+                    logging.info(f"Found character: {character.get('name')} with user_id: {character.get('user_id')}")
+                    return character
+                else:
+                    logging.warning(f"No character found for {query}")
+                    return None
+            except Exception as e:
+                import logging
+                logging.error(f"Error getting character: {e}")
+                return None
+        return None
     
     @staticmethod
     def list_characters(user_id):
