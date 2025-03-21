@@ -344,10 +344,3 @@ def init_extensions(app):
     # Register close_db to be called when a request ends
     app.teardown_appcontext(close_db)
     
-    # Configure session handling
-    app.config.update(
-        SESSION_COOKIE_SECURE=False,  # Set to True only if using HTTPS
-        SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript access
-        SESSION_COOKIE_SAMESITE='Lax',  # Controls cross-site request behavior
-        PERMANENT_SESSION_LIFETIME=timedelta(days=1)  # Session expires after 1 day
-    )

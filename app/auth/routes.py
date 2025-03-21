@@ -37,10 +37,13 @@ def login():
         session['username'] = user.get('username')
         
         # Force session to be saved
+        session.permanent = True
         session.modified = True
         
         # Update last_login in user record
         AuthService.update_last_login(user.get('_id'))
+
+        logging.info(f"Session after login: {dict(session)}")
         
         flash('Login successful!', 'success')
         return redirect(url_for('game.dashboard'))
