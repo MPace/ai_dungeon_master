@@ -47,6 +47,7 @@ def login():
         
         flash('Login successful!', 'success')
         resp = redirect(url_for('game.dashboard'))
+        resp.set_cookie('session', session.sid if hasattr(session, 'sid') else 'test_sid')
         logger.info(f"Response headers:{dict(resp.headers)}")
         return resp
     
