@@ -377,3 +377,49 @@ class CharacterService:
             import traceback
             logger.error(traceback.format_exc())
             return False
+    
+    @staticmethod
+    def check_submission(submission_id, user_id):
+        """
+        Check if a submission ID has already been processed
+        to prevent duplicate submissions
+        """
+        db = get_db()
+        if db is not None:
+            try:
+                # Look for this submission in the log
+                return db.submission_log.find_one({
+                    'submission_id': submission_id,
+                    'user_id': user_id
+                })
+            except Exception as e:
+                import logging
+                logging.error(f"Error checking submission: {e}")
+        return None
+    
+    @staticmethod
+    def log_submission(submission_id, character_id, user_id):
+        """
+        Log a submission to prevent future duplicates
+        """
+        db = get_db()
+        if db is not None:
+            try:
+                # Ensure the collection exists
+                if 'submission_log' not in db.list_collection_names():
+                    db.create_collection('submission_log')
+                    # Add TTL index to auto-expire log entries after 1 day
+                    db.submission_log.create_index("timestamp", expireAfterSeconds=86400)
+                
+                # Add the submission to the log
+                db.submission_log.insert_one({
+                    'submission_id': submission_id,
+                    'character_id': character_id,
+                    'user_id': user_id,
+                    'timestamp': datetime.utcnow()
+                })
+                return True
+            except Exception as e:
+                import logging
+                logging.error(f"Error logging submission: {e}")
+        return False
