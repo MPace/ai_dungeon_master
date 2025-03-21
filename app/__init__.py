@@ -2,6 +2,7 @@ import os
 from flask import Flask, render_template, redirect, url_for
 import logging
 from datetime import timedelta
+from flask_session import Session
 
 logging.basicConfig(
     filename='app.log',
@@ -64,8 +65,9 @@ def configure_app(app, config_name):
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
     app.config['SESSION_COOKIE_PATH'] = '/'
     app.config['SESSION_COOKIE_NAME'] = 'session_aidm'
-
-
+    app.config['SESSION_TYPE'] = 'filesystem'
+    Session(app)
+    
     # Load .env file if exists
     if os.path.exists('.env'):
         from dotenv import load_dotenv
