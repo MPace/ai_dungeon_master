@@ -67,7 +67,7 @@ def configure_app(app, config_name):
     app.config['SESSION_COOKIE_NAME'] = 'session_aidm'
     app.config['SESSION_TYPE'] = 'filesystem'
     Session(app)
-    
+
     # Load .env file if exists
     if os.path.exists('.env'):
         from dotenv import load_dotenv
@@ -87,7 +87,7 @@ def register_blueprints(app):
     
     # Register blueprints
     app.register_blueprint(auth_bp)
-    app.register_blueprint(characters_bp)
+    app.register_blueprint(characters_bp, url_prefix='/character')
     app.register_blueprint(game_bp)
 
 def register_error_handlers(app):
