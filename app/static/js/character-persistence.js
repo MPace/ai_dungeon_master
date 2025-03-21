@@ -157,7 +157,7 @@ function saveCharacterDraft(characterData) {
         showSavingIndicator();
         
         // Send API request
-        fetch('/api/save-character-draft', {
+        fetch('/characters/api/save-character-draft', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
