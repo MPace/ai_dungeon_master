@@ -314,6 +314,12 @@ function sendToServer(message) {
         character_data: character
     };
     
+    console.log("Sending data:", {
+        message_length: message.length,
+        session_id: sessionId,
+        character_id: character.character_id
+    });
+    
     // Send API request
     fetch('/game/api/send-message', {
         method: 'POST',
@@ -322,6 +328,7 @@ function sendToServer(message) {
         },
         body: JSON.stringify(data)
     })
+
     .then(response => {
         if (!response.ok) {
             throw new Error(`Server returned ${response.status}: ${response.statusText}`);
@@ -542,6 +549,9 @@ function checkForExistingSession() {
 function sendInitialMessage() {
     // Create an introduction for the AI
     const intro = `I am ${character.name}, a level ${character.level} ${character.race} ${character.class}. This is the start of our adventure. Please introduce the campaign setting and my first scene.`;
+    
+    // Add a log to help debug the message
+    console.log("Sending initial message:", intro);
     
     // Send to server
     sendToServer(intro);

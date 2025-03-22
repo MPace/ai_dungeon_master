@@ -27,18 +27,24 @@ class GameService:
             dict: Result with success status and session
         """
         try:
-            # Verify character ownership
-            character_result = CharacterService.get_character(character_id, user_id)
-            if not character_result['success']:
-                return character_result
+            # Get character data to verify ownership
+            character = CharacterService.get_character(character_id, user_id)
+            if character is None:
+                logger.error(f"Character not found for session creation: {character_id}")
+                return {'success': False, 'error': 'Character not found'}
             
-            character = character_result['character']
+            # Create a new session object
+            session_id = str(uuid.uuid4())
             
-            # Create a new session
-            session = GameSession(
+            # Create a new GameSession object
+            game_session = GameSession(
+                session_id=session_id,
                 character_id=character_id,
                 user_id=user_id,
-                game_state='intro'
+                game_state='intro',
+                history=[],
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
             )
             
             # Save session to database
@@ -47,10 +53,14 @@ class GameService:
                 logger.error("Database connection failed when creating session")
                 return {'success': False, 'error': 'Database connection error'}
             
-            result = db.sessions.insert_one(session.to_dict())
+            # Convert GameSession to dictionary for storage
+            session_dict = game_session.to_dict()
+            
+            # Insert into database
+            result = db.sessions.insert_one(session_dict)
             
             if result.inserted_id:
-                logger.info(f"Game session created: {session.session_id}")
+                logger.info(f"Game session created: {session_id}")
                 
                 # Update character's last_played timestamp
                 db.characters.update_one(
@@ -58,11 +68,11 @@ class GameService:
                     {'$set': {'last_played': datetime.utcnow()}}
                 )
                 
-                return {'success': True, 'session': session}
+                return {'success': True, 'session': game_session}
             else:
                 logger.error(f"Failed to create game session")
                 return {'success': False, 'error': 'Failed to create game session'}
-            
+                
         except Exception as e:
             logger.error(f"Error creating game session: {str(e)}")
             import traceback
@@ -121,23 +131,67 @@ class GameService:
             dict: Result with success status and AI response
         """
         try:
-            # Get session
-            session_result = GameService.get_session(session_id, user_id)
-            if not session_result['success']:
-                # If session doesn't exist, create a new one with character data
-                if 'character_id' in message:
-                    character_id = message.get('character_id')
-                    session_result = GameService.create_session(character_id, user_id)
-                    if not session_result['success']:
-                        return session_result
+            # Check if we have a session ID
+            if session_id is not None:
+                # Try to get existing session
+                session_result = GameService.get_session(session_id, user_id)
+                if not session_result['success']:
+                    logger.warning(f"Existing session not found: {session_id}, creating new session")
+                    # We'll continue below to create a new session
                 else:
-                    return session_result
+                    session = session_result['session']
+                    # Add user message to session history
+                    session.add_message('player', message)
+                    
+                    # Proceed with existing session processing
+                    return GameService._process_message(session, message, user_id)
+            
+            # If we get here, we need to create a new session
+            # Check if we have character_id in the message or character_data
+            character_id = None
+            
+            # Try to extract character_id from message if it's in JSON format
+            if isinstance(message, dict) and 'character_id' in message:
+                character_id = message.get('character_id')
+            # Or if it was properly sent in character_data
+            elif isinstance(message, str) and hasattr(message, 'character_data'):
+                character_id = message.character_data.get('character_id')
+            
+            # If no character_id found, try to get it from the first character
+            if character_id is None:
+                # Get the first character for this user
+                character_result = CharacterService.list_characters(user_id)
+                if character_result['success'] and character_result['characters']:
+                    character = character_result['characters'][0]
+                    character_id = character.character_id
+                    logger.info(f"Using first character: {character_id}")
+                else:
+                    return {'success': False, 'error': 'No characters found for this user'}
+            
+            # Create a new session with the character_id
+            session_result = GameService.create_session(character_id, user_id)
+            if not session_result['success']:
+                return session_result
             
             session = session_result['session']
             
             # Add user message to session history
             session.add_message('player', message)
             
+            # Process the message
+            return GameService._process_message(session, message, user_id)
+            
+        except Exception as e:
+            logger.error(f"Error sending message: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            
+            return {'success': False, 'error': str(e)}
+    
+    @staticmethod
+    def _process_message(session, message, user_id):
+        """Helper method to process a message in an existing session"""
+        try:
             # Get character data
             character_result = CharacterService.get_character(session.character_id, user_id)
             if not character_result['success']:
@@ -189,14 +243,14 @@ class GameService:
             else:
                 logger.error(f"Failed to update session: {session.session_id}")
                 return {'success': False, 'error': 'Failed to update session'}
-            
+        
         except Exception as e:
-            logger.error(f"Error sending message: {str(e)}")
+            logger.error(f"Error processing message: {str(e)}")
             import traceback
             logger.error(traceback.format_exc())
             
             return {'success': False, 'error': str(e)}
-    
+
     @staticmethod
     def roll_dice(dice_type, modifier=0):
         """
