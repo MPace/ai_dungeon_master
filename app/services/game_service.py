@@ -6,6 +6,7 @@ from app.services.ai_service import AIService
 from app.services.character_service import CharacterService
 from app.extensions import get_db
 from datetime import datetime
+import uuid
 import logging
 import random
 
