@@ -94,25 +94,48 @@ def play_game(character_id):
 @login_required
 def send_message():
     """Process a message from the player and return a DM response"""
-    data = request.json
-    message = data.get('message', '')
-    session_id = data.get('session_id')
-    character_data = data.get('character_data')
-    
-    user_id = session.get('user_id')
-    
-    # Send message and get response
-    result = GameService.send_message(session_id, message, user_id)
-    
-    if result['success']:
+    try:
+        data = request.json
+        message = data.get('message', '')
+        session_id = data.get('session_id')
+        character_data = data.get('character_data')
+        
+        user_id = session.get('user_id')
+        
+        # Log received data for debugging
+        logger.info(f"Received message request: message={message[:20]}..., session_id={session_id}, user_id={user_id}")
+        
+        # Validate required inputs
+        if not message:
+            return jsonify({
+                'error': 'No message provided'
+            }), 400
+            
+        if not user_id:
+            return jsonify({
+                'error': 'User not authenticated'
+            }), 401
+
+        # Send message and get response
+        result = GameService.send_message(session_id, message, user_id)
+        
+        if result['success']:
+            return jsonify({
+                'response': result['response'],
+                'session_id': result['session_id'],
+                'game_state': result['game_state']
+            })
+        else:
+            return jsonify({
+                'error': result.get('error', 'Failed to process message')
+            }), 500
+        
+    except Exception as e:
+        logger.error(f"Unhandled exception in send_message: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         return jsonify({
-            'response': result['response'],
-            'session_id': result['session_id'],
-            'game_state': result['game_state']
-        })
-    else:
-        return jsonify({
-            'error': result.get('error', 'Failed to process message')
+            'error': f"Server error: {str(e)}"
         }), 500
 
 @game_bp.route('/api/roll-dice', methods=['POST'])
