@@ -158,16 +158,16 @@ class GameService:
             elif isinstance(message, str) and hasattr(message, 'character_data'):
                 character_id = message.character_data.get('character_id')
             
-            # If no character_id found, try to get it from the first character
-            if character_id is None:
-                # Get the first character for this user
-                character_result = CharacterService.list_characters(user_id)
-                if character_result['success'] and character_result['characters']:
-                    character = character_result['characters'][0]
-                    character_id = character.character_id
-                    logger.info(f"Using first character: {character_id}")
-                else:
-                    return {'success': False, 'error': 'No characters found for this user'}
+            # Try to get the character_id from character_data
+            character_id = None
+            
+            # Get the first character for this user
+            characters = CharacterService.list_characters(user_id)
+            if characters and len(characters) > 0:
+                character_id = characters[0].character_id
+                logger.info(f"Using first character: {character_id}")
+            else:
+                return {'success': False, 'error': "No characters found for this user"}
             
             # Create a new session with the character_id
             session_result = GameService.create_session(character_id, user_id)
@@ -194,11 +194,10 @@ class GameService:
         """Helper method to process a message in an existing session"""
         try:
             # Get character data
-            character_result = CharacterService.get_character(session.character_id, user_id)
-            if not character_result['success']:
-                return character_result
-            
-            character = character_result['character']
+            character = CharacterService.get_character(session.character_id, user_id)
+            if character is None:
+                logger.error(f"Character not found: {session.character_id}")
+                return {'success': False, 'error': 'Character not found'}
             
             # Call AI service to generate response
             ai_service = AIService()
