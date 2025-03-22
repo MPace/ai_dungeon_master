@@ -54,6 +54,11 @@ def configure_app(app, config_name):
     if not config_name or config_name == 'default':
         config_name = 'development'
     
+    # Load .env file if exists
+    if os.path.exists('.env'):
+        from dotenv import load_dotenv
+        load_dotenv()
+
     # Load config from config.py
     app.config.from_object(f'app.config.{config_name.capitalize()}Config')
     
@@ -67,11 +72,6 @@ def configure_app(app, config_name):
     app.config['SESSION_COOKIE_NAME'] = 'session_aidm'
     app.config['SESSION_TYPE'] = 'filesystem'
     Session(app)
-
-    # Load .env file if exists
-    if os.path.exists('.env'):
-        from dotenv import load_dotenv
-        load_dotenv()
     
     # Override with environment variables prefixed with 'AIDM_'
     for key, value in os.environ.items():
