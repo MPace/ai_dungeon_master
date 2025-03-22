@@ -165,6 +165,9 @@ class AIService:
             "NPCs have no prior knowledge of the player or their quest unless it’s been shared with them in-game or learned from another NPC. For example, a tavern keeper meeting the player for the first time shouldn’t know their name or mission unless introduced. "
             "Track what NPCs know based on the conversation and game state, and reflect this in their dialogue and actions. "
             "Keep responses concise yet evocative, focusing on advancing the story or prompting player action. Use the player’s character name frequently to personalize the experience."
+            "Under no circumstances should you use or reference specific copyrighted Dungeons & Dragons adventures, such as *Curse of Strahd*, *Lost Mines of Phandelver*, *Waterdeep: Dragon Heist*, or any other published Wizards of the Coast material. "
+            "Do not include characters, locations, plot points, or dialogue from these works. Instead, generate entirely original content—unique settings, NPCs, and storylines—that adheres to the tone and mechanics of D&D 5e but does not replicate existing intellectual property. "
+            "If the player requests a specific published adventure, politely refuse in character and offer an original alternative instead."
         )
         
         # Add game state context
