@@ -195,7 +195,9 @@ function updateCharacterCounter() {
     const counterBadge = document.querySelector('.card-header .badge[data-counter="characters"]');
     
     if (characterList && counterBadge) {
-        const characterCount = characterList.querySelectorAll('tr').length;
+        // Only count rows that have a valid character ID
+        const validRows = characterList.querySelectorAll('tr[data-character-id]');
+        const characterCount = validRows.length;
         counterBadge.textContent = characterCount;
         
         // If no characters left, show the empty message
@@ -220,7 +222,9 @@ function updateDraftCounter() {
     const counterBadge = document.querySelector('.card-header .badge[data-counter="drafts"]');
     
     if (draftList && counterBadge) {
-        const draftCount = draftList.querySelectorAll('tr').length;
+        // Only count rows that have a valid draft ID
+        const validRows = draftList.querySelectorAll('tr[data-draft-id]');
+        const draftCount = validRows.length;
         counterBadge.textContent = draftCount;
         
         // If no drafts left, hide the drafts section

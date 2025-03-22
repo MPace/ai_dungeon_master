@@ -36,9 +36,19 @@ def dashboard():
     
     try:
         # Get characters and drafts from services
-        characters = CharacterService.list_characters(user_id)
-        drafts = CharacterService.list_character_drafts(user_id)
+        character_result = CharacterService.list_characters(user_id)
+        draft_result = CharacterService.list_character_drafts(user_id)
         
+        # Filter out characters with missing IDs
+        if character_result['success']:
+            characters = [c for c in character_result['characters']
+                          if hasattr(c, 'character_id') and c.character_id]
+
+        # Filter out drafts with missing IDs
+        if draft_result['success']:
+            drafts = [d for d in draft_result['drafts']
+                      if hasattr(d, 'character_id') and d.character_id]
+
         # Render the template
         return render_template('user.html',
                               username=session.get('username', 'User'),
