@@ -14,9 +14,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:wght@400;500&display=swap" rel="stylesheet">
     <!-- Additional game interface styles -->
     <style>
-        body, html {
-            height: 100%;
-            overflow: hidden;
+        /* Main theme colors from style.css */
+        body {
+            font-family: 'Lora', serif;
+            background-color: #171717;
+            background-image: url('/static/images/parchment-bg.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            color: #e0e0e0;
+        }
+        
+        h1, h2, h3, h4, h5, h6, .card-header {
+            font-family: 'Cinzel', serif;
         }
         
         .game-container {
@@ -67,31 +77,61 @@
         .character-card, .dice-card {
             background-color: rgba(31, 31, 31, 0.9);
             border: 1px solid #3a3a3a;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 20px rgba(255, 100, 0, 0.3);
+            border-radius: 15px;
+            transition: all 0.3s ease;
         }
         
-        /* Message styling enhancements - themed like character creator */
+        .character-card:hover, .dice-card:hover {
+            box-shadow: 0 0 30px rgba(255, 100, 0, 0.5);
+        }
+        
+        /* Message styling using the project theme */
         .message {
             max-width: 85%;
             margin-bottom: 20px;
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 12px 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.3s ease-in-out;
         }
         
         .dm-message {
-            background-color: #171717;
+            background-color: #2a3640;
             border-left: 4px solid #ff6400;
-            color: #ff6400;
             align-self: flex-start;
+            color: #e0e0e0;
         }
         
         .player-message {
-            background-color: #ff6400;
+            background-color: #3b313d;
             border-right: 4px solid #ff6400;
-            color: #ffffff;
             align-self: flex-end;
             text-align: right;
+            color: #e0e0e0;
+        }
+        
+        /* Card and button styling from main theme */
+        .btn-outline-primary {
+            border-color: #ff6400;
+            color: #ff6400;
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: #ff6400;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 100, 0, 0.4);
+        }
+        
+        .btn-outline-secondary {
+            border-color: #6c8bac;
+            color: #6c8bac;
+        }
+        
+        .btn-outline-secondary:hover {
+            background-color: #6c8bac;
+            color: #171717;
+            box-shadow: 0 0 15px rgba(108, 139, 172, 0.4);
         }
         
         /* For mobile responsiveness */
