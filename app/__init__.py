@@ -87,7 +87,7 @@ def register_blueprints(app):
     
     # Register blueprints
     app.register_blueprint(auth_bp)
-    app.register_blueprint(characters_bp, url_prefix='/character')
+    app.register_blueprint(characters_bp, url_prefix='/characters')
     app.register_blueprint(game_bp)
 
 def register_error_handlers(app):
