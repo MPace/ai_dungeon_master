@@ -46,14 +46,29 @@ function handleResize() {
     const diceRoller = document.querySelector('.dice-roller-container');
     
     // Keep dice roller on the right side regardless of screen size
-    // Just adjust its position slightly for very small screens
     diceRoller.style.right = '20px';
     diceRoller.style.left = 'auto';
     
-    if (window.innerWidth < 400) {
-        diceRoller.style.bottom = '80px'; // Move up a bit on very small screens to avoid overlap with input
+    if (window.innerWidth < 768) {
+        // On mobile, make sidebar full width and adjust dice roller position
+        if (sidebar) {
+            sidebar.style.width = '100%';
+            sidebar.style.height = 'calc(100% - 260px)'; // Leave more space for dice roller
+        }
+        if (diceRoller) {
+            diceRoller.style.width = 'calc(100% - 40px)'; // Full width minus padding
+            diceRoller.style.bottom = '80px'; // Move up a bit to avoid input field
+        }
     } else {
-        diceRoller.style.bottom = '20px';
+        // On desktop, maintain the fixed width sidebar and dice roller
+        if (sidebar) {
+            sidebar.style.width = '320px';
+            sidebar.style.height = 'calc(100% - 200px)';
+        }
+        if (diceRoller) {
+            diceRoller.style.width = '320px';
+            diceRoller.style.bottom = '20px';
+        }
     }
     
     // Ensure chat is scrolled to bottom on resize
