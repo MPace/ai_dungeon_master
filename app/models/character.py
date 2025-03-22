@@ -48,6 +48,12 @@ class Character:
         if not data:
             return None
         
+        if 'character_id' not in data or not data['character_id']:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Skipping character record missing character_id: {data.get('_id')}")
+            return None
+        
         # Convert _id from ObjectId to string if present
         _id = data.get('_id')
         if isinstance(_id, ObjectId):

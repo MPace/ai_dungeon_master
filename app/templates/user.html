@@ -104,6 +104,7 @@
                                 </thead>
                                 <tbody>
                                     {% for character in characters %}
+                                    {% if character and character.character_id %}
                                     <tr data-character-id="{{ character.character_id }}">
                                         <td class="align-middle">{{ character.name }}</td>
                                         <td class="align-middle">{{ character.race }}</td>
@@ -128,6 +129,7 @@
                                             </div>
                                         </td>
                                     </tr>
+                                    {% endif %}
                                     {% endfor %}
                                 </tbody>
                             </table>
@@ -164,6 +166,7 @@
                             </thead>
                             <tbody>
                                 {% for draft in drafts %}
+                                {% if draft and draft.character_id %}
                                 <tr data-draft-id="{{ draft.character_id }}">
                                     <td class="align-middle">{{ draft.name|default('Unnamed') }}</td>
                                     <td class="align-middle">{{ draft.race|default('-') }}</td>
@@ -186,6 +189,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                {% endif %}
                                 {% endfor %}
                             </tbody>
                         </table>

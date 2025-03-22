@@ -167,7 +167,9 @@ class CharacterService:
             }).sort('last_played', -1))
             
             characters = [Character.from_dict(data) for data in characters_data]
-            
+            # Filter out None values that might be returned from the from_dict
+            characters = [c for c in characters if c is not None]
+
             return {'success': True, 'characters': characters}
             
         except Exception as e:
@@ -196,6 +198,8 @@ class CharacterService:
             }).sort('lastUpdated', -1))
             
             drafts = [Character.from_dict(data) for data in drafts_data]
+            #Filter out None values that might be returned from the database
+            drafts = [d for d in drafts if d is not None]
             
             return {'success': True, 'drafts': drafts}
             
