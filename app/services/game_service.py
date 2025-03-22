@@ -43,7 +43,7 @@ class GameService:
             
             # Save session to database
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed when creating session")
                 return {'success': False, 'error': 'Database connection error'}
             
@@ -84,7 +84,7 @@ class GameService:
         """
         try:
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed when getting session")
                 return {'success': False, 'error': 'Database connection error'}
             
@@ -162,7 +162,7 @@ class GameService:
             
             # Save updated session
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed when saving session")
                 return {'success': False, 'error': 'Database connection error'}
             

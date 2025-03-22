@@ -59,7 +59,7 @@ class AuthService:
         """
         try:
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed during registration")
                 return {'success': False, 'error': 'Database connection error'}
             
@@ -115,7 +115,7 @@ class AuthService:
         """
         try:
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed during login")
                 return {'success': False, 'error': 'Database connection error'}
             
@@ -184,7 +184,7 @@ class AuthService:
                 return None
             
             db = get_db()
-            if not db:
+            if db is None:
                 logger.error("Database connection failed when getting current user")
                 return None
             
