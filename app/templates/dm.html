@@ -12,20 +12,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- Google Font for Fantasy Theme -->
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:wght@400;500&display=swap" rel="stylesheet">
-    <!-- Additional modern fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600&display=swap" rel="stylesheet">
     <!-- Additional game interface styles -->
     <style>
         body, html {
             height: 100%;
             overflow: hidden;
-            background-color: #0a0a0a;
-            color: #e6e6e6;
-        }
-        
-        .navbar {
-            background-color: #0a0a0a !important;
-            border-bottom: 1px solid #333 !important;
         }
         
         .game-container {
@@ -34,7 +25,6 @@
             overflow: hidden;
         }
         
-        /* Chat column styles */
         .chat-column {
             flex: 1;
             display: flex;
@@ -46,110 +36,65 @@
         .chat-window {
             flex: 1;
             overflow-y: auto;
-            border-radius: 10px 10px 0 0;
+            border-radius: 8px 8px 0 0;
             padding: 15px;
             margin-bottom: 0;
             border-bottom: none;
-            background-color: #121212;
-            scrollbar-width: thin;
-            scrollbar-color: #333 #121212;
-        }
-        
-        .chat-window::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .chat-window::-webkit-scrollbar-track {
-            background: #121212;
-        }
-        
-        .chat-window::-webkit-scrollbar-thumb {
-            background-color: #333;
-            border-radius: 6px;
+            background-color: rgba(31, 31, 31, 0.9);
         }
         
         .chat-input-container {
-            background-color: #121212;
-            border-radius: 0 0 10px 10px;
+            background-color: rgba(31, 31, 31, 0.9);
+            border-radius: 0 0 8px 8px;
             padding: 15px;
-            border-top: 1px solid #333;
+            border-top: 1px solid #3a3a3a;
         }
         
-        /* Sidebar styles */
         .sidebar-column {
             width: 320px;
             height: calc(100% - 200px); /* Reserve space for dice roller */
             overflow-y: auto;
             padding: 15px;
-            scrollbar-width: thin;
-            scrollbar-color: #333 #0a0a0a;
         }
         
-        .sidebar-column::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .sidebar-column::-webkit-scrollbar-track {
-            background: #0a0a0a;
-        }
-        
-        .sidebar-column::-webkit-scrollbar-thumb {
-            background-color: #333;
-            border-radius: 6px;
-        }
-        
-        /* Dice roller */
         .dice-roller-container {
             position: fixed;
             bottom: 20px;
             right: 20px;
             z-index: 1000;
-            width: 320px;
+            width: 320px; /* Match sidebar width */
         }
         
-        /* Card styling */
-        .card {
-            background-color: #161616;
-            border: 1px solid #333;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        .character-card, .dice-card {
+            background-color: rgba(31, 31, 31, 0.9);
+            border: 1px solid #3a3a3a;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
         
-        .card-header {
-            background-color: #1a1a1a;
-            border-bottom: 1px solid #333;
-            font-family: 'Raleway', sans-serif;
-            font-weight: 600;
-        }
-        
-        .card-body {
-            background-color: #161616;
-        }
-        
-        /* Message styling */
+        /* Message styling consistent with project theme */
         .message {
-            max-width: 80%;
+            max-width: 85%;
             margin-bottom: 20px;
-            border-radius: 12px;
-            padding: 14px 18px;
-            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 12px 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             animation: fadeIn 0.3s ease-in-out;
-            line-height: 1.5;
         }
         
         .dm-message {
-            background-color: #1e1e24;
-            border-left: 3px solid #4d5bce;
+            background-color: rgba(41, 41, 51, 0.8);
+            border-left: 4px solid #3a3a3a;
             align-self: flex-start;
-            color: #e6e6e6;
+            color: #e0e0e0;
         }
         
         .player-message {
-            background-color: #232129;
-            border-right: 3px solid #7e57c2;
+            background-color: rgba(51, 41, 51, 0.8);
+            border-right: 4px solid #3a3a3a;
             align-self: flex-end;
             text-align: right;
-            color: #e6e6e6;
+            color: #e0e0e0;
         }
         
         @keyframes fadeIn {
@@ -159,123 +104,23 @@
         
         /* Button styling */
         .btn-outline-primary {
-            color: #4d5bce;
-            border-color: #4d5bce;
-            background-color: transparent;
-            transition: all 0.3s ease;
+            border-color: #6c8bac;
+            color: #6c8bac;
         }
         
-        .btn-outline-primary:hover, .btn-outline-primary:focus {
-            background-color: #4d5bce;
-            color: #fff;
-            box-shadow: 0 0 10px rgba(77, 91, 206, 0.4);
+        .btn-outline-primary:hover {
+            background-color: #6c8bac;
+            color: #171717;
         }
         
         .btn-outline-secondary {
-            color: #7e57c2;
-            border-color: #7e57c2;
-            background-color: transparent;
-            transition: all 0.3s ease;
+            border-color: #6c8bac;
+            color: #6c8bac;
         }
         
-        .btn-outline-secondary:hover, .btn-outline-secondary:focus {
-            background-color: #7e57c2;
-            color: #fff;
-            box-shadow: 0 0 10px rgba(126, 87, 194, 0.4);
-        }
-        
-        .btn-outline-light {
-            border-color: #4d5bce;
-            color: #4d5bce;
-        }
-        
-        .btn-outline-light:hover, .btn-outline-light:focus {
-            background-color: #4d5bce;
-            border-color: #4d5bce;
-            color: #fff;
-        }
-        
-        /* Input field styling */
-        .form-control {
-            background-color: #1a1a1a;
-            border: 1px solid #333;
-            color: #e6e6e6;
-            transition: all 0.3s ease;
-        }
-        
-        .form-control:focus {
-            background-color: #1a1a1a;
-            border-color: #4d5bce;
-            box-shadow: 0 0 0 0.25rem rgba(77, 91, 206, 0.25);
-            color: #e6e6e6;
-        }
-        
-        /* Character sheet elements */
-        .ability-score {
-            background-color: #1a1a1a;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 10px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            border: 1px solid #333;
-        }
-        
-        .ability-name {
-            font-weight: bold;
-            color: #7e57c2;
-        }
-        
-        .ability-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #e6e6e6;
-        }
-        
-        .ability-modifier {
-            font-size: 0.9rem;
-            color: #4d5bce;
-        }
-        
-        .hp-bar {
-            background-color: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 6px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .badge {
-            background-color: #1a1a1a;
-            color: #7e57c2;
-            border: 1px solid #7e57c2;
-        }
-        
-        /* Typing indicator */
-        .typing-indicator {
-            display: flex;
-            align-items: center;
-        }
-        
-        .typing-indicator p {
-            margin-bottom: 0;
-        }
-        
-        .typing-indicator::after {
-            content: '';
-            width: 5px;
-            height: 5px;
-            background: #4d5bce;
-            border-radius: 50%;
-            margin-left: 5px;
-            animation: typingAnimation 1s infinite;
-        }
-        
-        @keyframes typingAnimation {
-            0% { opacity: 0.3; }
-            50% { opacity: 1; }
-            100% { opacity: 0.3; }
+        .btn-outline-secondary:hover {
+            background-color: #6c8bac;
+            color: #171717;
         }
         
         /* For mobile responsiveness */
@@ -294,16 +139,12 @@
                 height: calc(100vh - 256px); /* Subtract navbar + sidebar */
                 order: 1;
             }
-            
-            .dice-roller-container {
-                width: calc(100% - 40px);
-            }
         }
     </style>
 </head>
-<body>
+<body class="bg-dark">
     <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark border-bottom border-secondary">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">AI Dungeon Master</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -338,19 +179,18 @@
     <div class="game-container">
         <!-- Main Chat Area -->
         <div class="chat-column">
-            <div class="card shadow h-100 d-flex flex-column border-0">
-                <div class="card-header text-light d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-book me-2"></i>
-                        <h5 class="mb-0">Adventure Log</h5>
-                    </div>
-                    <div>
-                        <button class="btn btn-sm btn-outline-light" id="saveLogButton">
-                            <i class="bi bi-save"></i> Save Log
-                        </button>
-                        <button class="btn btn-sm btn-outline-light ms-2" id="clearLogButton">
-                            <i class="bi bi-eraser"></i> Clear
-                        </button>
+            <div class="card shadow h-100 d-flex flex-column border-0 character-card">
+                <div class="card-header bg-dark text-light border-bottom border-secondary">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-book me-2"></i>Adventure Log</h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-light" id="saveLogButton">
+                                <i class="bi bi-save"></i> Save Log
+                            </button>
+                            <button class="btn btn-sm btn-outline-light ms-2" id="clearLogButton">
+                                <i class="bi bi-eraser"></i> Clear
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body chat-window d-flex flex-column" id="chatWindow">
@@ -359,9 +199,9 @@
                         <p>Welcome, {{ character.name }}! I am your AI Dungeon Master. Your adventure is about to begin...</p>
                     </div>
                 </div>
-                <div class="card-footer chat-input-container border-top">
+                <div class="card-footer chat-input-container bg-dark border-top border-secondary p-3">
                     <div class="input-group">
-                        <input type="text" id="playerInput" class="form-control" placeholder="What would you like to do?">
+                        <input type="text" id="playerInput" class="form-control bg-dark text-light border-secondary" placeholder="What would you like to do?">
                         <button class="btn btn-outline-light" id="sendButton">
                             <i class="bi bi-send"></i> Send
                         </button>
@@ -372,12 +212,9 @@
         
         <!-- Character Sidebar -->
         <div class="sidebar-column">
-            <div class="card shadow mb-4 border-0">
-                <div class="card-header text-light">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-person me-2"></i>
-                        <h5 class="mb-0">Character Sheet</h5>
-                    </div>
+            <div class="card character-card shadow mb-4 border-0">
+                <div class="card-header bg-dark text-light border-bottom border-secondary">
+                    <h5 class="mb-0"><i class="bi bi-person me-2"></i>Character Sheet</h5>
                 </div>
                 <div class="card-body" id="characterSheet">
                     <!-- Character sheet will be populated here -->
@@ -388,18 +225,13 @@
     
     <!-- Fixed Dice Roller -->
     <div class="dice-roller-container">
-        <div class="card shadow border-0">
-            <div class="card-header text-light">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-dice-6 me-2"></i>
-                    <h5 class="mb-0">Dice Roller</h5>
-                </div>
+        <div class="card dice-card shadow border-0">
+            <div class="card-header bg-dark text-light border-bottom border-secondary">
+                <h5 class="mb-0"><i class="bi bi-dice-6 me-2"></i>Dice Roller</h5>
             </div>
             <div class="card-body p-3">
                 <div class="d-grid gap-2 mb-2">
-                    <button class="btn btn-lg btn-outline-primary" data-dice="d20">
-                        <i class="bi bi-dice-6-fill me-2"></i>Roll d20
-                    </button>
+                    <button class="btn btn-lg btn-outline-primary" data-dice="d20">Roll d20</button>
                 </div>
                 <div class="row g-2 mb-2">
                     <div class="col-4">
