@@ -28,6 +28,35 @@ function initGameInterface() {
     
     // Check if we're resuming a previous session
     checkForExistingSession();
+    
+    // Ensure chat window is scrolled to bottom initially
+    scrollChatToBottom();
+    
+    // Handle window resize for mobile adjustments
+    window.addEventListener('resize', handleResize);
+    handleResize();
+}
+
+/**
+ * Handle window resize events for responsive adjustments
+ */
+function handleResize() {
+    const chatWindow = document.getElementById('chatWindow');
+    const sidebar = document.querySelector('.sidebar-column');
+    const diceRoller = document.querySelector('.dice-roller-container');
+    
+    // Adjust dice roller position on mobile
+    if (window.innerWidth < 992) {
+        diceRoller.style.bottom = '20px';
+        diceRoller.style.left = 'auto';
+        diceRoller.style.right = '20px';
+    } else {
+        diceRoller.style.left = '20px';
+        diceRoller.style.right = 'auto';
+    }
+    
+    // Ensure chat is scrolled to bottom on resize
+    scrollChatToBottom();
 }
 
 /**
@@ -328,7 +357,6 @@ function sendToServer(message) {
         },
         body: JSON.stringify(data)
     })
-
     .then(response => {
         if (!response.ok) {
             throw new Error(`Server returned ${response.status}: ${response.statusText}`);
