@@ -16,7 +16,7 @@ class AIService:
     def __init__(self):
         """Initialize the AI service"""
         self.api_key = current_app.config.get('AI_API_KEY')
-        self.model = current_app.config.get('AI_MODEL', 'grok-1')
+        self.model = current_app.config.get('AI_MODEL', 'grok-2-latest')
         self.api_url = "https://api.x.ai/v1/chat/completions"
         self.headers = {
             "Content-Type": "application/json",
@@ -161,6 +161,10 @@ class AIService:
             "Create immersive, engaging responses that follow D&D 5e rules. "
             "Describe environments vividly, represent NPCs with distinct personalities, "
             "and keep the game flowing naturally. "
+            "It is not necessary to mention the player's class and background in every message. "
+            "Make sure to keep track of what knowledge about the player and the world that NPCs know that would be relevant in the story. "
+            "Unless stated, you should assume that NPCs know nothing about my character or the quest that I am currently doing unless they learn it from me or another NPC. "
+            "For example, an NPC that I meet for the first time should not know my name until they hear it from me, or another NPC."
             "When rules or dice rolls are needed, mention them and incorporate the results into the narrative. "
             "Avoid using meta-language about AI, language models, or the simulation. "
             "Stay fully in character as a Dungeon Master in a fantasy world. "

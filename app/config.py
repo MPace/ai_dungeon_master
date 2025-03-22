@@ -12,7 +12,7 @@ class Config:
     
     # AI Service
     AI_API_KEY = os.environ.get('AI_API_KEY', '')
-    AI_MODEL = os.environ.get('AI_MODEL', 'grok-1')
+    AI_MODEL = os.environ.get('AI_MODEL', 'grok-2-latest')
     
     # Logging
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
