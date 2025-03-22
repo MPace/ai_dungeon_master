@@ -44,23 +44,27 @@ function handleResize() {
     const chatWindow = document.getElementById('chatWindow');
     const sidebar = document.querySelector('.sidebar-column');
     const diceRoller = document.querySelector('.dice-roller-container');
+    const chatColumn = document.querySelector('.chat-column');
     
     // Keep dice roller on the right side regardless of screen size
     diceRoller.style.right = '20px';
     diceRoller.style.left = 'auto';
     
     if (window.innerWidth < 768) {
-        // On mobile, make sidebar full width and adjust dice roller position
+        // On mobile, adjust layout for vertical stacking
         if (sidebar) {
             sidebar.style.width = '100%';
-            sidebar.style.height = 'calc(100% - 260px)'; // Leave more space for dice roller
+            sidebar.style.height = 'calc(100% - 260px)'; 
         }
         if (diceRoller) {
-            diceRoller.style.width = 'calc(100% - 40px)'; // Full width minus padding
-            diceRoller.style.bottom = '80px'; // Move up a bit to avoid input field
+            diceRoller.style.width = 'calc(100% - 40px)';
+            diceRoller.style.bottom = '80px'; 
+        }
+        if (chatColumn) {
+            chatColumn.style.width = '100%';
         }
     } else {
-        // On desktop, maintain the fixed width sidebar and dice roller
+        // On desktop, maximize chat window width
         if (sidebar) {
             sidebar.style.width = '320px';
             sidebar.style.height = 'calc(100% - 200px)';
@@ -68,6 +72,9 @@ function handleResize() {
         if (diceRoller) {
             diceRoller.style.width = '320px';
             diceRoller.style.bottom = '20px';
+        }
+        if (chatColumn) {
+            chatColumn.style.width = 'calc(100% - 320px)';
         }
     }
     

@@ -23,7 +23,6 @@
             display: flex;
             height: calc(100vh - 56px); /* Subtract navbar height */
             overflow: hidden;
-            width: 100%;
         }
         
         .chat-column {
@@ -32,7 +31,7 @@
             flex-direction: column;
             height: 100%;
             padding: 15px;
-            max-width: calc(100% - 320px); /* Ensure it respects sidebar width */
+            width: calc(100% - 320px); /* Full width minus sidebar width */
         }
         
         .chat-window {
@@ -43,9 +42,6 @@
             margin-bottom: 0;
             border-bottom: none;
             background-color: rgba(31, 31, 31, 0.9);
-            display: flex;
-            flex-direction: column;
-            width: 100%;
         }
         
         .chat-input-container {
@@ -53,7 +49,6 @@
             border-radius: 0 0 8px 8px;
             padding: 15px;
             border-top: 1px solid #3a3a3a;
-            width: 100%;
         }
         
         .sidebar-column {
@@ -76,6 +71,7 @@
             border: 1px solid #3a3a3a;
             border-radius: 15px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: none;
         }
         
         /* Message styling consistent with project theme */
@@ -104,8 +100,8 @@
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         
         /* Button styling */
@@ -129,11 +125,7 @@
             color: #171717;
         }
         
-        /* Remove any hover transforms/animations */
-        .character-card:hover, .dice-card:hover {
-            /* No transform or animation effects */
-        }
-        
+        /* For mobile responsiveness */
         @media (max-width: 992px) {
             .game-container {
                 flex-direction: column;
@@ -148,11 +140,6 @@
             .chat-column {
                 height: calc(100vh - 256px); /* Subtract navbar + sidebar */
                 order: 1;
-                max-width: 100%; /* Allow full width on mobile */
-            }
-            
-            .dice-roller-container {
-                width: calc(100% - 30px); /* Full width minus padding */
             }
         }
     </style>
