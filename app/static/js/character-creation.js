@@ -1154,11 +1154,15 @@ function finishCharacterCreation() {
     // IMPORTANT: Remove the beforeunload handler to prevent navigation warning
     window.onbeforeunload = null;
     
+    // Get CSRF token from meta tag
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
     // Save the complete character to the server
     fetch('/characters/api/save-character', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
         },
         body: JSON.stringify(characterData)
     })

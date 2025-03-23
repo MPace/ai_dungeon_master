@@ -21,6 +21,10 @@ class Config:
     DEBUG = False
     TESTING = False
 
+    # CSRF Protection
+    WTF_CSRF_Enabled = True
+    WTF_CSRF_TIME_LIMIT = 1800
+
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
@@ -42,3 +46,8 @@ class ProductionConfig(Config):
     
     # Set stricter SameSite policy in production
     SESSION_COOKIE_SAMESITE = 'Strict'
+
+    # Ensure cookies are only sent over HTTPS in production
+    SESSION_COOKIE_SECURE = True
+    SESSION_TYPE = 'redis'
+    SESSION_USE_SIGNER = True

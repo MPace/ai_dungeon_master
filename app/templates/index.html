@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- Google Font for Fantasy Theme -->
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body class="bg-dark">
     <div class="container-fluid">
@@ -58,6 +59,7 @@
                                             <span class="input-group-text bg-dark text-light border-secondary">
                                                 <i class="bi bi-person"></i>
                                             </span>
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="text" class="form-control bg-dark text-light border-secondary" id="login-username" name="username" placeholder="Enter your username" required>
                                         </div>
                                     </div>
@@ -67,6 +69,7 @@
                                             <span class="input-group-text bg-dark text-light border-secondary">
                                                 <i class="bi bi-lock"></i>
                                             </span>
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="password" class="form-control bg-dark text-light border-secondary" id="login-password" name="password" placeholder="Enter your password" required>
                                         </div>
                                     </div>
@@ -98,6 +101,7 @@
                                                 <span class="input-group-text bg-dark text-light border-secondary">
                                                     <i class="bi bi-person-plus"></i>
                                                 </span>
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <input type="text" class="form-control bg-dark text-light border-secondary" id="register-username" name="username" placeholder="Choose a username" required>
                                             </div>
                                         </div>
@@ -107,6 +111,7 @@
                                                 <span class="input-group-text bg-dark text-light border-secondary">
                                                     <i class="bi bi-envelope"></i>
                                                 </span>
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <input type="email" class="form-control bg-dark text-light border-secondary" id="register-email" name="email" placeholder="Enter your email" required>
                                             </div>
                                         </div>
@@ -116,6 +121,7 @@
                                                 <span class="input-group-text bg-dark text-light border-secondary">
                                                     <i class="bi bi-lock"></i>
                                                 </span>
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <input type="password" class="form-control bg-dark text-light border-secondary" id="register-password" name="password" placeholder="Create a password" required>
                                             </div>
                                         </div>

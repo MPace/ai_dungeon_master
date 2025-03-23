@@ -104,12 +104,12 @@ class AuthService:
     @staticmethod
     def login_user(username, password):
         """
-        Authenticate a user
+        Authenticate a user and create a secure session
         
         Args:
             username (str): The username
             password (str): The plain text password
-            
+                
         Returns:
             dict: Result with success status and message/user
         """
@@ -123,6 +123,11 @@ class AuthService:
             user_data = db.users.find_one({'username': username})
             if not user_data:
                 logger.warning(f"Login attempt with non-existent username: {username}")
+                
+                # Add a small delay to prevent timing attacks
+                import time
+                time.sleep(0.5)  
+                
                 return {'success': False, 'error': 'Invalid username or password'}
             
             # Create user instance
@@ -131,19 +136,35 @@ class AuthService:
             # Verify password
             if not User.verify_password(password, user.password_hash):
                 logger.warning(f"Failed login attempt for user: {username}")
+                
+                # Track failed login attempts (could be expanded to implement lockout)
+                db.users.update_one(
+                    {'_id': user_data['_id']},
+                    {'$inc': {'failed_login_attempts': 1}}
+                )
+                
                 return {'success': False, 'error': 'Invalid username or password'}
             
-            # Update last login
+            # Reset failed login attempts counter
             db.users.update_one(
                 {'_id': user_data['_id']},
-                {'$set': {'last_login': datetime.utcnow()}}
+                {'$set': {'failed_login_attempts': 0, 'last_login': datetime.utcnow()}}
             )
             
             logger.info(f"User logged in successfully: {username}")
             
+            # Regenerate session to prevent session fixation attacks
+            # Clear previous session and create a new one
+            session.clear()
+            
             # Set session data
             session['user_id'] = user.user_id
             session['username'] = user.username
+            session['login_time'] = datetime.utcnow().isoformat()
+            
+            # Mark session as modified to ensure it's saved
+            session.permanent = True
+            session.modified = True
             
             return {'success': True, 'user': user}
             
@@ -157,14 +178,22 @@ class AuthService:
     @staticmethod
     def logout_user():
         """
-        Log out the current user
+        Log out the current user by properly clearing session data
         
         Returns:
             dict: Result with success status
         """
         try:
-            # Clear the session
+            # Get user info for logging before clearing session
+            username = session.get('username', 'Unknown')
+            
+            # Clear the session completely
             session.clear()
+            
+            # Regenerate session id
+            session.modified = True
+            
+            logger.info(f"User logged out successfully: {username}")
             return {'success': True}
         except Exception as e:
             logger.error(f"Logout error: {str(e)}")

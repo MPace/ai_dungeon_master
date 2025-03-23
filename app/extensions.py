@@ -9,9 +9,13 @@ import os
 import logging
 from datetime import datetime, timedelta
 import uuid
+import numpy as np
 from dotenv import load_dotenv
+from app.services.embedding_service import EmbeddingService
 
 load_dotenv()
+
+embedding_service = None
 
 # Setup logging
 logging.basicConfig(
@@ -38,23 +42,28 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         logger.info(f"Checking authentication for route: {request.path}")
-        logger.info(f"Session contains user_id: {'user_id' in session}")
         
-        # Log the full session dictionary to see what's there
-        logger.info(f"Full session content: {dict(session)}")
-        
+        # Check if user is logged in
         if 'user_id' not in session:
-            # Log authentication failure
             logger.error(f"AUTHENTICATION FAILED: No user_id in session for {request.path}")
-            logger.error(f"AUTHENTICATION FAILED: Session keys: {list(session.keys())}")
-            
-            # Add flash message
             flash('Please log in to access this page', 'warning')
-            
-            # Return redirect to login page
-            logger.info("Redirecting to login page")
             return redirect(url_for('auth.index'))
-            
+        
+        # Check session age to enforce re-login after extended periods
+        # This is optional but recommended for sensitive operations
+        if 'login_time' in session:
+            try:
+                login_time = datetime.fromisoformat(session['login_time'])
+                max_age = timedelta(days=1)  # Adjust as needed
+                
+                if datetime.utcnow() - login_time > max_age:
+                    logger.warning(f"Session expired for user: {session.get('username')}")
+                    session.clear()
+                    flash('Your session has expired. Please log in again.', 'warning')
+                    return redirect(url_for('auth.index'))
+            except (ValueError, TypeError) as e:
+                logger.error(f"Error checking session age: {e}")
+        
         # Authentication successful
         logger.info(f"Authentication successful for user: {session.get('username', 'Unknown')}")
         return f(*args, **kwargs)
@@ -165,6 +174,44 @@ def init_collections(db):
     if 'sessions' not in db.list_collection_names():
         db.create_collection('sessions')
         logger.info("Created 'sessions' collection")
+
+    # Add memory vectors collection
+    if 'memory_vectors' not in db.list_collection_names():
+        db.create_collection('memory_vectors')
+        logger.info("Created 'memory_vectors' collection")
+        
+        try:
+            # Create vector index for MongoDB 6.0+
+            db.memory_vectors.create_index(
+                [("embedding", "vector")],
+                {
+                    "name": "vector_index",
+                    "vectorDimension": 768,  # Will match our embedding model dimension
+                    "vectorDistanceMetric": "cosine"
+                }
+            )
+            logger.info("Created vector index on 'embedding' field")
+        except Exception as e:
+            logger.warning(f"Could not create vector index (requires MongoDB 6.0+): {e}")
+            logger.info("Will use fallback similarity calculations instead")
+        
+        # Create standard indexes
+        db.memory_vectors.create_index([("session_id", 1), ("created_at", -1)])
+        logger.info("Created index on 'session_id' and 'created_at'")
+        
+        db.memory_vectors.create_index([("character_id", 1), ("created_at", -1)])
+        logger.info("Created index on 'character_id' and 'created_at'")
+        
+        db.memory_vectors.create_index([("memory_type", 1), ("created_at", -1)])
+        logger.info("Created index on 'memory_type' and 'created_at'")
+        
+        # Create TTL index for short-term memories
+        db.memory_vectors.create_index(
+            [("created_at", 1)],
+            expireAfterSeconds=7*24*60*60,  # 7 days in seconds
+            partialFilterExpression={"memory_type": "short_term"}
+        )
+        logger.info("Created TTL index for 'short_term' memories")
     
     logger.info("Database collections initialized.")
 
@@ -335,12 +382,26 @@ def delete_character(character_id, user_id=None):
 
 def init_extensions(app):
     """Initialize extensions"""
-    global db, mongo_db
+    global db, mongo_db, embedding_service
     # Initialize database
     with app.app_context():
         init_db()
         db = mongo_db
     
+    # Initialize embedding service
+    try:
+        embedding_service = EmbeddingService()
+        logger.info("Embedding service initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing embedding service: {e}")
+        logger.warning("Application will run without embedding capabilities")
+        embedding_service = None
+
     # Register close_db to be called when a request ends
     app.teardown_appcontext(close_db)
     
+# Get the embedding service
+def get_embedding_service():
+    """Get the embedding service"""
+    global embedding_service
+    return embedding_service

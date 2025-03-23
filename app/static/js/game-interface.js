@@ -350,11 +350,15 @@ function sendToServer(message) {
         character_id: character.character_id
     });
     
+    // Get CSRF token from meta tag
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
     // Send API request
     fetch('/game/api/send-message', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
         },
         body: JSON.stringify(data)
     })
@@ -426,11 +430,16 @@ function setupDiceEvents() {
  * @param {string} diceType - The type of die to roll (e.g., 'd20')
  */
 function rollDice(diceType) {
+
+    // Get CSRF token from meta tag
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
     // Send API request
     fetch('/game/api/roll-dice', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
         },
         body: JSON.stringify({
             dice: diceType,

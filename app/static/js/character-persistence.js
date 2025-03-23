@@ -155,12 +155,16 @@ function saveCharacterDraft(characterData) {
     return new Promise((resolve, reject) => {
         // Show saving indicator
         showSavingIndicator();
+
+        // Get CSRF token from meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
         // Send API request
         fetch('/characters/api/save-character-draft', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify(characterData)
         })

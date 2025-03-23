@@ -195,10 +195,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Send the API request
         console.log('Sending fetch request to /api/send-message');
+
+        // Get CSRF token from meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
         fetch('/api/send-message', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify(data)
         })

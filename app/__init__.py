@@ -3,6 +3,7 @@ from flask import Flask, render_template, redirect, url_for
 import logging
 from datetime import timedelta
 from flask_session import Session
+from flask_wtf.csrf import CSRFProtect
 
 logging.basicConfig(
     filename='app.log',
@@ -14,6 +15,9 @@ logger = logging.getLogger(__name__)
 def create_app(config_name='default'):
     app = Flask(__name__)   
     configure_app(app, config_name)
+
+    # Initialize CSRF protection
+    csrf = CSRFProtect(app)
 
     # Load configuration
     app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
@@ -50,9 +54,12 @@ def create_app(config_name='default'):
 
 def configure_app(app, config_name):
     """Configure the app with the appropriate settings"""
+
+    config_name = 'production'
     # Default to development if not specified
     if not config_name or config_name == 'default':
         config_name = 'development'
+    
     
     # Load .env file if exists
     if os.path.exists('.env'):
@@ -64,13 +71,24 @@ def configure_app(app, config_name):
     
     # Configure session
     app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
-    app.config['SESSION_COOKIE_SECURE'] = False
+    app.config['SESSION_COOKIE_SECURE'] = True
     app.config['SESSION_COOKIE_HTTPONLY'] = True
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
     app.config['SESSION_COOKIE_PATH'] = '/'
     app.config['SESSION_COOKIE_NAME'] = 'session_aidm'
     app.config['SESSION_TYPE'] = 'filesystem'
+
+    if config_name == 'production' and app.config['SESSION_TYPE'] == 'redis':
+        import redis
+        redis_url = os.environ.get('REDIS_URL')
+        if redis_url:
+            app.config['SESSION_REDIS'] = redis.from_url(redis_url)
+            logger.info("Using Redis for session storage")
+        else:
+            app.config['SESSION_TYPE'] = 'filesystem'
+            logger.warning('Redis URL not found, falling back to filesystem sessions')
+
     Session(app)
     
     # Override with environment variables prefixed with 'AIDM_'

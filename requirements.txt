@@ -9,5 +9,10 @@ bcrypt==4.0.1
 certifi==2023.7.22
 pymongo
 flask-session
+Flask-WTF
+redis
+numpy
+transformers==4.37.2
+torch==2.0.1
 # For AI integration (when you're ready)
 # openai==0.27.0

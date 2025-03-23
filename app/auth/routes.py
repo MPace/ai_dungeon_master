@@ -26,29 +26,16 @@ def login():
         flash('Username and password are required', 'error')
         return redirect(url_for('auth.index'))
     
-    user = AuthService.authenticate_user(username, password)
+    # Use the improved login service
+    result = AuthService.login_user(username, password)
     
-    if user:
-        # Clear any existing session and create a new one
-        session.clear()
-        
-        # Set session data
-        session['user_id'] = str(user.get('_id'))
-        session['username'] = user.get('username')
-        
-        # Force session to be saved
-        session.permanent = True
-        session.modified = True
-
-        logging.info(f"Session after login: {dict(session)}")
-        
+    if result['success']:
         flash('Login successful!', 'success')
-        resp = redirect(url_for('game.dashboard'))
-        logger.info(f"Response headers:{dict(resp.headers)}")
-        return resp
+        return redirect(url_for('game.dashboard'))
     
-    flash('Invalid username or password', 'error')
+    flash(result.get('error', 'Invalid username or password'), 'error')
     return redirect(url_for('auth.index'))
+    
 
 @auth_bp.route('/register', methods=['POST'])
 def register():

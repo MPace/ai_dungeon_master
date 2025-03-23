@@ -81,12 +81,17 @@ function deleteCharacter(characterId) {
     // Show loading indicator on the page
     showLoadingIndicator();
     
+    // Get CSRF token from meta tag
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
     // Send delete request to the server
     fetch(`/characters/api/delete-character/${characterId}`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
-        }
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(data)
     })
     .then(response => {
         if (!response.ok) {
@@ -139,12 +144,17 @@ function deleteDraft(draftId) {
     // Show loading indicator on the page
     showLoadingIndicator();
     
+    // Get CSRF token from meta tag
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
     // Send delete request to the server
     fetch(`/characters/api/delete-draft/${draftId}`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
-        }
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(data)
     })
     .then(response => {
         if (!response.ok) {
