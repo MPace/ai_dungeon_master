@@ -2,12 +2,18 @@
 Character Service
 """
 from app.models.character import Character
-from app.extensions import get_db
 from datetime import datetime
 import logging
 import uuid
+from flask import current_app, g
 
 logger = logging.getLogger(__name__)
+
+def get_db_for_service():
+    """Get database connection for service"""
+    if 'db' not in g and current_app:
+        return current_app.extensions.get('mongodb')
+    return g.get('db')
 
 class CharacterService:
     """Service for handling character operations"""
@@ -25,7 +31,7 @@ class CharacterService:
             dict: Result with success status and message/character
         """
         try:
-            db = get_db()
+            db = get_db_for_service()
             if db is None:
                 logger.error("Database connection failed when creating character")
                 return {'success': False, 'error': 'Database connection error'}
@@ -69,7 +75,7 @@ class CharacterService:
             dict: Result with success status and message/character
         """
         try:
-            db = get_db()
+            db = get_db_for_service()
             if db is None:
                 logger.error("Database connection failed when saving character draft")
                 return {'success': False, 'error': 'Database connection error'}
@@ -111,7 +117,7 @@ class CharacterService:
     @staticmethod
     def get_character(character_id, user_id=None):
         """Get a character from the database"""
-        db = get_db()
+        db = get_db_for_service()
         if db is not None:
             try:
                 # Build query
@@ -152,7 +158,7 @@ class CharacterService:
             dict: Result with success status and characters list
         """
         try:
-            db = get_db()
+            db = get_db_for_service()
             if db is None:
                 logger.error("Database connection failed when listing characters")
                 return {'success': False, 'error': 'Database connection error'}
@@ -188,7 +194,7 @@ class CharacterService:
             dict: Result with success status and drafts list
         """
         try:
-            db = get_db()
+            db = get_db_for_service()
             if db is None:
                 logger.error("Database connection failed when listing character drafts")
                 return {'success': False, 'error': 'Database connection error'}
@@ -220,7 +226,7 @@ class CharacterService:
             dict: Result with success status
         """
         try:
-            db = get_db()
+            db = get_db_for_service()
             if db is None:
                 logger.error("Database connection failed when deleting character")
                 return {'success': False, 'error': 'Database connection error'}
@@ -273,7 +279,7 @@ class CharacterService:
             dict: Result with success status
         """
         try:
-            db = get_db()
+            db = get_db_for_service()
             if db is None:
                 logger.error("Database connection failed when deleting character draft")
                 return {'success': False, 'error': 'Database connection error'}
@@ -318,7 +324,7 @@ class CharacterService:
         Returns:
             bool: Success status
         """
-        db = get_db()
+        db = get_db_for_service()
         if db is None:
             logger.error("Database connection failed when saving character")
             return False
@@ -379,7 +385,7 @@ class CharacterService:
         Check if a submission ID has already been processed
         to prevent duplicate submissions
         """
-        db = get_db()
+        db = get_db_for_service()
         if db is not None:
             try:
                 # Look for this submission in the log
@@ -397,7 +403,7 @@ class CharacterService:
         """
         Log a submission to prevent future duplicates
         """
-        db = get_db()
+        db = get_db_for_service()
         if db is not None:
             try:
                 # Ensure the collection exists

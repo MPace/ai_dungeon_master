@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import uuid
 import numpy as np
 from dotenv import load_dotenv
-from app.services.embedding_service import EmbeddingService
+
 
 load_dotenv()
 
@@ -390,6 +390,7 @@ def init_extensions(app):
     
     # Initialize embedding service
     try:
+        from app.services.embedding_service import EmbeddingService
         embedding_service = EmbeddingService()
         logger.info("Embedding service initialized successfully")
     except Exception as e:
