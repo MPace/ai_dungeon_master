@@ -53,13 +53,14 @@
                             <!-- Login Tab -->
                             <div class="tab-pane fade show active" id="login-tab-pane" role="tabpanel" aria-labelledby="login-tab" tabindex="0">
                                 <form action="{{ url_for('auth.login') }}" method="POST">
+                                    {{ form.hidden_tag() }}
                                     <div class="mb-3">
                                         <label for="login-username" class="form-label text-light">Username</label>
                                         <div class="input-group">
                                             <span class="input-group-text bg-dark text-light border-secondary">
                                                 <i class="bi bi-person"></i>
                                             </span>
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            
                                             <input type="text" class="form-control bg-dark text-light border-secondary" id="login-username" name="username" placeholder="Enter your username" required>
                                         </div>
                                     </div>
@@ -92,7 +93,7 @@
                                 </div>
 
                                 <form action="{{ url_for('auth.register') }}" method="POST">
-                                    
+                                    {{ form.hidden_tag() }}
                                     <!-- remove when registrations open again -->
                                     <div style="display: none;">
                                         <div class="mb-3">
@@ -101,7 +102,6 @@
                                                 <span class="input-group-text bg-dark text-light border-secondary">
                                                     <i class="bi bi-person-plus"></i>
                                                 </span>
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <input type="text" class="form-control bg-dark text-light border-secondary" id="register-username" name="username" placeholder="Choose a username" required>
                                             </div>
                                         </div>
@@ -111,7 +111,6 @@
                                                 <span class="input-group-text bg-dark text-light border-secondary">
                                                     <i class="bi bi-envelope"></i>
                                                 </span>
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <input type="email" class="form-control bg-dark text-light border-secondary" id="register-email" name="email" placeholder="Enter your email" required>
                                             </div>
                                         </div>
@@ -121,7 +120,6 @@
                                                 <span class="input-group-text bg-dark text-light border-secondary">
                                                     <i class="bi bi-lock"></i>
                                                 </span>
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <input type="password" class="form-control bg-dark text-light border-secondary" id="register-password" name="password" placeholder="Create a password" required>
                                             </div>
                                         </div>
