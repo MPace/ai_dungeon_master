@@ -4,6 +4,8 @@ Game Service
 from app.models.game_session import GameSession
 from app.services.ai_service import AIService
 from app.services.character_service import CharacterService
+from app.services.memory_service_enhanced import EnhancedMemoryService
+from app.services.summarization_service import SummarizationService
 from app.extensions import get_db
 from datetime import datetime
 import uuid
@@ -131,7 +133,35 @@ class GameService:
         Returns:
             dict: Result with success status and AI response
         """
+
+        memory_service = EnhancedMemoryService()
+        summarization_service = SummarizationService()
+
         try:
+            
+            # Store player message as short-term memory
+            memory_service.store_memory_with_text(
+                content=message,
+                memory_type='short_term',
+                session_id=session_id,
+                character_id=character.character_id,
+                user_id=user_id,
+                importance=5,
+                metadata={'sender': 'player'}
+            )
+
+            # Build memory context
+            memory_context = memory_service.build_memory_context(
+                current_message=message,
+                session_id=session_id,
+                character_id=character.character_id
+            )
+
+            # Add memory context to AI prompt
+            if memory_context:
+                #Modify the prompt to include memories
+                system_prompt += f"\n\n{memory_context}"
+
             # Check if we have a session ID
             if session_id is not None:
                 # Try to get existing session
@@ -239,6 +269,20 @@ class GameService:
             # Add AI response to session history
             session.add_message('dm', ai_response.response_text)
             
+            # Store DM response as short-term memory
+            memory_service.store_memory_with_text(
+                content=ai_response.response_text,
+                memory_type='short_term',
+                session_id=session_id,
+                character_id=character.character_id,
+                user_id=user_id,
+                importance=5,  # Default importance
+                metadata={'sender': 'dm'}
+            )
+
+            # Check if summarization is needed
+            summarization_service.trigger_summarization_if_needed(session_id)
+
             # Update game state
             GameService._update_game_state(session, message)
             

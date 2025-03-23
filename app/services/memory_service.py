@@ -2,8 +2,7 @@
 Memory Service
 """
 from app.models.memory_vector import MemoryVector
-from app.extensions import get_db
-from app.extensions import get_embedding_service
+from app.extensions import get_db, get_embedding_service
 from datetime import datetime
 import logging
 import numpy as np
@@ -223,7 +222,6 @@ class MemoryService:
             metadata={'summarized_count': len(memory_ids)},
             summary_of=memory_ids
         )
-    
     @staticmethod
     def store_memory_with_text(session_id, content, memory_type='short_term',
                             character_id=None, user_id=None, importance=5, metadata=None):
@@ -270,7 +268,7 @@ class MemoryService:
             logger.error(traceback.format_exc())
             
             return {'success': False, 'error': str(e)}
-    
+        
     @staticmethod
     def find_similar_memories_by_text(text, session_id=None, limit=5, min_similarity=0.7):
         """
@@ -309,5 +307,3 @@ class MemoryService:
             logger.error(traceback.format_exc())
             
             return {'success': False, 'error': str(e)}
-            
-            
