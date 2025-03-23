@@ -55,11 +55,10 @@ def create_app(config_name='default'):
 def configure_app(app, config_name):
     """Configure the app with the appropriate settings"""
 
-    config_name = 'production'
+    config_name = os.environ.get('FLASK_ENV', config_name)
     # Default to development if not specified
     if not config_name or config_name == 'default':
         config_name = 'development'
-    
     
     # Load .env file if exists
     if os.path.exists('.env'):
@@ -69,28 +68,53 @@ def configure_app(app, config_name):
     # Load config from config.py
     app.config.from_object(f'app.config.{config_name.capitalize()}Config')
     
-    # Configure session
+    # Set SECRET_KEY
     app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
-    app.config['SESSION_COOKIE_SECURE'] = True
-    app.config['SESSION_COOKIE_HTTPONLY'] = True
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
+    
+    # Configure session
+    app.config['SESSION_TYPE'] = 'filesystem'  # Default to filesystem sessions
+    
+    # Configure session cookies
+    app.config['SESSION_COOKIE_NAME'] = 'aidm_session'
     app.config['SESSION_COOKIE_PATH'] = '/'
-    app.config['SESSION_COOKIE_NAME'] = 'session_aidm'
-    app.config['SESSION_TYPE'] = 'filesystem'
-    app.config['SESSION_FILE_DIR'] = '/var/www/sessions'
-
-    if config_name == 'production' and app.config['SESSION_TYPE'] == 'redis':
-        import redis
-        redis_url = os.environ.get('REDIS_URL')
-        if redis_url:
-            app.config['SESSION_REDIS'] = redis.from_url(redis_url)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
+    
+    # Security settings - adjust based on environment
+    if config_name == 'production':
+        app.config['SESSION_COOKIE_SECURE'] = True  # Requires HTTPS
+        app.config['SESSION_COOKIE_HTTPONLY'] = True
+        app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Changed from 'Strict' to 'Lax' for better compatibility
+    else:
+        # Development environment - less strict for easier testing
+        app.config['SESSION_COOKIE_SECURE'] = False  # Works without HTTPS
+        app.config['SESSION_COOKIE_HTTPONLY'] = True
+        app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    
+    # Create the session directory if using filesystem sessions
+    if app.config['SESSION_TYPE'] == 'filesystem':
+        session_dir = os.environ.get('SESSION_FILE_DIR', '/tmp/flask_sessions')
+        app.config['SESSION_FILE_DIR'] = session_dir
+        os.makedirs(session_dir, exist_ok=True)
+        logger.info(f"Using filesystem sessions at {session_dir}")
+    
+    # Redis session support
+    if config_name == 'production' and os.environ.get('REDIS_URL'):
+        try:
+            import redis
+            app.config['SESSION_TYPE'] = 'redis'
+            app.config['SESSION_REDIS'] = redis.from_url(os.environ.get('REDIS_URL'))
             logger.info("Using Redis for session storage")
-        else:
-            app.config['SESSION_TYPE'] = 'filesystem'
-            logger.warning('Redis URL not found, falling back to filesystem sessions')
-
+        except (ImportError, Exception) as e:
+            logger.warning(f'Could not configure Redis sessions: {e}')
+            logger.warning('Falling back to filesystem sessions')
+    
+    # Initialize session extension
     Session(app)
+    
+    # Set up CSRF protection
+    app.config['WTF_CSRF_ENABLED'] = True
+    app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
+    app.config['WTF_CSRF_SSL_STRICT'] = False  # Important for dev environments
     
     # Override with environment variables prefixed with 'AIDM_'
     for key, value in os.environ.items():

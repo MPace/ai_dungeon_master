@@ -84,6 +84,9 @@ function deleteCharacter(characterId) {
     // Get CSRF token from meta tag
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+    // Create data object to send in the request
+    const data = { character_id: characterId };
+
     // Send delete request to the server
     fetch(`/characters/api/delete-character/${characterId}`, {
         method: 'POST',
@@ -146,6 +149,9 @@ function deleteDraft(draftId) {
     
     // Get CSRF token from meta tag
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    // Create data object to send in the request
+    const data = { draft_id: draftId };
     
     // Send delete request to the server
     fetch(`/characters/api/delete-draft/${draftId}`, {
