@@ -34,33 +34,35 @@ def dashboard():
     # Get user ID from session
     user_id = session.get('user_id')
     
+    characters = []
+    drafts = []
+
     try:
-        # Get characters and drafts from services
+        # Get characters 
         character_result = CharacterService.list_characters(user_id)
-        draft_result = CharacterService.list_character_drafts(user_id)
-        
-        # Filter out characters with missing IDs
         if character_result['success']:
-            characters = [c for c in character_result['characters']
-                          if hasattr(c, 'character_id') and c.character_id]
+            characters = character_result['characters']
+        else:
+            error_msg = character_result.get('error', 'Unknown error')
+            logger.error(f"Error loading characters: {error_msg}")
+            flash(f"Error loading characters: {error_msg}", 'error')
 
-        # Filter out drafts with missing IDs
-        if draft_result['success']:
-            drafts = [d for d in draft_result['drafts']
-                      if hasattr(d, 'character_id') and d.character_id]
-
-        # Render the template
-        return render_template('user.html',
-                              username=session.get('username', 'User'),
-                              characters=characters,
-                              drafts=drafts)
+         # Get drafts
+        drafts_result = CharacterService.list_character_drafts(user_id)
+        if drafts_result['success']:
+            drafts = drafts_result['drafts']
+            logger.info(f"Successfully loaded {len(drafts)} drafts")
+        else:
+            error_msg = drafts_result.get('error', 'Unknown error')
+            logger.error(f"Error loading drafts: {error_msg}")
+            flash(f'Error loading drafts: {error_msg}', 'error')
     
     except Exception as e:
         import traceback
         traceback.print_exc()
-        
         flash('Error loading dashboard: ' + str(e), 'error')
-        return render_template('user.html',
+    
+    return render_template('user.html',
                               username=session.get('username', 'User'),
                               characters=[],
                               drafts=[])

@@ -11,9 +11,54 @@ logger = logging.getLogger(__name__)
 
 def get_db_for_service():
     """Get database connection for service"""
-    if 'db' not in g and current_app:
-        return current_app.extensions.get('mongodb')
-    return g.get('db')
+    try:
+        from flask import current_app, g
+        
+        # First check if we have a connection in the Flask app context
+        if hasattr(g, 'db'):
+            logger.debug("Using existing database connection from Flask context")
+            return g.db
+            
+        # If we have a current_app, use it to get the MongoDB instance
+        if current_app:
+            logger.debug("Getting database connection from Flask app context")
+            if 'mongodb' in current_app.extensions:
+                return current_app.extensions['mongodb']
+            # Fall back to check in extensions directly
+            from app.extensions import mongo_db
+            if mongo_db:
+                logger.debug("Using mongo_db from extensions module")
+                return mongo_db
+                
+        # If we're outside Flask context, try to get from extensions module
+        from app.extensions import mongo_db
+        if mongo_db:
+            logger.debug("Using mongo_db from extensions module (outside Flask context)")
+            return mongo_db
+            
+        # If all else fails, try to initialize a new connection
+        import os
+        import pymongo
+        
+        mongo_uri = os.environ.get("MONGO_URI")
+        if not mongo_uri:
+            logger.error("MONGO_URI environment variable not set")
+            return None
+            
+        logger.warning("Creating new MongoDB connection outside Flask context")
+        client = pymongo.MongoClient(
+            mongo_uri,
+            tlsAllowInvalidCertificates=True,
+            serverSelectionTimeoutMS=5000
+        )
+        
+        return client.ai_dungeon_master
+            
+    except Exception as e:
+        logger.error(f"Error getting database connection: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return None
 
 class CharacterService:
     """Service for handling character operations"""
@@ -172,14 +217,22 @@ class CharacterService:
                 ]
             }).sort('last_played', -1))
             
-            characters = [Character.from_dict(data) for data in characters_data]
-            # Filter out None values that might be returned from the from_dict
-            characters = [c for c in characters if c is not None]
-
+            logger.info(f"Found {len(characters_data)} characters for user {user_id}")
+            
+            characters = []
+            for data in characters_data:
+                character = Character.from_dict(data)
+                if character is not None:  # Only include valid characters
+                    characters.append(character)
+            
+            logger.info(f"Converted {len(characters)} characters from database data")
+            
             return {'success': True, 'characters': characters}
             
         except Exception as e:
             logger.error(f"Error listing characters: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
     @staticmethod
@@ -203,14 +256,22 @@ class CharacterService:
                 'user_id': user_id
             }).sort('lastUpdated', -1))
             
-            drafts = [Character.from_dict(data) for data in drafts_data]
-            #Filter out None values that might be returned from the database
-            drafts = [d for d in drafts if d is not None]
+            logger.info(f"Found {len(drafts_data)} drafts for user {user_id}")
+            
+            drafts = []
+            for data in drafts_data:
+                draft = Character.from_dict(data)
+                if draft is not None:  # Only include valid drafts
+                    drafts.append(draft)
+            
+            logger.info(f"Converted {len(drafts)} drafts from database data")
             
             return {'success': True, 'drafts': drafts}
             
         except Exception as e:
             logger.error(f"Error listing character drafts: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
     @staticmethod
