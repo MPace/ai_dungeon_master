@@ -26,13 +26,13 @@ def get_db_for_service():
                 return current_app.extensions['mongodb']
             # Fall back to check in extensions directly
             from app.extensions import mongo_db
-            if mongo_db:
+            if mongo_db is not None:
                 logger.debug("Using mongo_db from extensions module")
                 return mongo_db
                 
         # If we're outside Flask context, try to get from extensions module
         from app.extensions import mongo_db
-        if mongo_db:
+        if mongo_db is not None:
             logger.debug("Using mongo_db from extensions module (outside Flask context)")
             return mongo_db
             
