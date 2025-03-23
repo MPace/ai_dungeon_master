@@ -7,14 +7,6 @@ import os
 import logging
 import json
 from flask import current_app
-from langchain.llms import BaseLLM
-from langchain.chains import LLMChain
-from langchain.memory import ConversationBufferMemory
-from langchain.prompts import PromptTemplate
-from langchain.chat_models import ChatOpenAI
-from app.services.langchain_service import LangchainService
-from app.services.chain_orchestrator import ChainOrchestrator
-from app.services.memory_service_enhanced import EnhancedMemoryService
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +28,11 @@ class AIService:
         
         if self.use_langchain:
             try:
+                # Delay imports to avoid circular dependencies
+                from app.services.langchain_service import LangchainService
+                from app.services.chain_orchestrator import ChainOrchestrator
+                from app.services.memory_service_enhanced import EnhancedMemoryService
+                
                 self.langchain_service = LangchainService(api_key=self.api_key, model_name=self.model)
                 self.chain_orchestrator = ChainOrchestrator(api_key=self.api_key)
                 self.memory_service = EnhancedMemoryService()
@@ -85,19 +82,31 @@ class AIService:
         session_id = character_data.get('session_id')
         
         # Use Langchain if enabled and properly initialized
-        if self.use_langchain and self.chain_orchestrator and session_id:
+        if self.use_langchain and session_id:
             try:
+                # Delay import to avoid circular imports
+                if not self.chain_orchestrator:
+                    from app.services.chain_orchestrator import ChainOrchestrator
+                    self.chain_orchestrator = ChainOrchestrator(api_key=self.api_key)
+                
                 logger.info(f"Using Langchain for response generation (state: {game_state})")
-                response = self.chain_orchestrator.generate_response(
+                result = self.chain_orchestrator.process_message(
                     player_message,
-                    session_id,
                     character_data,
-                    game_state
+                    game_state,
+                    conversation_history
                 )
                 
-                # If we got a valid response, return it
-                if response and hasattr(response, 'response_text'):
-                    return response
+                # If we got a valid response, return it as AIResponse
+                if result and 'response' in result:
+                    return AIResponse(
+                        response_text=result['response'],
+                        session_id=session_id,
+                        character_id=character_data.get('character_id'),
+                        user_id=character_data.get('user_id'),
+                        prompt=player_message,
+                        model_used=self.model
+                    )
                 
                 # Otherwise, fall back to standard implementation
                 logger.warning("Langchain response generation failed, falling back to standard API")
@@ -114,7 +123,12 @@ class AIService:
             system_prompt = self._create_system_prompt(game_state, character_data)
             
             # If memory service is available, enrich the prompt with memories
-            if self.memory_service and session_id:
+            if session_id:
+                # Lazy-load memory service if needed
+                if not self.memory_service:
+                    from app.services.memory_service_enhanced import EnhancedMemoryService
+                    self.memory_service = EnhancedMemoryService()
+                
                 try:
                     memory_context = self.memory_service.build_memory_context(
                         current_message=player_message,
@@ -171,7 +185,7 @@ class AIService:
                 )
                 
                 # Store in memory if available
-                if self.memory_service and session_id:
+                if session_id and self.memory_service:
                     try:
                         self.memory_service.store_memory_with_text(
                             content=response_text,
@@ -361,6 +375,9 @@ class AIService:
         Returns:
             PromptTemplate: Langchain prompt template
         """
+        # Import here to avoid circular imports
+        from langchain.prompts import PromptTemplate
+        
         # Create base system prompt
         system_prompt = self._create_system_prompt(game_state, character_data)
         
@@ -387,6 +404,11 @@ class AIService:
         Returns:
             LLMChain: Langchain chain for this state
         """
+        # Import here to avoid circular imports
+        if not self.langchain_service:
+            from app.services.langchain_service import LangchainService
+            self.langchain_service = LangchainService(api_key=self.api_key, model_name=self.model)
+        
         if not self.langchain_service:
             logger.error("Langchain service not initialized")
             return None
