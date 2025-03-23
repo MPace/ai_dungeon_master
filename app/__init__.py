@@ -78,6 +78,7 @@ def configure_app(app, config_name):
     app.config['SESSION_COOKIE_PATH'] = '/'
     app.config['SESSION_COOKIE_NAME'] = 'session_aidm'
     app.config['SESSION_TYPE'] = 'filesystem'
+    app.config['SESSION_FILE_DIR'] = '/var/www/sessions'
 
     if config_name == 'production' and app.config['SESSION_TYPE'] == 'redis':
         import redis
