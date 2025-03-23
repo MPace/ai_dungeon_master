@@ -3,7 +3,6 @@ Auth routes
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from app.auth import auth_bp
-from app.forms import LoginForm
 from app.services.auth_service import AuthService
 from app.extensions import db
 import logging
@@ -11,26 +10,31 @@ import logging
 auth_bp = Blueprint('auth', __name__, template_folder='templates')
 logger = logging.getLogger(__name__)
 
-@auth_bp.route('/', methods=['GET', 'POST'])
+@auth_bp.route('/')
 def index():
     """Landing page with login form"""
-    logger.info('Auth index accessed: method=%s', request.method)
+    logger.info('Auth index accessed')
     if 'user_id' in session:
         return redirect(url_for('game.dashboard'))
+    return render_template('index.html')
+
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    password = request.form.get('password')
     
-    form = LoginForm()
-    if request.method == 'POST' and form.validate_on_submit():
-        username = form.username.data
-        password = form.password.data
-        result = AuthService.login_user(username, password)
-        
-        if result['success']:
-            flash('Login successful!', 'success')
-            return redirect(url_for('game.dashboard'))
-        else:
-            flash(result.get('error', 'Invalid username or password'), 'error')
+    if username is None or password is None or username == "" or password == "":
+        flash('Username and password are required', 'error')
+        return redirect(url_for('auth.index'))
     
-    return render_template('index.html', form=form)
+    result = AuthService.login_user(username, password)
+    
+    if result['success']:
+        flash('Login successful!', 'success')
+        return redirect(url_for('game.dashboard'))
+    
+    flash(result.get('error', 'Invalid username or password'), 'error')
+    return redirect(url_for('auth.index'))
     
 
 @auth_bp.route('/register', methods=['POST'])
