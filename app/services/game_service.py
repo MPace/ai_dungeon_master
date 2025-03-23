@@ -2,11 +2,8 @@
 Game Service
 """
 from app.models.game_session import GameSession
-from app.services.ai_service import AIService
+# from app.services.ai_service import AIService
 from app.services.character_service import CharacterService
-from app.services.memory_service_enhanced import EnhancedMemoryService
-from app.services.summarization_service import SummarizationService
-from app.services.chain_orchestrator import ChainOrchestrator
 from app.extensions import get_db
 from datetime import datetime
 import uuid
@@ -121,11 +118,10 @@ class GameService:
             logger.error(f"Error getting session: {str(e)}")
             return {'success': False, 'error': str(e)}
     
-
     @staticmethod
     def send_message(session_id, message, user_id):
         """
-        Send a message in a game session using Langchain orchestration
+        Send a message in a game session
         
         Args:
             session_id (str): Session ID
@@ -135,11 +131,14 @@ class GameService:
         Returns:
             dict: Result with success status and AI response
         """
-        # Initialize services
+        # Import here to avoid circular import
+        from app.services.ai_service import AIService
+        from app.services.memory_service_enhanced import EnhancedMemoryService
+        from app.services.summarization_service import SummarizationService
+
         memory_service = EnhancedMemoryService()
         summarization_service = SummarizationService()
-        chain_orchestrator = ChainOrchestrator()
-        
+
         try:
             # Check if we have a session ID
             if session_id is not None:
@@ -160,16 +159,42 @@ class GameService:
                     
                     character = character_result
                     
-                    # Generate response using chain orchestrator
-                    ai_response = chain_orchestrator.generate_response(
+                    # Store player message as short-term memory
+                    memory_service.store_memory_with_text(
+                        content=message,
+                        memory_type='short_term',
+                        session_id=session_id,
+                        character_id=character.character_id,
+                        user_id=user_id,
+                        importance=5,
+                        metadata={'sender': 'player'}
+                    )
+                    
+                    # Call AI service
+                    ai_service = AIService()
+                    ai_response = ai_service.generate_response(
                         message, 
-                        session.session_id,
+                        session.history, 
                         character, 
                         session.game_state
                     )
                     
                     # Add AI response to session history
                     session.add_message('dm', ai_response.response_text)
+                    
+                    # Store DM response as short-term memory
+                    memory_service.store_memory_with_text(
+                        content=ai_response.response_text,
+                        memory_type='short_term',
+                        session_id=session_id,
+                        character_id=character.character_id,
+                        user_id=user_id,
+                        importance=5,  # Default importance
+                        metadata={'sender': 'dm'}
+                    )
+                    
+                    # Check if summarization is needed
+                    summarization_service.trigger_summarization_if_needed(session_id)
                     
                     # Update game state
                     GameService._update_game_state(session, message)
@@ -192,9 +217,6 @@ class GameService:
                             {'character_id': session.character_id},
                             {'$set': {'last_played': datetime.utcnow()}}
                         )
-                        
-                        # Check if summarization is needed
-                        summarization_service.trigger_summarization_if_needed(session.session_id)
                         
                         return {
                             'success': True, 
@@ -238,10 +260,22 @@ class GameService:
             
             character = character_result
             
-            # Generate response using chain orchestrator
-            ai_response = chain_orchestrator.generate_response(
+            # Store player message as short-term memory
+            memory_service.store_memory_with_text(
+                content=message,
+                memory_type='short_term',
+                session_id=session.session_id,  # Use the new session ID
+                character_id=character.character_id,
+                user_id=user_id,
+                importance=5,
+                metadata={'sender': 'player'}
+            )
+            
+            # Call AI service
+            ai_service = AIService()
+            ai_response = ai_service.generate_response(
                 message, 
-                session.session_id,
+                session.history, 
                 character, 
                 session.game_state
             )
@@ -249,6 +283,17 @@ class GameService:
             # Add AI response to session history
             session.add_message('dm', ai_response.response_text)
             
+            # Store DM response as short-term memory
+            memory_service.store_memory_with_text(
+                content=ai_response.response_text,
+                memory_type='short_term',
+                session_id=session.session_id,  # Use the new session ID
+                character_id=character.character_id,
+                user_id=user_id,
+                importance=5,  # Default importance
+                metadata={'sender': 'dm'}
+            )
+
             # Update game state
             GameService._update_game_state(session, message)
             
@@ -286,12 +331,14 @@ class GameService:
             import traceback
             logger.error(traceback.format_exc())
             
-            return {'success': False, 'error': str(e)}    
-              
+            return {'success': False, 'error': str(e)}
     
     @staticmethod
     def _process_message(session, message, user_id):
         """Helper method to process a message in an existing session"""
+        # Import here to avoid circular import
+        from app.services.ai_service import AIService
+        
         try:
             # Get character data
             character = CharacterService.get_character(session.character_id, user_id)
@@ -304,7 +351,7 @@ class GameService:
             ai_response = ai_service.generate_response(
                 message, 
                 session.history, 
-                character.to_dict(), 
+                character, 
                 session.game_state
             )
             

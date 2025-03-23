@@ -1,87 +1,242 @@
-# app/services/chain_orchestrator.py
 """
-Chain Orchestrator
+Chain Orchestrator for AI Dungeon Master
+
+This module orchestrates the Langchain components for the AI Dungeon Master,
+managing the flow of information between different chains and components.
 """
 import logging
-from typing import Dict, Any, Optional, List
-from app.services.langchain_service import LangchainService
-from app.services.ai_service import AIService
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+from langchain.memory import ConversationBufferMemory
+from langchain.llms import OpenAI
 
 logger = logging.getLogger(__name__)
 
 class ChainOrchestrator:
-    """Orchestrates different Langchain chains for game states"""
+    """Orchestrates Langchain components for AI Dungeon Master"""
     
-    def __init__(self, api_key=None):
-        """Initialize chain orchestrator"""
-        self.langchain_service = LangchainService(api_key=api_key)
-        self.ai_service = AIService()
-        self.chains = {}
+    def __init__(self, api_key=None, model_name="gpt-4"):
+        """
+        Initialize the orchestrator with Langchain components
+        
+        Args:
+            api_key (str, optional): API key for the LLM service
+            model_name (str): Name of the model to use
+        """
+        self.api_key = api_key
+        self.model_name = model_name
+        self.llm = None
+        self.memory = ConversationBufferMemory(return_messages=True)
+        
+        # Initialize different chains for different game states
+        self.intro_chain = None
+        self.combat_chain = None
+        self.social_chain = None
+        self.exploration_chain = None
+        
+        # Initialize the chains
+        self._initialize_chains()
     
-    def get_chain_for_state(self, game_state, session_id, character_data):
-        """Get or create a chain for the given game state"""
-        chain_key = f"{session_id}_{game_state}"
+    def _initialize_chains(self):
+        """Initialize all the chains with appropriate templates"""
+        try:
+            # Initialize LLM
+            self.llm = OpenAI(
+                temperature=0.7,
+                model_name=self.model_name,
+                api_key=self.api_key
+            )
+            
+            # Initialize chain templates
+            self._init_intro_chain()
+            self._init_combat_chain()
+            self._init_social_chain()
+            self._init_exploration_chain()
+            
+            logger.info("Chain orchestrator initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing chains: {e}")
+            raise
+    
+    def _init_intro_chain(self):
+        """Initialize the intro chain"""
+        template = """
+        You are a skilled Dungeon Master for a D&D 5e game. Create an engaging introduction for a new player.
         
-        # Return existing chain if available
-        if chain_key in self.chains:
-            return self.chains[chain_key]
+        Character Information:
+        Name: {character_name}
+        Race: {character_race}
+        Class: {character_class}
+        Background: {character_background}
         
-        # Create system prompt based on game state
-        system_prompt = self._create_system_prompt(game_state, character_data)
+        Previous conversation:
+        {chat_history}
         
-        # Create chain
-        chain = self.langchain_service.create_memory_enhanced_chain(
-            system_prompt=system_prompt,
-            character_data=character_data,
-            session_id=session_id
+        User message: {input}
+        
+        DM response:
+        """
+        
+        prompt = PromptTemplate(
+            input_variables=["character_name", "character_race", "character_class", 
+                             "character_background", "chat_history", "input"],
+            template=template
         )
         
-        # Store chain
-        self.chains[chain_key] = chain
+        self.intro_chain = LLMChain(
+            llm=self.llm,
+            prompt=prompt,
+            memory=self.memory
+        )
+    
+    def _init_combat_chain(self):
+        """Initialize the combat chain"""
+        template = """
+        You are a skilled Dungeon Master for a D&D 5e game. The player is currently in combat.
         
-        return chain
+        Character Information:
+        Name: {character_name}
+        Race: {character_race}
+        Class: {character_class}
+        Background: {character_background}
+        
+        Previous conversation:
+        {chat_history}
+        
+        User message: {input}
+        
+        DM response: (Focus on exciting, detailed combat and use D&D 5e rules accurately)
+        """
+        
+        prompt = PromptTemplate(
+            input_variables=["character_name", "character_race", "character_class", 
+                             "character_background", "chat_history", "input"],
+            template=template
+        )
+        
+        self.combat_chain = LLMChain(
+            llm=self.llm,
+            prompt=prompt,
+            memory=self.memory
+        )
     
-    def _create_system_prompt(self, game_state, character_data):
-        """Create appropriate system prompt based on state"""
-        # Use AI service's prompt creation logic for consistency
-        return self.ai_service._create_system_prompt(game_state, character_data)
+    def _init_social_chain(self):
+        """Initialize the social chain"""
+        template = """
+        You are a skilled Dungeon Master for a D&D 5e game. The player is currently in a social interaction.
+        
+        Character Information:
+        Name: {character_name}
+        Race: {character_race}
+        Class: {character_class}
+        Background: {character_background}
+        
+        Previous conversation:
+        {chat_history}
+        
+        User message: {input}
+        
+        DM response: (Focus on rich character interactions, dialogue, and social dynamics)
+        """
+        
+        prompt = PromptTemplate(
+            input_variables=["character_name", "character_race", "character_class", 
+                             "character_background", "chat_history", "input"],
+            template=template
+        )
+        
+        self.social_chain = LLMChain(
+            llm=self.llm,
+            prompt=prompt,
+            memory=self.memory
+        )
     
-    def generate_response(self, message, session_id, character_data, game_state):
-        """Generate response using appropriate chain"""
+    def _init_exploration_chain(self):
+        """Initialize the exploration chain"""
+        template = """
+        You are a skilled Dungeon Master for a D&D 5e game. The player is currently exploring.
+        
+        Character Information:
+        Name: {character_name}
+        Race: {character_race}
+        Class: {character_class}
+        Background: {character_background}
+        
+        Previous conversation:
+        {chat_history}
+        
+        User message: {input}
+        
+        DM response: (Focus on vivid descriptions, discoveries, and environmental interactions)
+        """
+        
+        prompt = PromptTemplate(
+            input_variables=["character_name", "character_race", "character_class", 
+                             "character_background", "chat_history", "input"],
+            template=template
+        )
+        
+        self.exploration_chain = LLMChain(
+            llm=self.llm,
+            prompt=prompt,
+            memory=self.memory
+        )
+    
+    def process_message(self, message, character_data, game_state="intro", session_history=None):
+        """
+        Process a message using the appropriate chain based on the game state
+        
+        Args:
+            message (str): The user's message
+            character_data (dict): Character data
+            game_state (str): Current game state
+            session_history (list, optional): Session history
+            
+        Returns:
+            str: The response from the AI
+        """
         try:
-            # Get chain for this state
-            chain = self.get_chain_for_state(game_state, session_id, character_data)
+            # Update memory if session history is provided
+            if session_history:
+                # Clear existing memory to avoid duplication
+                self.memory.clear()
+                
+                # Add session history to memory
+                for entry in session_history:
+                    if entry['sender'] == 'player':
+                        self.memory.chat_memory.add_user_message(entry['message'])
+                    else:
+                        self.memory.chat_memory.add_ai_message(entry['message'])
             
-            # Run chain
-            result = self.langchain_service.run_chain(
-                chain=chain,
-                message=message,
-                session_id=session_id,
-                character_id=character_data.get("character_id")
-            )
+            # Prepare inputs for the chain
+            inputs = {
+                "character_name": character_data.get('name', 'Unknown'),
+                "character_race": character_data.get('race', 'Unknown'),
+                "character_class": character_data.get('class', 'Unknown'),
+                "character_background": character_data.get('background', 'Unknown'),
+                "input": message
+            }
             
-            # Wrap in AI response object for compatibility
-            from app.models.ai_response import AIResponse
+            # Select the appropriate chain based on game state
+            if game_state == "combat":
+                chain = self.combat_chain
+            elif game_state == "social":
+                chain = self.social_chain
+            elif game_state == "exploration":
+                chain = self.exploration_chain
+            else:  # Default to intro chain
+                chain = self.intro_chain
             
-            response = AIResponse(
-                response_text=result.get("response", ""),
-                session_id=session_id,
-                character_id=character_data.get("character_id"),
-                prompt=message,
-                model_used=self.langchain_service.model_name
-            )
+            # Run the chain
+            response = chain.run(**inputs)
             
-            return response
+            return response.strip()
+            
         except Exception as e:
-            logger.error(f"Error generating response with chain: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
-            
-            # Fallback to standard AI service
-            logger.info("Falling back to standard AI service")
-            return self.ai_service.generate_response(
-                message, 
-                [], 
-                character_data, 
-                game_state
-            )
+            logger.error(f"Error processing message with chain: {e}")
+            # Provide a fallback response
+            return "The Dungeon Master seems momentarily distracted. Please try again."
+    
+    def reset_memory(self):
+        """Reset the memory to clear conversation history"""
+        self.memory.clear()
