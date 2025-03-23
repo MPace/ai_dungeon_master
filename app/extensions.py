@@ -3,7 +3,7 @@ Extensions module.
 Each extension is initialized in the app factory located in app/__init__.py
 """
 import pymongo
-from flask import g, session, redirect, url_for, flash, request
+from flask import gurl_for, flash, request
 from functools import wraps
 import os
 import logging
