@@ -46,53 +46,106 @@ class Character:
     def from_dict(cls, data):
         """Create a Character instance from a dictionary"""
         if not data:
+            logger.warning("Empty data passed to Character.from_dict")
             return None
         
-        if 'character_id' not in data or not data['character_id']:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Skipping character record missing character_id: {data.get('_id')}")
+        try:
+            # First check for required fields
+            if 'name' not in data:
+                logger.warning("Character data missing 'name' field")
+                return None
+                
+            # Handle 'character_id' being missing or None
+            if 'character_id' not in data or not data['character_id']:
+                import uuid
+                character_id = str(uuid.uuid4())
+                logger.info(f"Generated missing character_id: {character_id}")
+            else:
+                character_id = data['character_id']
+            
+            # Convert _id from ObjectId to string if present
+            _id = data.get('_id')
+            if isinstance(_id, ObjectId):
+                _id = str(_id)
+            
+            # Map 'class' key to 'character_class' attribute
+            character_class = data.get('class')
+            if not character_class and 'character_class' in data:
+                character_class = data.get('character_class')
+            
+            # Map 'isDraft' to 'is_draft'
+            is_draft = data.get('isDraft', False)
+            
+            # Get other fields with appropriate defaults
+            abilities = data.get('abilities', {})
+            skills = data.get('skills', [])
+            
+            # Parse datetime fields
+            created_at = data.get('created_at')
+            if isinstance(created_at, str):
+                try:
+                    created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                except ValueError:
+                    created_at = datetime.utcnow()
+            elif not created_at:
+                created_at = datetime.utcnow()
+                
+            updated_at = data.get('updated_at')
+            if isinstance(updated_at, str):
+                try:
+                    updated_at = datetime.fromisoformat(updated_at.replace('Z', '+00:00'))
+                except ValueError:
+                    updated_at = datetime.utcnow()
+            elif not updated_at:
+                updated_at = datetime.utcnow()
+                
+            last_played = data.get('last_played')
+            if isinstance(last_played, str):
+                try:
+                    last_played = datetime.fromisoformat(last_played.replace('Z', '+00:00'))
+                except ValueError:
+                    last_played = None
+                    
+            completed_at = data.get('completedAt')
+            if isinstance(completed_at, str):
+                try:
+                    completed_at = datetime.fromisoformat(completed_at.replace('Z', '+00:00'))
+                except ValueError:
+                    completed_at = None if is_draft else datetime.utcnow()
+            
+            # Map 'hitPoints' to 'hit_points'
+            hit_points = data.get('hitPoints', {})
+            if not hit_points and 'hit_points' in data:
+                hit_points = data.get('hit_points', {})
+                
+            # Construct the character instance
+            return cls(
+                name=data.get('name', ''),
+                race=data.get('race', ''),
+                character_class=character_class,
+                background=data.get('background', ''),
+                level=data.get('level', 1),
+                abilities=abilities,
+                skills=skills,
+                equipment=data.get('equipment', {}),
+                features=data.get('features', {}),
+                spellcasting=data.get('spellcasting', {}),
+                hit_points=hit_points,
+                description=data.get('description', ''),
+                user_id=data.get('user_id'),
+                character_id=character_id,
+                created_at=created_at,
+                updated_at=updated_at,
+                last_played=last_played,
+                is_draft=is_draft,
+                completed_at=completed_at,
+                _id=_id
+            )
+        except Exception as e:
+            logger.error(f"Error in Character.from_dict: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return None
-        
-        # Convert _id from ObjectId to string if present
-        _id = data.get('_id')
-        if isinstance(_id, ObjectId):
-            _id = str(_id)
-        
-        # Map 'class' key to 'character_class' attribute
-        character_class = data.get('class')
-        if not character_class and 'character_class' in data:
-            character_class = data.get('character_class')
-        
-        # Map 'isDraft' to 'is_draft'
-        is_draft = data.get('isDraft', False)
-        
-        # Get other fields with appropriate defaults
-        abilities = data.get('abilities', {})
-        skills = data.get('skills', [])
-        
-        return cls(
-            name=data.get('name', ''),
-            race=data.get('race', ''),
-            character_class=character_class,
-            background=data.get('background', ''),
-            level=data.get('level', 1),
-            abilities=abilities,
-            skills=skills,
-            equipment=data.get('equipment', {}),
-            features=data.get('features', {}),
-            spellcasting=data.get('spellcasting', {}),
-            hit_points=data.get('hitPoints', {}),
-            description=data.get('description', ''),
-            user_id=data.get('user_id'),
-            character_id=data.get('character_id'),
-            created_at=data.get('created_at'),
-            updated_at=data.get('updated_at'),
-            last_played=data.get('last_played'),
-            is_draft=is_draft,
-            completed_at=data.get('completedAt'),
-            _id=_id
-        )
     
     def to_dict(self):
         """Convert Character instance to a dictionary for JSON serialization"""

@@ -5,9 +5,10 @@ from flask import render_template, request, redirect, url_for, flash, jsonify, s
 from app.game import game_bp
 from app.services.game_service import GameService
 from app.services.character_service import CharacterService
-from app.services.auth_service import AuthService
+from app.extensions import get_db
 from functools import wraps
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -85,24 +86,33 @@ def play_game(character_id):
         
         character = character_result.get('character')
         if not character:
-            logger.warning(f"Character object in None: {character_id}")
+            logger.warning(f"Character object is None: {character_id}")
             flash('Error loading character', 'error')
-            return redirect(url_for('game_dashboard'))
+            return redirect(url_for('game.dashboard'))
         
-        logger.info (f"Characer loaded successfully: {character.name}")
+        logger.info(f"Character loaded successfully: {character.name}")
         
-        # Check if this character belongs to the current user
-        #if str(character.get('user_id')) != str(user_id):
-        #    logger.error(f"User ID mismatch: character user_id={character.get('user_id')}, session user_id={user_id}")
-        #    flash('You do not have permission to access this character', 'error')
-        #    return redirect(url_for('game.dashboard'))
-        
-        # Update last played timestamp
-        #CharacterService.update_last_played(character_id)
-
         # Convert the Character object to a dictionary for JSON serialization
         character_dict = character.to_dict()
-
+        
+        # Log character data for debugging
+        logger.info(f"Character dictionary has keys: {character_dict.keys()}")
+        
+        # Update last played timestamp
+        try:
+            character.last_played = datetime.utcnow()
+            character_dict = character.to_dict()  # Update the dictionary with new timestamp
+            
+            # Save the updated timestamp
+            db = get_db()
+            if db is not None:
+                db.characters.update_one(
+                    {'character_id': character_id},
+                    {'$set': {'last_played': datetime.utcnow()}}
+                )
+        except Exception as e:
+            logger.warning(f"Error updating last_played timestamp: {e}")
+        
         return render_template('dm.html', character=character_dict)
     
     except Exception as e:

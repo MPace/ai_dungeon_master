@@ -81,25 +81,53 @@ class CharacterService:
                 logger.error("Database connection failed when creating character")
                 return {'success': False, 'error': 'Database connection error'}
             
-            # Add user_id to character data
-            character_data['user_id'] = user_id
+            # Add user_id to character data if not already present
+            if 'user_id' not in character_data:
+                character_data['user_id'] = user_id
             
             # Generate character_id if not provided
-            if 'character_id' not in character_data:
+            if 'character_id' not in character_data or not character_data['character_id']:
                 character_data['character_id'] = str(uuid.uuid4())
+                logger.info(f"Generated new character_id: {character_data['character_id']}")
             
             # Create character instance
             character = Character.from_dict(character_data)
+            if character is None:
+                logger.error(f"Failed to create Character from data: {character_data}")
+                return {'success': False, 'error': 'Failed to create Character object'}
             
             # Mark as complete (not a draft)
             character.is_draft = False
             character.completed_at = datetime.utcnow()
             
-            # Save to database
-            CharacterService._save_character(character)
+            # Save to database directly
+            character_dict = character.to_dict()
             
-            return {'success': True, 'character': character}
+            # Insert or update in database
+            result = db.characters.update_one(
+                {'character_id': character.character_id, 'user_id': user_id},
+                {'$set': character_dict},
+                upsert=True
+            )
             
+            if result.acknowledged:
+                logger.info(f"Character saved: {character.name} with ID: {character.character_id}")
+                
+                # Delete any drafts
+                try:
+                    db.character_drafts.delete_one({
+                        'character_id': character.character_id,
+                        'user_id': user_id
+                    })
+                    logger.info(f"Deleted draft for character: {character.character_id}")
+                except Exception as draft_e:
+                    logger.warning(f"Error deleting draft: {draft_e}")
+                
+                return {'success': True, 'character': character}
+            else:
+                logger.error(f"Failed to save character to database: {character.name}")
+                return {'success': False, 'error': 'Failed to save character to database'}
+                
         except Exception as e:
             logger.error(f"Error creating character: {str(e)}")
             import traceback
@@ -192,17 +220,19 @@ class CharacterService:
                 return {'success': False, 'error': 'Character not found'}
             
             # Convert dictionary to Character object
-            from app.models.character import Character
             character = Character.from_dict(character_data)
             
             if character:
+                logger.info(f"Character found: {character.name}")
                 return {'success': True, 'character': character}
             else:
                 logger.warning(f"Failed to create Character object from data: {character_id}")
                 return {'success': False, 'error': 'Failed to create Character object'}
-                
+                    
         except Exception as e:
             logger.error(f"Error getting character: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
     @staticmethod

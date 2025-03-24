@@ -75,6 +75,7 @@ def create():
     return render_template('create.html', draft=draft)
 
 @characters_bp.route('/api/save-character', methods=['POST'])
+@login_required
 def save_character_route():
     try:
         # Get character data from request
@@ -127,9 +128,10 @@ def save_character_route():
             character_data['character_id'] = character_id
         
         # Check if character already exists
-        existing_character = CharacterService.get_character(character_id, user_id)
+        existing_result = CharacterService.get_character(character_id, user_id)
+        existing_character = existing_result.get('character') if existing_result.get('success', False) else None
         
-        if existing_character is not None and existing_character.get('isDraft') is not True:
+        if existing_character is not None and not existing_character.is_draft:
             # This character already exists as a completed character
             # Log this submission to prevent future duplicates
             if submission_id is not None:
@@ -148,9 +150,11 @@ def save_character_route():
         
         # Now save the character
         result = CharacterService.create_character(character_data, user_id)
-        saved_id = character_id if result ['success'] else None
-
-        if saved_id is not None:
+        
+        if result['success']:
+            # Get the character_id from the result
+            saved_id = result['character'].character_id if hasattr(result['character'], 'character_id') else character_id
+            
             # Log this submission to prevent future duplicates
             if submission_id is not None:
                 CharacterService.log_submission(submission_id, saved_id, user_id)
@@ -163,7 +167,7 @@ def save_character_route():
         else:
             return jsonify({
                 'success': False,
-                'error': 'Failed to save character'
+                'error': result.get('error', 'Failed to save character')
             }), 500
     
     except Exception as e:
