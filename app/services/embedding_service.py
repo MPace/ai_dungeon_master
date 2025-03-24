@@ -97,11 +97,11 @@ class EmbeddingService:
             attention_mask = inputs['attention_mask']
             
             # Expand attention mask from [batch_size, seq_length] to [batch_size, seq_length, hidden_size]
-            input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+            input_mask_expanded = attention_mask.unsqueeze(-1).expand_as(token_embeddings).float()
             
             # Calculate mean of token embeddings (ignoring padding tokens)
-            sum_embeddings = torch.sum(token_embeddings * input_mask_expanded, 1)
-            sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+            sum_embeddings = torch.sum(token_embeddings * input_mask_expanded, dim=1)
+            sum_mask = torch.clamp(attention_mask.sum(dim=1).unsqueeze(-1), min=1e-9)
             mean_pooled = sum_embeddings / sum_mask
             
             # Convert to numpy array and then to list
@@ -176,9 +176,10 @@ class EmbeddingService:
             # Mean pooling
             token_embeddings = outputs.last_hidden_state
             attention_mask = inputs['attention_mask']
-            input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-            sum_embeddings = torch.sum(token_embeddings * input_mask_expanded, 1)
-            sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+            input_mask_expanded = attention_mask.unsqueeze(-1).expand_as(token_embeddings).float()
+
+            sum_embeddings = torch.sum(token_embeddings * input_mask_expanded, dim=1)
+            sum_mask = torch.clamp(attention_mask.sum(dim=1).unsqueeze(-1), min=1e-9)
             batch_embeddings = sum_embeddings / sum_mask
             
             # Convert to list of lists
