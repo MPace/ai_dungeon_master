@@ -64,8 +64,8 @@ def dashboard():
     
     return render_template('user.html',
                               username=session.get('username', 'User'),
-                              characters=[],
-                              drafts=[])
+                              characters=characters,
+                              drafts=drafts)
 
 @game_bp.route('/play/<character_id>')
 @login_required
@@ -76,14 +76,21 @@ def play_game(character_id):
     
     try:
         # Get character data
-        character = CharacterService.get_character(character_id, user_id)
+        character_result = CharacterService.get_character(character_id, user_id)
         
-        if not character:
+        if not character_result.get('success', False):
             logger.warning(f"Character not found: {character_id}")
             flash('Character not found', 'error')
             return redirect(url_for('game.dashboard'))
         
-        logger.info(f"Character loaded succesfully: {character.get('name')}")
+        character = character_result.get('character')
+        if not character:
+            logger.warning(f"Character object in None: {character_id}")
+            flash('Error loading character', 'error')
+            return redirect(url_for('game_dashboard'))
+        
+        logger.info (f"Characer loaded successfully: {character.name}")
+        
         # Check if this character belongs to the current user
         #if str(character.get('user_id')) != str(user_id):
         #    logger.error(f"User ID mismatch: character user_id={character.get('user_id')}, session user_id={user_id}")

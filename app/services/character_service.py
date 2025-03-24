@@ -162,7 +162,7 @@ class CharacterService:
     @staticmethod
     def get_character(character_id, user_id=None):
         """
-        Get a game session by ID
+        Get a character by ID
         
         Args:
             character_id (str): Character ID
@@ -181,6 +181,8 @@ class CharacterService:
             query = {'character_id': character_id}
             if user_id is not None:
                 query['user_id'] = user_id
+            
+            logger.info(f"Querying for character with: {query}")
             
             # Find character
             character_data = db.characters.find_one(query)
