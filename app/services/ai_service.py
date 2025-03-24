@@ -175,6 +175,102 @@ class AIService:
             player_message, conversation_history, character_data, game_state
         )
     
+    def _create_system_prompt(self, game_state, character_data):
+        """
+        Create a system prompt based on game state and character data
+        
+        Args:
+            game_state (str): Current game state (intro, combat, social, exploration)
+            character_data (dict): Character data
+            
+        Returns:
+            str: System prompt for AI
+        """
+        # Base prompt that applies to all states
+        base_prompt = (
+            "You are a seasoned Dungeon Master for a Dungeons & Dragons 5th Edition game, guiding a solo player through a rich fantasy world. "
+            "Your role is to weave an immersive, engaging story, staying fully in character as a narrator and arbiter of the world. "
+            "Respond with vivid descriptions, distinct NPC personalities, and a natural flow that draws the player into the adventure. "
+            "Adhere strictly to D&D 5e rules, incorporating dice rolls (e.g., 'Roll a d20 for Perception') and mechanics only when necessary—blend them seamlessly into the narrative. "
+            "When D&D 5e rules require a dice roll (e.g., Initiative, attack, skill check), prompt the player to roll the die (e.g., 'Roll a d20 for Initiative') and pause your response there. "
+            "Do not guess, assume, or simulate the player's roll—wait for their next message with the result before advancing the story or resolving outcomes."
+            "\n\n"
+        )
+        
+        # Format character information
+        character_info = (
+            f"## CHARACTER INFORMATION:\n"
+            f"Name: {character_data.get('name', 'Unknown')}\n"
+            f"Race: {character_data.get('race', 'Unknown')}\n"
+            f"Class: {character_data.get('class', 'Unknown')}\n"
+            f"Level: {character_data.get('level', 1)}\n"
+            f"Background: {character_data.get('background', 'Unknown')}\n"
+        )
+        
+        # Add abilities
+        abilities_section = ""
+        if character_data.get('abilities'):
+            abilities_section = "Ability Scores:\n"
+            for ability, score in character_data['abilities'].items():
+                modifier = (score - 10) // 2
+                sign = "+" if modifier >= 0 else ""
+                abilities_section += f"- {ability.capitalize()}: {score} ({sign}{modifier})\n"
+        
+        # Add skills
+        skills_section = ""
+        if character_data.get('skills') and len(character_data['skills']) > 0:
+            skills_section = "Skill Proficiencies:\n"
+            for skill in character_data['skills']:
+                skills_section += f"- {skill}\n"
+        
+        # Add description
+        description_section = ""
+        if character_data.get('description'):
+            description_section = f"Description: {character_data['description']}\n"
+        
+        # State-specific prompts
+        state_prompts = {
+            "combat": (
+                "The player is currently in combat. Narrate the scene with high stakes and visceral detail—blood, steel, and chaos. "
+                "Manage combat turns: describe the enemy's action, then prompt the player for their move. "
+                "For dice rolls like initiative, attack rolls, or saves, always prompt the player to roll and stop there—do not assume or simulate the player's roll. "
+                "Wait for the player to provide the result in their next message before continuing the combat sequence. "
+                "Keep the pace fast and tense, but respect the player's agency over their rolls."
+            ),
+            "social": (
+                "The player is in a social interaction. Portray NPCs with distinct personalities, motivations, and speech patterns. "
+                "Respond to social approaches and charisma-based actions with appropriate reactions. "
+                "Give NPCs clear voices, mannerisms, and attitudes that make them memorable. "
+                "Allow for persuasion, deception, and intimidation attempts where appropriate, calling for dice rolls when needed."
+            ),
+            "exploration": (
+                "The player is exploring. Describe the environment in rich detail with sensory information and interesting features that reward investigation. "
+                "Offer clear directions and points of interest. Hint at possible secrets or hidden elements to create a sense of wonder and discovery. "
+                "When perception, investigation, or other checks are needed, prompt for dice rolls and wait for player input."
+            ),
+            "intro": (
+                "This is the beginning of a new adventure. Introduce the world to the player with rich detail and atmosphere. "
+                "Set the initial scene and establish the tone of the campaign. "
+                "Provide hooks or motivations for the player to begin their journey, but let them decide how to proceed. "
+                "Help establish the character's place in the world, considering their background and abilities."
+            )
+        }
+        
+        # Get the state-specific prompt, default to intro if not found
+        state_prompt = state_prompts.get(game_state, state_prompts["intro"])
+        
+        # Combine all sections
+        full_prompt = (
+            f"{base_prompt}"
+            f"{state_prompt}\n\n"
+            f"{character_info}\n"
+            f"{abilities_section}\n"
+            f"{skills_section}\n"
+            f"{description_section}\n"
+        )
+        
+        return full_prompt
+
     def _generate_standard_response(self, player_message, conversation_history, character_data, game_state):
         """Generate response using standard API implementation"""
         session_id = character_data.get('session_id')
