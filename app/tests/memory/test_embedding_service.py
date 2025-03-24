@@ -52,18 +52,16 @@ class TestEmbeddingService:
         with patch('torch.cuda.is_available', return_value=False):
             service = EmbeddingService(model_name="test-model")
             # Mock the model forward pass to return predictable embeddings
-            def mock_forward(**kwargs):
+            def mock_forward(*args, **kwargs):
                 import torch
                 # Return a tensor with a shape that matches what the model would output
                 last_hidden_state = torch.ones((1, 10, 384), dtype=torch.float)
+                return type('MockOutput', (), {'last_hidden_state': last_hidden_state})()
+
                 
-                class MockOutput:
-                    def __init__(self, hidden_state):
-                        self.last_hidden_state = hidden_state
-                
-                return MockOutput(last_hidden_state)
             
-            service.model.return_value = mock_forward
+            service.model.forward = mock_forward
+            service.model.__call__ = mock_forward
             return service
 
     def test_initialization(self, embedding_service):
