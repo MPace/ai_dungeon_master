@@ -35,8 +35,6 @@ class TestEmbeddingService:
     def mock_tokenizer(self):
         """Mock AutoTokenizer from Hugging Face"""
         with patch('transformers.AutoTokenizer.from_pretrained') as mock_tokenizer:
-            mock_instance = MagicMock()
-            
             def mock_tokenize(texts, **kwargs):
                 if isinstance(texts, str):
                     batch_size = 1
@@ -48,14 +46,48 @@ class TestEmbeddingService:
                     'attention_mask': torch.ones((batch_size, 10), dtype=torch.long)
                 }
             
+            mock_instance = MagicMock()
             mock_instance.__call__ = mock_tokenize
+            mock_instance.side_effect = mock_tokenize
             mock_tokenizer.return_value = mock_instance
             yield mock_instance
 
     @pytest.fixture
-    def embedding_service(self, mock_model, mock_tokenizer):
+    def embedding_service(self):
         """Create an EmbeddingService with mocked dependencies"""
-        with patch('torch.cuda.is_available', return_value=False):
+        with patch('torch.cuda.is_available', return_value=False), \
+             patch('transformers.AutoTokenizer.from_pretrained') as mock_tokenizer, \
+             patch('transformers.AutoModel.from_pretrained') as mock_model:
+            
+            # Set up tokenizer mock
+            def mock_tokenize(texts, **kwargs):
+                if isinstance(texts, str):
+                    batch_size = 1
+                else:
+                    batch_size = len(texts)
+                return {
+                    'input_ids': torch.ones((batch_size, 10), dtype=torch.long),
+                    'attention_mask': torch.ones((batch_size, 10), dtype=torch.long)
+                }
+            
+            tokenizer_instance = MagicMock()
+            tokenizer_instance.__call__ = mock_tokenize
+            mock_tokenizer.return_value = tokenizer_instance
+            
+            # Set up model mock
+            model_instance = MagicMock()
+            def mock_forward(**kwargs):
+                batch_size = kwargs['input_ids'].shape[0]
+                return type('MockOutput', (), {
+                    'last_hidden_state': torch.ones((batch_size, 10, 384), dtype=torch.float) * 0.5
+                })()
+            
+            model_instance.forward = mock_forward
+            model_instance.__call__ = mock_forward
+            model_instance.eval = MagicMock(return_value=model_instance)
+            model_instance.to = MagicMock(return_value=model_instance)
+            mock_model.return_value = model_instance
+            
             service = EmbeddingService(model_name="test-model")
             return service
 
@@ -74,6 +106,7 @@ class TestEmbeddingService:
         assert isinstance(embedding, list)
         assert len(embedding) == 384
         assert all(isinstance(x, float) for x in embedding)
+        assert not all(x == 0.0 for x in embedding)  # Make sure we're not getting zero vectors
 
     def test_embedding_caching(self, embedding_service):
         """Test that embeddings are cached and reused"""
@@ -81,6 +114,10 @@ class TestEmbeddingService:
         
         # First call should compute the embedding
         first_embedding = embedding_service.generate_embedding(test_text)
+        
+        # Verify first embedding is valid
+        assert len(first_embedding) == 384
+        assert not all(x == 0.0 for x in first_embedding)
         
         # Second call should use the cache
         second_embedding = embedding_service.generate_embedding(test_text)
@@ -103,9 +140,7 @@ class TestEmbeddingService:
         # Check results
         assert len(embeddings) == 3
         assert all(len(emb) == 384 for emb in embeddings)
-        
-        # Check that each embedding is different from zero
-        assert not all(all(x == 0.0 for x in emb) for emb in embeddings)
+        assert all(not all(x == 0.0 for x in emb) for emb in embeddings)  # No zero vectors
 
     def test_fallback_behavior(self, embedding_service):
         """Test fallback behavior when model fails"""
