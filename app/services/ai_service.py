@@ -91,15 +91,25 @@ class AIService:
         Args:
             player_message (str): The message from the player
             conversation_history (list): List of previous messages
-            character_data (dict): Character data
+            character_data (dict or Character): Character data (can be dict or Character object)
             game_state (str): Current game state
             
         Returns:
             AIResponse: The AI-generated response
         """
-        session_id = character_data.get('session_id')
-        character_id = character_data.get('character_id')
-        user_id = character_data.get('user_id')
+        # Handle character_data being either a Character object or a dictionary
+        if hasattr(character_data, 'to_dict'):
+            # It's a Character object
+            character_dict = character_data.to_dict()
+            session_id = character_dict.get('session_id')
+            character_id = character_dict.get('character_id')
+            user_id = character_dict.get('user_id')
+        else:
+            # It's already a dictionary
+            character_dict = character_data
+            session_id = character_dict.get('session_id')
+            character_id = character_dict.get('character_id')
+            user_id = character_dict.get('user_id')
         
         # Check cache for exact match
         cache_key = self._create_cache_key(player_message, character_id, game_state)
@@ -123,7 +133,7 @@ class AIService:
                 # Process with Langchain
                 result = self.chain_orchestrator.process_message(
                     player_message,
-                    character_data,
+                    character_dict,
                     game_state,
                     conversation_history
                 )
@@ -137,7 +147,7 @@ class AIService:
                     logger.warning(f"Unexpected result type from chain_orchestrator: {type(result)}")
                     logger.warning("Falling back to standard API implementation")
                     return self._generate_standard_response(
-                        player_message, conversation_history, character_data, game_state
+                        player_message, conversation_history, character_dict, game_state
                     )
                 
                 # Create AIResponse object
@@ -172,7 +182,7 @@ class AIService:
         
         # Standard API implementation (fallback)
         return self._generate_standard_response(
-            player_message, conversation_history, character_data, game_state
+            player_message, conversation_history, character_dict, game_state
         )
     
     def _create_system_prompt(self, game_state, character_data):
