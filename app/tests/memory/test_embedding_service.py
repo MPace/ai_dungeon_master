@@ -36,6 +36,7 @@ class TestEmbeddingService:
             # Make tokenizer return a simple tensor with attention mask
             def mock_tokenize(text, return_tensors=None, padding=None, truncation=None, max_length=None):
                 import torch
+                batch_size = 1 if isinstance(text, str) else len(text)
                 # Create a simple mock tensor that matches what the real tokenizer would return
                 return {
                     'input_ids': torch.ones((1, 10), dtype=torch.long),
@@ -54,6 +55,7 @@ class TestEmbeddingService:
             # Mock the model forward pass to return predictable embeddings
             def mock_forward(*args, **kwargs):
                 import torch
+                batch_size = kwargs.get('input_ids', torch.ones(1,10)).shape[0]
                 # Return a tensor with a shape that matches what the model would output
                 last_hidden_state = torch.ones((1, 10, 384), dtype=torch.float)
                 return type('MockOutput', (), {'last_hidden_state': last_hidden_state})()
@@ -62,6 +64,7 @@ class TestEmbeddingService:
             
             service.model.forward = mock_forward
             service.model.__call__ = mock_forward
+
             return service
 
     def test_initialization(self, embedding_service):
@@ -97,16 +100,15 @@ class TestEmbeddingService:
         test_text = "This is a test for caching"
         
         # Configure mock forward pass
-        with patch.object(embedding_service.model, '__call__') as mock_call:
+        with patch.object(embedding_service.model, 'forward') as mock_forward:
             import torch
             # Return a tensor with recognizable values
             values = torch.ones((1, 10, 384), dtype=torch.float) * 0.5
             
-            class MockOutput:
-                def __init__(self, hidden_state):
-                    self.last_hidden_state = hidden_state
+            def mock_fn(*args, **kwargs):
+                return type('MockOutput', (), {'last_hidden_state': values})()
             
-            mock_call.return_value = MockOutput(values)
+            mock_forward.side_effect = mock_fn
             
             # First call should compute the embedding
             first_embedding = embedding_service.generate_embedding(test_text)
@@ -118,7 +120,7 @@ class TestEmbeddingService:
             assert first_embedding == second_embedding
             
             # Model should only be called once
-            assert mock_call.call_count == 1
+            assert mock_forward.call_count == 1
             
             # Check cache stats
             cache_stats = embedding_service.get_cache_stats()
@@ -130,16 +132,15 @@ class TestEmbeddingService:
         texts = ["First test text", "Second test text", "Third test text"]
         
         # Configure mock forward pass
-        with patch.object(embedding_service.model, '__call__') as mock_call:
+        with patch.object(embedding_service.model, 'forward') as mock_forward:
             import torch
             # Return a tensor with shape matching batch size
             values = torch.ones((3, 10, 384), dtype=torch.float) * 0.5
             
-            class MockOutput:
-                def __init__(self, hidden_state):
-                    self.last_hidden_state = hidden_state
+            def mock_fn(*args, **kwargs):
+                return type('MockOutput', (), {'last_hidden_state': values})()
             
-            mock_call.return_value = MockOutput(values)
+            mock_forward.side_effect = mock_fn
             
             # Generate batch embeddings
             embeddings = embedding_service.generate_batch_embeddings(texts)
@@ -149,7 +150,7 @@ class TestEmbeddingService:
             assert all(len(emb) == 384 for emb in embeddings)
             
             # Model should be called once for the batch
-            assert mock_call.call_count == 1
+            assert mock_forward.call_count == 1
     
     def test_fallback_behavior(self, embedding_service):
         """Test fallback behavior when model fails"""
