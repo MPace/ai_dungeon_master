@@ -272,46 +272,46 @@ function setupChatEvents() {
     
     // Send button click
     if (sendButton) {
-        sendButton.addEventListener('click', sendMessage);
+        sendButton.addEventListener('click', handleSendMessage);
     }
     
     // Enter key in input field
     if (playerInput) {
         playerInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                sendMessage();
+                handleSendMessage();
             }
         });
         
         // Focus on input field by default
         playerInput.focus();
     }
-    
-    // Function to send message
-    window.sendMessage = function() {
-        if (!playerInput) return;
-        
-        const message = playerInput.value.trim();
-        if (!message) return;
-        
-        // Add player message to chat
-        addMessageToChat(message, 'player');
-        
-        // Clear input field
-        playerInput.value = '';
-        
-        // Focus back on input field for next message
-        playerInput.focus();
-        
-        // Send to server
-        sendToServer(message);
-    };
-    
-    // Assign to window for external access
-    if (typeof window !== 'undefined') {
-        window.sendMessage = sendMessage;
-    }
 }
+
+/**
+ * Handle sending a message
+ */
+function handleSendMessage() {
+    const playerInput = document.getElementById('playerInput');
+    if (!playerInput) return;
+    
+    const message = playerInput.value.trim();
+    if (!message) return;
+    
+    // Add player message to chat
+    addMessageToChat(message, 'player');
+    
+    // Clear input field
+    playerInput.value = '';
+    
+    // Focus back on input field for next message
+    playerInput.focus();
+    
+    // Send to server
+    sendToServer(message);
+}
+
+window.sendMessage = handleSendMessage;
 
 /**
  * Set up context menu for messages
