@@ -99,8 +99,11 @@ def play_game(character_id):
         
         # Update last played timestamp
         #CharacterService.update_last_played(character_id)
-        
-        return render_template('dm.html', character=character)
+
+        # Convert the Character object to a dictionary for JSON serialization
+        character_dict = character.to_dict()
+
+        return render_template('dm.html', character=character_dict)
     
     except Exception as e:
         logger.error(f"Error in play_game route: {e}")
