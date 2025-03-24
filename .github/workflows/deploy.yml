@@ -17,8 +17,8 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /var/www/staging_ai_dungeon_master
-            git pull origin staging
             git stash push -m "Auto-stashed by GitHub Actions"
+            git pull origin staging
             source venv/bin/activate
             pip install -r requirements.txt
             systemctl restart staging-gunicorn
