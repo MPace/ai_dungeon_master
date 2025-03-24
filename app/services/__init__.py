@@ -6,4 +6,4 @@ Services package initialization
 #from app.services.game_service import GameService
 #from app.services.ai_service import AIService
 
-__all__ = ['AuthService', 'CharacterService', 'GameService', 'AIService']
+__all__ = ['AuthService', 'CharacterService', 'GameService', 'AIService', 'SummarizationService', 'ChainOrchestrator', 'EmbeddingService', 'VectorDBMemory', 'SummarizingMemory', 'LangchainService', 'BaseMemoryInterface', 'ShortTermMemoryInterface', 'LongTermMemoryInterface', 'SemanticMemoryInterface', 'EnhancedMemoryService', 'MemoryService']

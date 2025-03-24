@@ -826,73 +826,53 @@ class GameService:
     @staticmethod
     def _generate_session_summary(session):
         """
-        Generate a summary for the session
+        Generate a summary of the gaming session using the BART summarization model.
         
         Args:
-            session (GameSession): Game session
+            session (GameSession): Game session object
             
         Returns:
-            None
+            str: A concise summary of the gaming session
         """
         try:
-            # In a real implementation, we would use the SummarizationService
-            # For now, we'll just create a simple summary based on the recent messages
-            
-            # For a proper implementation, use ChatGPT or similar to generate a better summary
+            # Import the summarization service here to avoid circular imports
             from app.services.summarization_service import SummarizationService
             
-            # Get the last 10 messages
-            recent_messages = session.history[-10:]
+            # Initialize the summarization service
+            summarization_service = SummarizationService()
             
-            # Format into a single text
-            conversation_text = "\n".join([
-                f"{'DM' if msg['sender'] == 'dm' else 'Player'}: {msg['message']}"
-                for msg in recent_messages
-            ])
+            # Use recent messages from the session history
+            # Typically we'd use the last 20 messages or so
+            recent_messages = session.history[-20:] if len(session.history) >= 20 else session.history
             
-            # Use summarization service if available
-            try:
-                summarization_service = SummarizationService()
-                summary = summarization_service.summarize_text(conversation_text, max_length=150, min_length=50)
-                session.update_session_summary(summary)
-                return
-            except Exception as e:
-                logger.error(f"Error using summarization service: {e}")
-                # Fall back to simple summary
+            # Extract the text content from messages
+            message_texts = []
+            for msg in recent_messages:
+                if isinstance(msg, dict):
+                    message_texts.append(f"{msg.get('sender', 'Unknown')}: {msg.get('content', '')}")
+                else:
+                    message_texts.append(str(msg))
             
-            # Fall back to simple summary approach
-            # Count recent entities
-            entities = {}
-            for entity_name, entity_data in session.important_entities.items():
-                entity_type = entity_data.get('type', 'unknown')
-                if entity_type not in entities:
-                    entities[entity_type] = []
-                entities[entity_type].append(entity_name)
+            # Join messages into a single text
+            full_text = " ".join(message_texts)
             
-            # Create simple summary
-            summary_parts = []
-            summary_parts.append(f"Session has {len(session.history)} messages.")
+            # Call the BART summarization service
+            summary = summarization_service.summarize(
+                text=full_text,
+                session_id=session.session_id,
+                max_length=150  # Adjust based on your requirements
+            )
             
-            if 'npc' in entities and entities['npc']:
-                summary_parts.append(f"NPCs encountered: {', '.join(entities['npc'][:3])}.")
-            
-            if 'location' in entities and entities['location']:
-                summary_parts.append(f"Locations visited: {', '.join(entities['location'][:3])}.")
-            
-            if 'item' in entities and entities['item']:
-                summary_parts.append(f"Items found: {', '.join(entities['item'][:3])}.")
-            
-            if session.player_decisions:
-                recent_decisions = session.player_decisions[-3:]
-                decision_texts = [d.get('decision', '') for d in recent_decisions]
-                summary_parts.append(f"Recent decisions: {'; '.join(decision_texts)}.")
-            
-            session.update_session_summary(' '.join(summary_parts))
+            # Update the session summary
+            session.session_summary = summary
+            return summary
             
         except Exception as e:
-            logger.error(f"Error generating session summary: {e}")
-            session.update_session_summary("Summary generation failed.")
-    
+            # Log the error but provide a fallback summary
+            logging.error(f"Failed to generate summary for session {session.session_id}: {str(e)}")
+            session.session_summary = f"Gaming session with {len(session.history)} interactions"
+            return session.session_summary
+        
     @staticmethod
     def _calculate_message_importance(message):
         """
