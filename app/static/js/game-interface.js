@@ -1,8 +1,9 @@
 /**
- * Game Interface Module
+ * Game Interface Module with Memory Integration
  * 
  * This module handles the interaction between the player and the AI Dungeon Master
- * on the game page. It manages the chat interface, character sheet, and dice rolling.
+ * on the game page. It manages the chat interface, character sheet, dice rolling,
+ * and integrates with the memory system.
  */
 
 // Session data
@@ -25,6 +26,7 @@ function initGameInterface() {
     setupChatEvents();
     setupDiceEvents();
     setupLogControls();
+    setupMessageContextMenu();
     
     // Check if we're resuming a previous session
     checkForExistingSession();
@@ -265,7 +267,7 @@ function setupChatEvents() {
     }
     
     // Function to send message
-    function sendMessage() {
+    window.sendMessage = function() {
         if (!playerInput) return;
         
         const message = playerInput.value.trim();
@@ -277,9 +279,210 @@ function setupChatEvents() {
         // Clear input field
         playerInput.value = '';
         
+        // Focus back on input field for next message
+        playerInput.focus();
+        
         // Send to server
         sendToServer(message);
+    };
+    
+    // Assign to window for external access
+    if (typeof window !== 'undefined') {
+        window.sendMessage = sendMessage;
     }
+}
+
+/**
+ * Set up context menu for messages
+ */
+function setupMessageContextMenu() {
+    const chatWindow = document.getElementById('chatWindow');
+    if (!chatWindow) return;
+    
+    // Add context menu event listener
+    chatWindow.addEventListener('contextmenu', function(e) {
+        // Find closest message element
+        const messageEl = e.target.closest('.message');
+        if (messageEl) {
+            e.preventDefault();
+            showMessageContextMenu(e, messageEl);
+        }
+    });
+}
+
+/**
+ * Show context menu for message
+ * @param {MouseEvent} e - Mouse event
+ * @param {HTMLElement} messageEl - Message element
+ */
+function showMessageContextMenu(e, messageEl) {
+    // Remove any existing context menu
+    const existingMenu = document.getElementById('messageContextMenu');
+    if (existingMenu) {
+        existingMenu.remove();
+    }
+    
+    // Get message text
+    const messageText = messageEl.textContent.trim();
+    const isPlayerMessage = messageEl.classList.contains('player-message');
+    
+    // Create context menu
+    const contextMenu = document.createElement('div');
+    contextMenu.id = 'messageContextMenu';
+    contextMenu.className = 'bg-dark text-light border border-secondary rounded shadow-lg p-2';
+    contextMenu.style.position = 'fixed';
+    contextMenu.style.zIndex = '1000';
+    contextMenu.style.top = `${e.clientY}px`;
+    contextMenu.style.left = `${e.clientX}px`;
+    contextMenu.style.minWidth = '200px';
+    
+    // Menu items
+    contextMenu.innerHTML = `
+        <div class="context-item p-2 d-flex align-items-center" data-action="pin">
+            <i class="bi bi-pin-angle me-2"></i>Pin to Memory
+        </div>
+        <div class="context-item p-2 d-flex align-items-center" data-action="copy">
+            <i class="bi bi-clipboard me-2"></i>Copy Text
+        </div>
+    `;
+    
+    // Add click handlers
+    contextMenu.querySelectorAll('.context-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const action = this.getAttribute('data-action');
+            
+            if (action === 'pin') {
+                pinMessageAsMemory(messageText, isPlayerMessage ? 'player' : 'dm');
+            } else if (action === 'copy') {
+                navigator.clipboard.writeText(messageText).then(() => {
+                    showToast('Text copied to clipboard', 'success');
+                }).catch(err => {
+                    console.error('Error copying text:', err);
+                    showToast('Failed to copy text', 'error');
+                });
+            }
+            
+            contextMenu.remove();
+        });
+        
+        // Add hover effect
+        item.addEventListener('mouseenter', function() {
+            this.classList.add('bg-primary');
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.classList.remove('bg-primary');
+        });
+    });
+    
+    // Add to document
+    document.body.appendChild(contextMenu);
+    
+    // Click outside to close
+    document.addEventListener('click', function closeMenu(e) {
+        if (!contextMenu.contains(e.target)) {
+            contextMenu.remove();
+            document.removeEventListener('click', closeMenu);
+        }
+    });
+}
+
+/**
+ * Pin a message as a memory
+ * @param {string} content - Message content
+ * @param {string} sender - Message sender (player/dm)
+ */
+function pinMessageAsMemory(content, sender) {
+    if (!sessionId) {
+        alert('No active session found. Please start a conversation first.');
+        return;
+    }
+    
+    // Get CSRF token from meta tag
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    // Create and store a new memory
+    fetch(`/api/memories/${sessionId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            content: content,
+            memory_type: 'long_term',
+            importance: 8, // Higher importance for manually pinned memories
+            metadata: {
+                sender: sender,
+                pinned: true,
+                pinned_at: new Date().toISOString()
+            }
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showToast('Message pinned to memory', 'success');
+            
+            // Notify memory management system
+            if (typeof refreshMemories === 'function') {
+                refreshMemories();
+            }
+        } else {
+            console.error('Error pinning message:', data.error);
+            showToast(`Error pinning message: ${data.error || 'Unknown error'}`, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error pinning message:', error);
+        showToast(`Error pinning message: ${error.message}`, 'error');
+    });
+}
+
+/**
+ * Show a toast notification
+ * @param {string} message - Toast message
+ * @param {string} type - Toast type (success, error, warning, info)
+ */
+function showToast(message, type = 'info') {
+    // Remove existing toast container if any
+    const existingContainer = document.getElementById('toastContainer');
+    if (existingContainer) {
+        existingContainer.remove();
+    }
+    
+    // Create container
+    const container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '1070';
+    
+    // Create toast
+    container.innerHTML = `
+        <div class="toast bg-dark text-light" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-${type === 'error' ? 'danger' : type} text-light">
+                <strong class="me-auto">Game System</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    // Add to document
+    document.body.appendChild(container);
+    
+    // Initialize and show Bootstrap toast
+    const toastEl = container.querySelector('.toast');
+    const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+    toast.show();
 }
 
 /**
@@ -382,6 +585,9 @@ function sendToServer(message) {
             sessionId = data.session_id;
             saveSessionId(sessionId);
             console.log('Session ID updated:', sessionId);
+            
+            // Set session ID on chat window
+            chatWindow.setAttribute('data-session-id', sessionId);
         }
         
         // Update game state if provided
@@ -392,6 +598,20 @@ function sendToServer(message) {
             // Update UI based on game state
             updateUIForGameState(gameState);
         }
+        
+        // Handle newly detected entities
+        if (data.entities_found && data.entities_found.length > 0) {
+            handleNewEntities(data.entities_found);
+        }
+        
+        // Dispatch event for other components to know about the response
+        document.dispatchEvent(new CustomEvent('dm-response-received', { 
+            detail: { 
+                session_id: sessionId,
+                game_state: gameState,
+                entities: data.entities_found || []
+            }
+        }));
     })
     .catch(error => {
         console.error('Error communicating with server:', error);
@@ -409,6 +629,22 @@ function sendToServer(message) {
             'dm'
         );
     });
+}
+
+/**
+ * Handle newly detected entities
+ * @param {Array} entities - New entities detected
+ */
+function handleNewEntities(entities) {
+    if (!entities || entities.length === 0) return;
+    
+    // Show notification for important entities
+    const importantEntities = entities.filter(entity => (entity.importance || 5) >= 8);
+    
+    if (importantEntities.length > 0) {
+        const entityNames = importantEntities.map(entity => entity.name).join(', ');
+        showToast(`Important entities detected: ${entityNames}`, 'info');
+    }
 }
 
 /**
@@ -430,7 +666,6 @@ function setupDiceEvents() {
  * @param {string} diceType - The type of die to roll (e.g., 'd20')
  */
 function rollDice(diceType) {
-
     // Get CSRF token from meta tag
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     
@@ -574,6 +809,12 @@ function checkForExistingSession() {
         sessionId = savedSessionId;
         console.log('Resuming previous session:', sessionId);
         
+        // Set session ID on chat window
+        const chatWindow = document.getElementById('chatWindow');
+        if (chatWindow) {
+            chatWindow.setAttribute('data-session-id', sessionId);
+        }
+        
         // Optionally: fetch previous messages from the server to populate chat history
     } else {
         // Start a new session with an introduction message
@@ -612,6 +853,17 @@ function capitalize(str) {
     if (!str) return '';
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
+
+// Make functions available globally
+window.gameInterface = {
+    sendMessage,
+    addMessageToChat,
+    rollDice,
+    saveAdventureLog,
+    clearAdventureLog,
+    pinMessageAsMemory,
+    showToast
+};
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', initGameInterface);

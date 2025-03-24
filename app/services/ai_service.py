@@ -7,14 +7,17 @@ import os
 import logging
 import json
 from flask import current_app
+from datetime import datetime, timedelta
+import hashlib
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
 class AIService:
-    """Service for handling AI interactions with optional Langchain support"""
+    """Service for handling AI interactions with integrated memory management"""
     
     def __init__(self, use_langchain=True):
-        """Initialize the AI service"""
+        """Initialize the AI service with memory support"""
         self.api_key = self._get_api_key()
         self.model = self._get_model_name()
         self.api_url = "https://api.x.ai/v1/chat/completions"
@@ -26,21 +29,36 @@ class AIService:
         self.chain_orchestrator = None
         self.memory_service = None
         
+        # Response cache
+        self.response_cache = {}
+        self.cache_size = 100  # Max cache entries
+        self.cache_ttl = timedelta(hours=1)  # Cache time-to-live
+        
+        # Token management
+        self.max_context_tokens = 4096  # Adjust based on your model
+        self.history_token_budget = int(self.max_context_tokens * 0.6)  # 60% for history
+        self.memory_token_budget = int(self.max_context_tokens * 0.25)  # 25% for memories
+        
+        # Initialize Langchain components if enabled
         if self.use_langchain:
-            try:
-                # Delay imports to avoid circular dependencies
-                from app.services.langchain_service import LangchainService
-                from app.services.chain_orchestrator import ChainOrchestrator
-                from app.services.memory_service_enhanced import EnhancedMemoryService
-                
-                self.langchain_service = LangchainService(api_key=self.api_key, model_name=self.model)
-                self.chain_orchestrator = ChainOrchestrator(api_key=self.api_key)
-                self.memory_service = EnhancedMemoryService()
-                logger.info(f"Langchain integration initialized with model: {self.model}")
-            except Exception as e:
-                logger.error(f"Failed to initialize Langchain: {e}")
-                self.use_langchain = False
-                logger.info("Falling back to standard API implementation")
+            self._init_langchain_components()
+    
+    def _init_langchain_components(self):
+        """Initialize Langchain components"""
+        try:
+            # Delay imports to avoid circular dependencies
+            from app.services.langchain_service import LangchainService
+            from app.services.chain_orchestrator import ChainOrchestrator
+            from app.services.memory_service_enhanced import EnhancedMemoryService
+            
+            self.langchain_service = LangchainService(api_key=self.api_key, model_name=self.model)
+            self.chain_orchestrator = ChainOrchestrator(api_key=self.api_key)
+            self.memory_service = EnhancedMemoryService()
+            logger.info(f"Langchain integration initialized with model: {self.model}")
+        except Exception as e:
+            logger.error(f"Failed to initialize Langchain: {e}")
+            self.use_langchain = False
+            logger.info("Falling back to standard API implementation")
     
     def _get_api_key(self):
         """Get API key from app config"""
@@ -80,16 +98,29 @@ class AIService:
             AIResponse: The AI-generated response
         """
         session_id = character_data.get('session_id')
+        character_id = character_data.get('character_id')
+        user_id = character_data.get('user_id')
+        
+        # Check cache for exact match
+        cache_key = self._create_cache_key(player_message, character_id, game_state)
+        cached_response = self._get_cached_response(cache_key)
+        if cached_response:
+            logger.info("Using cached response")
+            return cached_response
         
         # Use Langchain if enabled and properly initialized
         if self.use_langchain and session_id:
             try:
-                # Delay import to avoid circular imports
+                # Ensure Langchain components are initialized
                 if not self.chain_orchestrator:
-                    from app.services.chain_orchestrator import ChainOrchestrator
-                    self.chain_orchestrator = ChainOrchestrator(api_key=self.api_key)
+                    self._init_langchain_components()
+                
+                if not self.chain_orchestrator:
+                    raise Exception("Chain orchestrator initialization failed")
                 
                 logger.info(f"Using Langchain for response generation (state: {game_state})")
+                
+                # Process with Langchain
                 result = self.chain_orchestrator.process_message(
                     player_message,
                     character_data,
@@ -97,52 +128,76 @@ class AIService:
                     conversation_history
                 )
                 
-                # If we got a valid response, return it as AIResponse
-                if result and 'response' in result:
-                    return AIResponse(
-                        response_text=result['response'],
-                        session_id=session_id,
-                        character_id=character_data.get('character_id'),
-                        user_id=character_data.get('user_id'),
-                        prompt=player_message,
-                        model_used=self.model
+                # Parse result based on return type
+                if isinstance(result, dict) and 'response' in result:
+                    response_text = result['response']
+                elif isinstance(result, str):
+                    response_text = result
+                else:
+                    logger.warning(f"Unexpected result type from chain_orchestrator: {type(result)}")
+                    logger.warning("Falling back to standard API implementation")
+                    return self._generate_standard_response(
+                        player_message, conversation_history, character_data, game_state
                     )
                 
-                # Otherwise, fall back to standard implementation
-                logger.warning("Langchain response generation failed, falling back to standard API")
+                # Create AIResponse object
+                ai_response = AIResponse(
+                    response_text=response_text,
+                    session_id=session_id,
+                    character_id=character_id,
+                    user_id=user_id,
+                    prompt=player_message,
+                    model_used=self.model
+                )
+                
+                # Process and store the AI response in memory system
+                self._process_memory_lifecycle(
+                    player_message,
+                    response_text,
+                    session_id,
+                    character_id,
+                    user_id
+                )
+                
+                # Cache the response
+                self._cache_response(cache_key, ai_response)
+                
+                return ai_response
+                
             except Exception as e:
                 logger.error(f"Error using Langchain for response: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
                 logger.info("Falling back to standard API implementation")
         
         # Standard API implementation (fallback)
+        return self._generate_standard_response(
+            player_message, conversation_history, character_data, game_state
+        )
+    
+    def _generate_standard_response(self, player_message, conversation_history, character_data, game_state):
+        """Generate response using standard API implementation"""
+        session_id = character_data.get('session_id')
+        character_id = character_data.get('character_id')
+        user_id = character_data.get('user_id')
+        
         try:
-            # Format conversation history for the API
+            # Format conversation history for the API with context window management
             formatted_history = self._format_conversation_history(conversation_history)
             
             # Create system prompt based on game state and character data
             system_prompt = self._create_system_prompt(game_state, character_data)
             
-            # If memory service is available, enrich the prompt with memories
-            if session_id:
-                # Lazy-load memory service if needed
-                if not self.memory_service:
-                    from app.services.memory_service_enhanced import EnhancedMemoryService
-                    self.memory_service = EnhancedMemoryService()
-                
-                try:
-                    memory_context = self.memory_service.build_memory_context(
-                        current_message=player_message,
-                        session_id=session_id,
-                        character_id=character_data.get('character_id')
-                    )
-                    
-                    if memory_context:
-                        system_prompt += f"\n\n{memory_context}"
-                        logger.info("Added memory context to prompt")
-                except Exception as e:
-                    logger.error(f"Error adding memory context: {e}")
+            # Retrieve and add memory context if available
+            memory_context = self._retrieve_memory_context(
+                player_message, session_id, character_id
+            )
             
-            # Prepare the request payload - specific to xAI format
+            if memory_context:
+                system_prompt += f"\n\n{memory_context}"
+                logger.info("Added memory context to prompt")
+            
+            # Prepare the request payload for xAI format
             payload = {
                 "model": self.model,
                 "messages": [
@@ -160,7 +215,8 @@ class AIService:
             response = requests.post(
                 self.api_url,
                 headers=self.headers,
-                json=payload
+                json=payload,
+                timeout=30  # Add timeout for better error handling
             )
             
             # Check if the request was successful
@@ -176,37 +232,26 @@ class AIService:
                 # Create AIResponse object
                 ai_response = AIResponse(
                     response_text=response_text,
-                    session_id=character_data.get('session_id'),
-                    character_id=character_data.get('character_id'),
-                    user_id=character_data.get('user_id'),
+                    session_id=session_id,
+                    character_id=character_id,
+                    user_id=user_id,
                     prompt=player_message,
                     model_used=self.model,
                     tokens_used=result.get('usage', {}).get('total_tokens')
                 )
                 
-                # Store in memory if available
-                if session_id and self.memory_service:
-                    try:
-                        self.memory_service.store_memory_with_text(
-                            content=response_text,
-                            memory_type="short_term",
-                            session_id=session_id,
-                            character_id=character_data.get('character_id'),
-                            user_id=character_data.get('user_id'),
-                            metadata={"sender": "dm"}
-                        )
-                        
-                        # Also store player message
-                        self.memory_service.store_memory_with_text(
-                            content=player_message,
-                            memory_type="short_term",
-                            session_id=session_id,
-                            character_id=character_data.get('character_id'),
-                            user_id=character_data.get('user_id'),
-                            metadata={"sender": "player"}
-                        )
-                    except Exception as e:
-                        logger.error(f"Error storing memory: {e}")
+                # Process and store in memory system
+                self._process_memory_lifecycle(
+                    player_message,
+                    response_text,
+                    session_id,
+                    character_id,
+                    user_id
+                )
+                
+                # Cache the response for future use
+                cache_key = self._create_cache_key(player_message, character_id, game_state)
+                self._cache_response(cache_key, ai_response)
                 
                 return ai_response
             else:
@@ -244,187 +289,280 @@ class AIService:
     
     def _format_conversation_history(self, history):
         """
-        Format conversation history to match API requirements
+        Format conversation history with context window management
         
         Args:
             history (list): Conversation history
             
         Returns:
-            list: Formatted history
+            list: Formatted history respecting token budget
         """
         formatted = []
         
-        for entry in history[-10:]:  # Only use the last 10 messages to avoid context overflow
+        # Function to estimate tokens (naive implementation)
+        def estimate_tokens(text):
+            # Rough estimate: 1 token ~= 4 chars
+            return len(text) // 4
+        
+        current_tokens = 0
+        
+        # Process history from newest to oldest
+        for entry in reversed(history[-20:]):  # Consider at most the last 20 messages
             role = "assistant" if entry["sender"] == "dm" else "user"
-            formatted.append({
+            message = entry["message"]
+            
+            # Estimate tokens for this message
+            message_tokens = estimate_tokens(message)
+            
+            # Check if adding this message would exceed our budget
+            if current_tokens + message_tokens > self.history_token_budget:
+                break
+            
+            # Add message to the beginning of the list to maintain chronological order
+            formatted.insert(0, {
                 "role": role,
-                "content": entry["message"]
+                "content": message
             })
             
+            current_tokens += message_tokens
+        
+        logger.debug(f"Formatted history with {len(formatted)} messages, ~{current_tokens} tokens")
         return formatted
     
-    def _create_system_prompt(self, game_state, character_data):
+    def _retrieve_memory_context(self, current_message, session_id, character_id):
         """
-        Create a system prompt based on the current game state and character data
+        Retrieve relevant memories for the current context
         
         Args:
-            game_state (str): Current game state
-            character_data (dict): Character data
+            current_message (str): The current player message
+            session_id (str): The session ID
+            character_id (str): The character ID
             
         Returns:
-            str: System prompt
+            str: Memory context as formatted text
         """
-        base_prompt = (
-            "You are a seasoned Dungeon Master for a Dungeons & Dragons 5th Edition game, guiding a solo player through a rich fantasy world. "
-            "Your role is to weave an immersive, engaging story, staying fully in character as a narrator and arbiter of the world. "
-            "Respond with vivid descriptions, distinct NPC personalities, and a natural flow that draws the player into the adventure. "
-            "Adhere strictly to D&D 5e rules, incorporating dice rolls (e.g., 'Roll a d20 for Perception') and mechanics only when necessary—blend them seamlessly into the narrative. "
-            "When D&D 5e rules require a dice roll (e.g., Initiative, attack, skill check), prompt the player to roll the die (e.g., 'Roll a d20 for Initiative') and pause your response there. "
-            "Do not guess, assume, or simulate the player's roll—wait for their next message with the result before advancing the story or resolving outcomes. This ensures the player retains full control over their character's fate."
-            "Avoid over-explaining rules unless the player asks for clarification. Do not use meta-language about AI, models, or simulations; remain entirely within the fantasy context. "
-            "NPCs have no prior knowledge of the player or their quest unless it's been shared with them in-game or learned from another NPC. For example, a tavern keeper meeting the player for the first time shouldn't know their name or mission unless introduced. "
-            "Track what NPCs know based on the conversation and game state, and reflect this in their dialogue and actions. "
-            "Keep responses concise yet evocative, focusing on advancing the story or prompting player action. Use the player's character name frequently to personalize the experience."
-            "Under no circumstances should you use or reference specific copyrighted Dungeons & Dragons adventures, such as *Curse of Strahd*, *Lost Mines of Phandelver*, *Waterdeep: Dragon Heist*, or any other published Wizards of the Coast material. "
-            "Do not include characters, locations, plot points, or dialogue from these works. Instead, generate entirely original content—unique settings, NPCs, and storylines—that adheres to the tone and mechanics of D&D 5e but does not replicate existing intellectual property. "
-            "If the player requests a specific published adventure, politely refuse in character and offer an original alternative instead."
-        )
-        
-        # Add game state context
-        if game_state == "intro":
-            base_prompt += (
-                "The player is just starting their adventure. Help them get oriented "
-                "and excited about the campaign world. Offer hooks to engage them. "
-                "Provide vivid descriptions and let them decide what they might want to do. "
-            )
-        elif game_state == "combat":
-            base_prompt += (
-                "The player is locked in battle. Narrate the scene with high stakes and visceral detail—blood, steel, and chaos. "
-                "Manage combat turns: describe the enemy's last action, then prompt the player for their move (e.g., 'The orc swings its axe; what do you do?'). "
-                "For dice rolls like initiative, attack rolls, or saves, always prompt the player to roll (e.g., 'Roll a d20 for Initiative') and stop there—do not assume or simulate the player's roll under any circumstances. "
-                "Wait for the player to provide the result in their next message before continuing the combat sequence. Only resolve enemy actions or outcomes after the player's input is received. "
-                "Keep the pace fast and tense, but respect the player's agency over their rolls."
-            )
-        elif game_state == "exploration":
-            base_prompt += (
-                "The player is exploring. Describe the environment in rich detail. "
-                "Include sensory information and interesting features that reward investigation. "
-                "Offer clear directions and points of interest. Hint at possible secrets or hidden elements. "
-                "Create a sense of wonder and discovery. "
-            )
-        elif game_state == "social":
-            base_prompt += (
-                "The player is in a social interaction. Portray NPCs with distinct personalities, "
-                "motivations, and speech patterns. Respond to social approaches and charisma-based actions. "
-                "Give NPCs clear voices, mannerisms, and attitudes. "
-                "Allow for persuasion, deception, and intimidation attempts where appropriate. "
-            )
-        
-        # Add character context if available
-        if character_data:
-            base_prompt += "\n\n## CHARACTER INFORMATION:"
+        if not session_id:
+            return ""
             
-            # Basic character info
-            if character_data.get("name"):
-                base_prompt += f"\nName: {character_data['name']}"
-            if character_data.get("race"):
-                race_key = character_data["race"]
-                race_name = race_key.capitalize()
-                base_prompt += f"\nRace: {race_name}"
-            if character_data.get("class"):
-                class_key = character_data["class"]
-                class_name = class_key.capitalize()
-                base_prompt += f"\nClass: {class_name}"
-            if character_data.get("level"):
-                base_prompt += f"\nLevel: {character_data['level']}"
-            if character_data.get("background"):
-                background_key = character_data["background"]
-                background_name = background_key.capitalize()
-                base_prompt += f"\nBackground: {background_name}"
-                
-            # Add abilities if available
-            if character_data.get("abilities"):
-                base_prompt += "\n\nAbility Scores:"
-                for ability, score in character_data["abilities"].items():
-                    modifier = (score - 10) // 2
-                    sign = "+" if modifier >= 0 else ""
-                    base_prompt += f"\n- {ability.capitalize()}: {score} ({sign}{modifier})"
-            
-            # Add skills if available
-            if character_data.get("skills") and len(character_data["skills"]) > 0:
-                base_prompt += "\n\nSkill Proficiencies:"
-                for skill in character_data["skills"]:
-                    base_prompt += f"\n- {skill}"
-            
-            # Add character description if available
-            if character_data.get("description"):
-                base_prompt += f"\n\nDescription: {character_data['description']}"
-        
-        base_prompt += "\n\nRespond as the Dungeon Master guiding this character through their adventure. Use their character name."
-        
-        return base_prompt
-    
-    def create_langchain_prompt_template(self, game_state, character_data):
-        """
-        Create a Langchain prompt template for a given game state
-        
-        Args:
-            game_state (str): Current game state
-            character_data (dict): Character data
-            
-        Returns:
-            PromptTemplate: Langchain prompt template
-        """
-        # Import here to avoid circular imports
-        from langchain.prompts import PromptTemplate
-        
-        # Create base system prompt
-        system_prompt = self._create_system_prompt(game_state, character_data)
-        
-        # Add placeholders for Langchain
-        template = f"{system_prompt}\n\n{{memory_context}}\n\n{{history}}\n\nPlayer: {{input}}\nDM:"
-        
-        # Create template
-        prompt_template = PromptTemplate(
-            input_variables=["memory_context", "history", "input"],
-            template=template
-        )
-        
-        return prompt_template
-    
-    def create_chain_for_state(self, game_state, character_data, session_id):
-        """
-        Create a Langchain chain for a specific game state
-        
-        Args:
-            game_state (str): Game state
-            character_data (dict): Character data
-            session_id (str): Session ID
-            
-        Returns:
-            LLMChain: Langchain chain for this state
-        """
-        # Import here to avoid circular imports
-        if not self.langchain_service:
-            from app.services.langchain_service import LangchainService
-            self.langchain_service = LangchainService(api_key=self.api_key, model_name=self.model)
-        
-        if not self.langchain_service:
-            logger.error("Langchain service not initialized")
-            return None
+        # Lazy-load memory service if needed
+        if not self.memory_service:
+            try:
+                from app.services.memory_service_enhanced import EnhancedMemoryService
+                self.memory_service = EnhancedMemoryService()
+            except Exception as e:
+                logger.error(f"Error initializing memory service: {e}")
+                return ""
         
         try:
-            # Create prompt template
-            prompt_template = self.create_langchain_prompt_template(game_state, character_data)
-            
-            # Create chain
-            chain = self.langchain_service.create_memory_enhanced_chain(
-                system_prompt=prompt_template.template,
-                character_data=character_data,
-                session_id=session_id
+            # Build memory context
+            memory_context = self.memory_service.build_memory_context(
+                current_message=current_message,
+                session_id=session_id,
+                character_id=character_id,
+                max_tokens=self.memory_token_budget,
+                recency_boost=True
             )
             
-            return chain
+            return memory_context or ""
+            
         except Exception as e:
-            logger.error(f"Error creating chain for state {game_state}: {e}")
-            return None
+            logger.error(f"Error retrieving memory context: {e}")
+            return ""
+    
+    def _process_memory_lifecycle(self, player_message, ai_response, session_id, character_id, user_id):
+        """
+        Process and store messages in the memory system
+        
+        Args:
+            player_message (str): The player's message
+            ai_response (str): The AI's response
+            session_id (str): The session ID
+            character_id (str): The character ID
+            user_id (str): The user ID
+        """
+        if not session_id:
+            return
+            
+        # Lazy-load memory service if needed
+        if not self.memory_service:
+            try:
+                from app.services.memory_service_enhanced import EnhancedMemoryService
+                self.memory_service = EnhancedMemoryService()
+            except Exception as e:
+                logger.error(f"Error initializing memory service: {e}")
+                return
+        
+        # Process in background using ThreadPoolExecutor
+        with ThreadPoolExecutor() as executor:
+            # Store player message
+            executor.submit(
+                self._store_memory,
+                player_message,
+                "short_term",
+                session_id,
+                character_id,
+                user_id,
+                self._calculate_importance(player_message),
+                {"sender": "player"}
+            )
+            
+            # Store AI response
+            executor.submit(
+                self._store_memory,
+                ai_response,
+                "short_term",
+                session_id,
+                character_id,
+                user_id,
+                self._calculate_importance(ai_response),
+                {"sender": "dm"}
+            )
+            
+            # Check for summarization
+            executor.submit(
+                self._check_for_summarization,
+                session_id
+            )
+    
+    def _store_memory(self, content, memory_type, session_id, character_id, user_id, importance, metadata):
+        """Store a memory with the memory service"""
+        try:
+            self.memory_service.store_memory_with_text(
+                content=content,
+                memory_type=memory_type,
+                session_id=session_id,
+                character_id=character_id,
+                user_id=user_id,
+                importance=importance,
+                metadata=metadata
+            )
+        except Exception as e:
+            logger.error(f"Error storing memory: {e}")
+    
+    def _calculate_importance(self, text):
+        """
+        Calculate importance score for a text
+        
+        Args:
+            text (str): The text to analyze
+            
+        Returns:
+            int: Importance score (1-10)
+        """
+        # Base importance
+        importance = 5
+        
+        # Adjust based on text length
+        if len(text) > 500:
+            importance += 1
+        
+        # Key terms indicating important information
+        important_terms = [
+            "quest", "mission", "objective", "task", "goal",
+            "important", "critical", "crucial", "essential", "vital",
+            "remember", "forget", "keep in mind", "note",
+            "secret", "hidden", "discover", "reveal", "find",
+            "key", "password", "code", "combination",
+            "treasure", "artifact", "item", "weapon", "armor",
+            "danger", "threat", "enemy", "villain", "boss",
+            "ally", "friend", "companion", "helper",
+            "location", "place", "map", "direction", "path"
+        ]
+        
+        # Check for important terms
+        for term in important_terms:
+            if term.lower() in text.lower():
+                importance += 1
+                # Avoid double-counting similar terms
+                break
+        
+        # Check for proper nouns (simplified approach)
+        words = text.split()
+        for word in words:
+            if len(word) > 1 and word[0].isupper() and word[1:].islower():
+                importance += 1
+                break
+        
+        # Cap importance
+        return min(10, importance)
+    
+    def _check_for_summarization(self, session_id):
+        """Check if summarization is needed for this session"""
+        try:
+            # Import summarization service
+            from app.services.summarization_service import SummarizationService
+            
+            # Trigger summarization if needed
+            summarization_service = SummarizationService()
+            result = summarization_service.trigger_summarization_if_needed(session_id)
+            
+            if result.get('success', False):
+                logger.info(f"Summarized memories for session {session_id}")
+        except Exception as e:
+            logger.error(f"Error checking for summarization: {e}")
+    
+    def _create_cache_key(self, message, character_id, game_state):
+        """Create a cache key from the input parameters"""
+        # Create a deterministic key from the inputs
+        key_string = f"{message}|{character_id}|{game_state}"
+        return hashlib.md5(key_string.encode()).hexdigest()
+    
+    def _get_cached_response(self, cache_key):
+        """Get a response from the cache if valid"""
+        if cache_key in self.response_cache:
+            cached_entry = self.response_cache[cache_key]
+            cached_response = cached_entry['response']
+            cached_time = cached_entry['timestamp']
+            
+            # Check if cache is still valid
+            if datetime.utcnow() - cached_time < self.cache_ttl:
+                # Move to the end to mark as recently used
+                self.response_cache.pop(cache_key)
+                self.response_cache[cache_key] = {
+                    'response': cached_response,
+                    'timestamp': cached_time
+                }
+                return cached_response
+            
+            # Invalid cache, remove it
+            del self.response_cache[cache_key]
+        
+        return None
+    
+    def _cache_response(self, cache_key, response):
+        """Cache a response for future use"""
+        # Limit cache size by removing oldest entries
+        if len(self.response_cache) >= self.cache_size:
+            # Remove oldest entry (first key in dict)
+            oldest_key = next(iter(self.response_cache))
+            del self.response_cache[oldest_key]
+        
+        # Add to cache
+        self.response_cache[cache_key] = {
+            'response': response,
+            'timestamp': datetime.utcnow()
+        }
+        
+
+
+
+
+
+
+
+
+#        base_prompt = (
+#            "You are a seasoned Dungeon Master for a Dungeons & Dragons 5th Edition game, guiding a solo player through a rich fantasy world. "
+#            "Your role is to weave an immersive, engaging story, staying fully in character as a narrator and arbiter of the world. "
+#            "Respond with vivid descriptions, distinct NPC personalities, and a natural flow that draws the player into the adventure. "
+#            "Adhere strictly to D&D 5e rules, incorporating dice rolls (e.g., 'Roll a d20 for Perception') and mechanics only when necessary—blend them seamlessly into the narrative. "
+#            "When D&D 5e rules require a dice roll (e.g., Initiative, attack, skill check), prompt the player to roll the die (e.g., 'Roll a d20 for Initiative') and pause your response there. "
+#            "Do not guess, assume, or simulate the player's roll—wait for their next message with the result before advancing the story or resolving outcomes. This ensures the player retains full control over their character's fate."
+#            "Avoid over-explaining rules unless the player asks for clarification. Do not use meta-language about AI, models, or simulations; remain entirely within the fantasy context. "
+#           "NPCs have no prior knowledge of the player or their quest unless it's been shared with them in-game or learned from another NPC. For example, a tavern keeper meeting the player for the first time shouldn't know their name or mission unless introduced. "
+#            "Track what NPCs know based on the conversation and game state, and reflect this in their dialogue and actions. "
+#            "Keep responses concise yet evocative, focusing on advancing the story or prompting player action. Use the player's character name frequently to personalize the experience."
+#            "Under no circumstances should you use or reference specific copyrighted Dungeons & Dragons adventures, such as *Curse of Strahd*, *Lost Mines of Phandelver*, *Waterdeep: Dragon Heist*, or any other published Wizards of the Coast material. "
+#            "Do not include characters, locations, plot points, or dialogue from these works. Instead, generate entirely original content—unique settings, NPCs, and storylines—that adheres to the tone and mechanics of D&D 5e but does not replicate existing intellectual property. "
+#            "If the player requests a specific published adventure, politely refuse in character and offer an original alternative instead."
+#       )

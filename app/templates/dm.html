@@ -93,6 +93,38 @@
             text-align: right;
         }
         
+        /* Memory management styles */
+        .memory-panel {
+            margin-bottom: 15px;
+        }
+        
+        .entity-item, .memory-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .entity-item:hover, .memory-item:hover {
+            background-color: rgba(61, 61, 61, 0.8) !important;
+        }
+        
+        .context-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .memory-badge {
+            position: relative;
+            top: -1px;
+            font-size: 0.75em;
+            font-weight: normal;
+            padding: 2px 5px;
+        }
+        
+        /* Toast styling */
+        .toast-container {
+            z-index: 1070;
+        }
+        
         /* For mobile responsiveness */
         @media (max-width: 992px) {
             .game-container {
@@ -182,6 +214,8 @@
         
         <!-- Character Sidebar -->
         <div class="sidebar-column">
+            <!-- Memory Management Panel (will be inserted by JS) -->
+            <!-- Character Sheet -->
             <div class="card character-card shadow mb-4 border-0">
                 <div class="card-header bg-dark text-light border-bottom border-secondary">
                     <h5 class="mb-0"><i class="bi bi-person me-2"></i>Character Sheet</h5>
@@ -214,6 +248,15 @@
         </div>
     </div>
 
+    <!-- Hidden session data for JS access -->
+    <script type="application/json" id="sessionData">
+        {% if game_session %}
+        {{ game_session|tojson }}
+        {% else %}
+        {}
+        {% endif %}
+    </script>
+
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     
@@ -225,6 +268,7 @@
     
     <!-- Custom JS for game interface -->
     <script src="{{ url_for('static', filename='js/spell-data.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/memory-management.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/game-interface.js') }}"></script>
 </body>
 </html>

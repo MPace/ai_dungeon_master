@@ -1,19 +1,19 @@
 """
-Game Service
+Enhanced Game Service with Memory Management
 """
 from app.models.game_session import GameSession
-# from app.services.ai_service import AIService
 from app.services.character_service import CharacterService
 from app.extensions import get_db
 from datetime import datetime
 import uuid
 import logging
 import random
+from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
 class GameService:
-    """Service for handling game session operations"""
+    """Service for handling game session operations with memory management"""
     
     @staticmethod
     def create_session(character_id, user_id):
@@ -45,7 +45,12 @@ class GameService:
                 game_state='intro',
                 history=[],
                 created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow()
+                updated_at=datetime.utcnow(),
+                # Initialize memory-related fields
+                pinned_memories=[],
+                session_summary="Session beginning. No summary yet.",
+                important_entities={},
+                player_decisions=[]
             )
             
             # Save session to database
@@ -68,6 +73,9 @@ class GameService:
                     {'character_id': character_id},
                     {'$set': {'last_played': datetime.utcnow()}}
                 )
+                
+                # Initialize memory service for this session
+                GameService._initialize_session_memory(session_id, character_id, user_id)
                 
                 return {'success': True, 'session': game_session}
             else:
@@ -134,10 +142,8 @@ class GameService:
         # Import here to avoid circular import
         from app.services.ai_service import AIService
         from app.services.memory_service_enhanced import EnhancedMemoryService
-        from app.services.summarization_service import SummarizationService
 
         memory_service = EnhancedMemoryService()
-        summarization_service = SummarizationService()
 
         try:
             # Check if we have a session ID
@@ -160,17 +166,20 @@ class GameService:
                     character = character_result
                     
                     # Store player message as short-term memory
-                    memory_service.store_memory_with_text(
+                    memory_result = memory_service.store_memory_with_text(
                         content=message,
                         memory_type='short_term',
                         session_id=session_id,
                         character_id=character.character_id,
                         user_id=user_id,
-                        importance=5,
+                        importance=GameService._calculate_message_importance(message),
                         metadata={'sender': 'player'}
                     )
                     
-                    # Call AI service
+                    # Check for important entities or player decisions in message
+                    GameService._process_message_for_entities(session, message)
+                    
+                    # Call AI service with enhanced memory context
                     ai_service = AIService()
                     ai_response = ai_service.generate_response(
                         message, 
@@ -182,22 +191,25 @@ class GameService:
                     # Add AI response to session history
                     session.add_message('dm', ai_response.response_text)
                     
+                    # Update game state based on content
+                    GameService._update_game_state(session, message, ai_response.response_text)
+                    
                     # Store DM response as short-term memory
-                    memory_service.store_memory_with_text(
+                    response_memory = memory_service.store_memory_with_text(
                         content=ai_response.response_text,
                         memory_type='short_term',
                         session_id=session_id,
                         character_id=character.character_id,
                         user_id=user_id,
-                        importance=5,  # Default importance
+                        importance=GameService._calculate_message_importance(ai_response.response_text),
                         metadata={'sender': 'dm'}
                     )
                     
-                    # Check if summarization is needed
-                    summarization_service.trigger_summarization_if_needed(session_id)
+                    # Process DM response for important entities
+                    GameService._process_message_for_entities(session, ai_response.response_text, is_dm=True)
                     
-                    # Update game state
-                    GameService._update_game_state(session, message)
+                    # Update session summary periodically
+                    GameService._update_session_summary_if_needed(session)
                     
                     # Save session
                     db = get_db()
@@ -222,7 +234,9 @@ class GameService:
                             'success': True, 
                             'response': ai_response.response_text,
                             'session_id': session.session_id,
-                            'game_state': session.game_state
+                            'game_state': session.game_state,
+                            'memory_used': True,  # Indicate that memory was used
+                            'entities_found': GameService._get_latest_entities(session, 3)  # Return recent entities
                         }
                     else:
                         logger.error(f"Failed to update session: {session.session_id}")
@@ -260,17 +274,6 @@ class GameService:
             
             character = character_result
             
-            # Store player message as short-term memory
-            memory_service.store_memory_with_text(
-                content=message,
-                memory_type='short_term',
-                session_id=session.session_id,  # Use the new session ID
-                character_id=character.character_id,
-                user_id=user_id,
-                importance=5,
-                metadata={'sender': 'player'}
-            )
-            
             # Call AI service
             ai_service = AIService()
             ai_response = ai_service.generate_response(
@@ -283,19 +286,12 @@ class GameService:
             # Add AI response to session history
             session.add_message('dm', ai_response.response_text)
             
-            # Store DM response as short-term memory
-            memory_service.store_memory_with_text(
-                content=ai_response.response_text,
-                memory_type='short_term',
-                session_id=session.session_id,  # Use the new session ID
-                character_id=character.character_id,
-                user_id=user_id,
-                importance=5,  # Default importance
-                metadata={'sender': 'dm'}
-            )
-
+            # Process both messages for entities
+            GameService._process_message_for_entities(session, message)
+            GameService._process_message_for_entities(session, ai_response.response_text, is_dm=True)
+            
             # Update game state
-            GameService._update_game_state(session, message)
+            GameService._update_game_state(session, message, ai_response.response_text)
             
             # Save session
             db = get_db()
@@ -308,7 +304,7 @@ class GameService:
             )
             
             if result.acknowledged:
-                logger.info(f"Session updated: {session.session_id}")
+                logger.info(f"New session created and updated: {session.session_id}")
                 
                 # Update character's last_played timestamp
                 db.characters.update_one(
@@ -320,10 +316,11 @@ class GameService:
                     'success': True, 
                     'response': ai_response.response_text,
                     'session_id': session.session_id,
-                    'game_state': session.game_state
+                    'game_state': session.game_state,
+                    'new_session': True  # Indicate this is a new session
                 }
             else:
-                logger.error(f"Failed to update session: {session.session_id}")
+                logger.error(f"Failed to update new session: {session.session_id}")
                 return {'success': False, 'error': 'Failed to update session'}
         
         except Exception as e:
@@ -334,113 +331,267 @@ class GameService:
             return {'success': False, 'error': str(e)}
     
     @staticmethod
-    def _process_message(session, message, user_id):
-        """Helper method to process a message in an existing session"""
-        # Import here to avoid circular import
-        from app.services.ai_service import AIService
-        
-        try:
-            # Get character data
-            character = CharacterService.get_character(session.character_id, user_id)
-            if character is None:
-                logger.error(f"Character not found: {session.character_id}")
-                return {'success': False, 'error': 'Character not found'}
-            
-            # Call AI service to generate response
-            ai_service = AIService()
-            ai_response = ai_service.generate_response(
-                message, 
-                session.history, 
-                character, 
-                session.game_state
-            )
-            
-            # Add AI response to session history
-            session.add_message('dm', ai_response.response_text)
-            
-            # Update game state based on message content (simplified)
-            GameService._update_game_state(session, message)
-            
-            # Save updated session
-            db = get_db()
-            if db is None:
-                logger.error("Database connection failed when saving session")
-                return {'success': False, 'error': 'Database connection error'}
-            
-            result = db.sessions.update_one(
-                {'session_id': session.session_id},
-                {'$set': session.to_dict()}
-            )
-            
-            if result.acknowledged:
-                logger.info(f"Session updated: {session.session_id}")
-                
-                # Update character's last_played timestamp
-                db.characters.update_one(
-                    {'character_id': session.character_id},
-                    {'$set': {'last_played': datetime.utcnow()}}
-                )
-                
-                return {
-                    'success': True, 
-                    'response': ai_response.response_text,
-                    'session_id': session.session_id,
-                    'game_state': session.game_state
-                }
-            else:
-                logger.error(f"Failed to update session: {session.session_id}")
-                return {'success': False, 'error': 'Failed to update session'}
-        
-        except Exception as e:
-            logger.error(f"Error processing message: {str(e)}")
-            import traceback
-            logger.error(traceback.format_exc())
-            
-            return {'success': False, 'error': str(e)}
-
-    @staticmethod
-    def roll_dice(dice_type, modifier=0):
+    def get_session_memories(session_id, user_id, limit=20, memory_type='all'):
         """
-        Roll a die
+        Get memories associated with a session
         
         Args:
-            dice_type (str): Type of die to roll (e.g., 'd20')
-            modifier (int): Modifier to add to roll
+            session_id (str): Session ID
+            user_id (str): User ID for permission check
+            limit (int): Maximum number of memories to return
+            memory_type (str): Type of memories (all, short_term, long_term, summary)
             
         Returns:
-            dict: Roll result
+            dict: Result with success status and memories
         """
         try:
-            # Parse the dice type (e.g., "d20" -> 20)
-            sides = int(dice_type[1:])
+            # First check if the user has access to this session
+            session_result = GameService.get_session(session_id, user_id)
+            if not session_result['success']:
+                return {'success': False, 'error': 'Session not found or access denied'}
             
-            if sides <= 0:
-                return {'success': False, 'error': 'Invalid dice type'}
+            # Get memory service
+            from app.services.memory_service_enhanced import EnhancedMemoryService
+            memory_service = EnhancedMemoryService()
             
-            # Roll the dice
-            result = random.randint(1, sides)
-            modified_result = result + modifier
+            db = get_db()
+            if db is None:
+                return {'success': False, 'error': 'Database connection error'}
             
-            return {
-                'success': True,
-                'dice': dice_type,
-                'result': result,
-                'modifier': modifier,
-                'modified_result': modified_result
-            }
+            # Build query
+            query = {'session_id': session_id}
+            if memory_type != 'all':
+                query['memory_type'] = memory_type
+            
+            # Sort by created_at descending (newest first)
+            memories = list(db.memory_vectors.find(query).sort('created_at', -1).limit(limit))
+            
+            # Return memories
+            return {'success': True, 'memories': memories}
             
         except Exception as e:
-            logger.error(f"Error rolling dice: {str(e)}")
+            logger.error(f"Error getting session memories: {str(e)}")
             return {'success': False, 'error': str(e)}
     
     @staticmethod
-    def _update_game_state(session, message):
+    def pin_memory(session_id, memory_id, user_id, importance=None, note=None):
+        """
+        Pin a memory to a session
+        
+        Args:
+            session_id (str): Session ID
+            memory_id (str): Memory ID to pin
+            user_id (str): User ID for permission check
+            importance (int, optional): Optional importance override
+            note (str, optional): Optional note about why this memory is pinned
+            
+        Returns:
+            dict: Result with success status
+        """
+        try:
+            # Check if the user has access to this session
+            session_result = GameService.get_session(session_id, user_id)
+            if not session_result['success']:
+                return {'success': False, 'error': 'Session not found or access denied'}
+            
+            session = session_result['session']
+            
+            # Pin the memory
+            session.pin_memory(memory_id, importance, note)
+            
+            # Save session
+            db = get_db()
+            if db is None:
+                return {'success': False, 'error': 'Database connection error'}
+            
+            result = db.sessions.update_one(
+                {'session_id': session_id},
+                {'$set': {'pinned_memories': session.pinned_memories}}
+            )
+            
+            if result.acknowledged:
+                return {'success': True, 'message': 'Memory pinned successfully'}
+            else:
+                return {'success': False, 'error': 'Failed to pin memory'}
+                
+        except Exception as e:
+            logger.error(f"Error pinning memory: {str(e)}")
+            return {'success': False, 'error': str(e)}
+    
+    @staticmethod
+    def unpin_memory(session_id, memory_id, user_id):
+        """
+        Unpin a memory from a session
+        
+        Args:
+            session_id (str): Session ID
+            memory_id (str): Memory ID to unpin
+            user_id (str): User ID for permission check
+            
+        Returns:
+            dict: Result with success status
+        """
+        try:
+            # Check if the user has access to this session
+            session_result = GameService.get_session(session_id, user_id)
+            if not session_result['success']:
+                return {'success': False, 'error': 'Session not found or access denied'}
+            
+            session = session_result['session']
+            
+            # Unpin the memory
+            session.unpin_memory(memory_id)
+            
+            # Save session
+            db = get_db()
+            if db is None:
+                return {'success': False, 'error': 'Database connection error'}
+            
+            result = db.sessions.update_one(
+                {'session_id': session_id},
+                {'$set': {'pinned_memories': session.pinned_memories}}
+            )
+            
+            if result.acknowledged:
+                return {'success': True, 'message': 'Memory unpinned successfully'}
+            else:
+                return {'success': False, 'error': 'Failed to unpin memory'}
+                
+        except Exception as e:
+            logger.error(f"Error unpinning memory: {str(e)}")
+            return {'success': False, 'error': str(e)}
+    
+    @staticmethod
+    def get_important_entities(session_id, user_id):
+        """
+        Get important entities for a session
+        
+        Args:
+            session_id (str): Session ID
+            user_id (str): User ID for permission check
+            
+        Returns:
+            dict: Result with success status and entities
+        """
+        try:
+            # Check if the user has access to this session
+            session_result = GameService.get_session(session_id, user_id)
+            if not session_result['success']:
+                return {'success': False, 'error': 'Session not found or access denied'}
+            
+            session = session_result['session']
+            
+            # Return entities
+            return {
+                'success': True, 
+                'entities': session.important_entities
+            }
+                
+        except Exception as e:
+            logger.error(f"Error getting important entities: {str(e)}")
+            return {'success': False, 'error': str(e)}
+    
+    @staticmethod
+    def update_entity(session_id, entity_name, entity_data, user_id):
+        """
+        Update an entity in a session
+        
+        Args:
+            session_id (str): Session ID
+            entity_name (str): Entity name
+            entity_data (dict): Updated entity data
+            user_id (str): User ID for permission check
+            
+        Returns:
+            dict: Result with success status
+        """
+        try:
+            # Check if the user has access to this session
+            session_result = GameService.get_session(session_id, user_id)
+            if not session_result['success']:
+                return {'success': False, 'error': 'Session not found or access denied'}
+            
+            session = session_result['session']
+            
+            # Update the entity
+            if entity_name in session.important_entities:
+                session.important_entities[entity_name].update(entity_data)
+                session.important_entities[entity_name]['updated_at'] = datetime.utcnow().isoformat()
+            else:
+                return {'success': False, 'error': 'Entity not found'}
+            
+            # Save session
+            db = get_db()
+            if db is None:
+                return {'success': False, 'error': 'Database connection error'}
+            
+            result = db.sessions.update_one(
+                {'session_id': session_id},
+                {'$set': {'important_entities': session.important_entities}}
+            )
+            
+            if result.acknowledged:
+                return {'success': True, 'message': 'Entity updated successfully'}
+            else:
+                return {'success': False, 'error': 'Failed to update entity'}
+                
+        except Exception as e:
+            logger.error(f"Error updating entity: {str(e)}")
+            return {'success': False, 'error': str(e)}
+    
+    @staticmethod
+    def get_session_summary(session_id, user_id):
+        """
+        Get summary for a session
+        
+        Args:
+            session_id (str): Session ID
+            user_id (str): User ID for permission check
+            
+        Returns:
+            dict: Result with success status and summary
+        """
+        try:
+            # Check if the user has access to this session
+            session_result = GameService.get_session(session_id, user_id)
+            if not session_result['success']:
+                return {'success': False, 'error': 'Session not found or access denied'}
+            
+            session = session_result['session']
+            
+            # If summary is empty, generate one
+            if not session.session_summary or session.session_summary == "Session beginning. No summary yet.":
+                GameService._generate_session_summary(session)
+                
+                # Save session
+                db = get_db()
+                if db is None:
+                    return {'success': False, 'error': 'Database connection error'}
+                
+                db.sessions.update_one(
+                    {'session_id': session_id},
+                    {'$set': {'session_summary': session.session_summary}}
+                )
+            
+            # Return summary
+            return {
+                'success': True, 
+                'summary': session.session_summary
+            }
+                
+        except Exception as e:
+            logger.error(f"Error getting session summary: {str(e)}")
+            return {'success': False, 'error': str(e)}
+    
+    @staticmethod
+    def _update_game_state(session, message, ai_response=None):
         """
         Update game state based on message content
         
         Args:
             session (GameSession): Game session
             message (str): User message
+            ai_response (str, optional): AI response text
             
         Returns:
             None
@@ -450,12 +601,375 @@ class GameService:
         # Simple keyword-based state update
         message_lower = message.lower()
         
-        if any(word in message_lower for word in ['attack', 'fight', 'hit', 'cast']):
+        if any(word in message_lower for word in ['attack', 'fight', 'hit', 'cast', 'kill', 'slay', 'battle']):
             session.game_state = 'combat'
-        elif any(word in message_lower for word in ['talk', 'speak', 'ask', 'say']):
+        elif any(word in message_lower for word in ['talk', 'speak', 'ask', 'say', 'chat', 'convince', 'persuade']):
             session.game_state = 'social'
-        elif any(word in message_lower for word in ['look', 'search', 'investigate', 'explore']):
+        elif any(word in message_lower for word in ['look', 'search', 'investigate', 'explore', 'examine', 'find']):
             session.game_state = 'exploration'
+        
+        # Also check AI response if provided
+        if ai_response:
+            ai_lower = ai_response.lower()
+            
+            # Combat indicators in DM response
+            if (session.game_state != 'combat' and 
+                any(word in ai_lower for word in ['initiative', 'roll for initiative', 'attack roll', 'make an attack'])):
+                session.game_state = 'combat'
+            
+            # Social indicators in DM response
+            elif (session.game_state != 'social' and
+                  any(word in ai_lower for word in ['persuasion check', 'charisma check', 'deception check'])):
+                session.game_state = 'social'
+            
+            # Exploration indicators in DM response
+            elif (session.game_state != 'exploration' and
+                  any(word in ai_lower for word in ['perception check', 'investigation check', 'you see', 'you notice'])):
+                session.game_state = 'exploration'
         
         if old_state != session.game_state:
             logger.info(f"Game state changed from {old_state} to {session.game_state}")
+    
+    @staticmethod
+    def _initialize_session_memory(session_id, character_id, user_id):
+        """
+        Initialize memory for a new session
+        
+        Args:
+            session_id (str): Session ID
+            character_id (str): Character ID
+            user_id (str): User ID
+            
+        Returns:
+            None
+        """
+        try:
+            from app.services.memory_service_enhanced import EnhancedMemoryService
+            memory_service = EnhancedMemoryService()
+            
+            # Get character data
+            character_result = CharacterService.get_character(character_id, user_id)
+            if character_result is None:
+                logger.error(f"Character not found for memory initialization: {character_id}")
+                return
+            
+            character = character_result
+            
+            # Create initial memory entry with character info
+            character_info = f"Character: {character.name}. A level {character.level} {character.race} {character.character_class}."
+            if character.description:
+                character_info += f" Description: {character.description}"
+            
+            memory_service.store_memory_with_text(
+                content=character_info,
+                memory_type='long_term',  # Store as long-term memory
+                session_id=session_id,
+                character_id=character_id,
+                user_id=user_id,
+                importance=10,  # Highest importance
+                metadata={'type': 'character_info', 'persistent': True}
+            )
+            
+            # Store any character abilities, skills, or features as semantic memories
+            if character.abilities:
+                abilities_text = "Character abilities: "
+                for ability, score in character.abilities.items():
+                    modifier = (score - 10) // 2
+                    sign = "+" if modifier >= 0 else ""
+                    abilities_text += f"{ability.capitalize()}: {score} ({sign}{modifier}). "
+                
+                memory_service.store_memory_with_text(
+                    content=abilities_text,
+                    memory_type='semantic',
+                    session_id=session_id,
+                    character_id=character_id,
+                    user_id=user_id,
+                    importance=8,
+                    metadata={'type': 'abilities', 'persistent': True}
+                )
+            
+            if character.skills and len(character.skills) > 0:
+                skills_text = f"Character is proficient in: {', '.join(character.skills)}."
+                
+                memory_service.store_memory_with_text(
+                    content=skills_text,
+                    memory_type='semantic',
+                    session_id=session_id,
+                    character_id=character_id,
+                    user_id=user_id,
+                    importance=8,
+                    metadata={'type': 'skills', 'persistent': True}
+                )
+            
+            logger.info(f"Initialized session memory for {session_id}")
+            
+        except Exception as e:
+            logger.error(f"Error initializing session memory: {e}")
+    
+    @staticmethod
+    def _process_message_for_entities(session, message, is_dm=False):
+        """
+        Process message text to extract entities
+        
+        Args:
+            session (GameSession): Game session
+            message (str): Message text
+            is_dm (bool): Whether this is a DM message
+            
+        Returns:
+            None
+        """
+        try:
+            # Simple entity extraction with NER would be better
+            # This is a simplified version that looks for capitalized words
+            
+            # Entities are often proper nouns (capitalized)
+            words = message.split()
+            for i, word in enumerate(words):
+                # Skip small words and those that start sentences
+                if len(word) < 3 or (i == 0):
+                    continue
+                
+                # Check for capitalized words
+                if word[0].isupper() and word[1:].islower():
+                    # Clean up punctuation
+                    clean_word = word.strip(',.!?:;\'\"()')
+                    
+                    # Skip common capitalized words that aren't entities
+                    common_words = ['The', 'And', 'But', 'Or', 'For', 'With', 'You', 'Your']
+                    if clean_word in common_words:
+                        continue
+                    
+                    # Get surrounding context
+                    start_idx = max(0, i - 5)
+                    end_idx = min(len(words), i + 5)
+                    context = ' '.join(words[start_idx:end_idx])
+                    
+                    # Try to determine entity type
+                    entity_type = "unknown"
+                    
+                    # Check for location indicators
+                    location_indicators = ['town', 'city', 'village', 'castle', 'fortress', 'inn', 'tavern', 
+                                          'dungeon', 'cave', 'forest', 'mountain', 'river', 'lake', 'temple']
+                    
+                    # Check for NPC indicators
+                    npc_indicators = ['says', 'said', 'man', 'woman', 'elf', 'dwarf', 'halfling', 'gnome', 
+                                     'merchant', 'guard', 'knight', 'wizard', 'sorcerer', 'priest']
+                    
+                    # Check for item indicators
+                    item_indicators = ['sword', 'dagger', 'bow', 'staff', 'wand', 'scroll', 'potion',
+                                      'armor', 'shield', 'amulet', 'ring', 'cloak', 'boots']
+                    
+                    # Context-based type determination
+                    context_lower = context.lower()
+                    if any(indicator in context_lower for indicator in location_indicators):
+                        entity_type = "location"
+                    elif any(indicator in context_lower for indicator in npc_indicators):
+                        entity_type = "npc"
+                    elif any(indicator in context_lower for indicator in item_indicators):
+                        entity_type = "item"
+                    
+                    # Add or update the entity
+                    if clean_word in session.important_entities:
+                        # Update existing entity
+                        entity = session.important_entities[clean_word]
+                        # Only update description if it's from the DM 
+                        # (DM descriptions are more authoritative than player ones)
+                        if is_dm:
+                            entity['description'] = context
+                        # Increment importance for repeated mentions
+                        entity['importance'] = min(10, entity.get('importance', 5) + 1)
+                        entity['updated_at'] = datetime.utcnow().isoformat()
+                    else:
+                        # Add new entity
+                        session.add_important_entity(
+                            clean_word,
+                            entity_type,
+                            context,
+                            importance=6 if is_dm else 5  # DM entities are slightly more important
+                        )
+            
+            # Check for player decisions (if not a DM message)
+            if not is_dm:
+                decision_indicators = ['decide', 'decision', 'choose', 'choice', 'opt', 'option', 'elect', 'selection']
+                message_lower = message.lower()
+                
+                if any(indicator in message_lower for indicator in decision_indicators):
+                    # Record as a player decision
+                    session.record_player_decision(message)
+        except Exception as e:
+            logger.error(f"Error processing message for entities: {e}")
+    
+    @staticmethod
+    def _update_session_summary_if_needed(session):
+        """
+        Update session summary if needed
+        
+        Args:
+            session (GameSession): Game session
+            
+        Returns:
+            None
+        """
+        try:
+            # Check if we have at least 10 messages
+            if len(session.history) >= 10:
+                # Check if we have no summary yet
+                if not session.session_summary or session.session_summary == "Session beginning. No summary yet.":
+                    GameService._generate_session_summary(session)
+                # Or check if we have at least 10 new messages since the last summary generation
+                elif len(session.history) % 10 == 0:
+                    GameService._generate_session_summary(session)
+        except Exception as e:
+            logger.error(f"Error updating session summary: {e}")
+    
+    @staticmethod
+    def _generate_session_summary(session):
+        """
+        Generate a summary for the session
+        
+        Args:
+            session (GameSession): Game session
+            
+        Returns:
+            None
+        """
+        try:
+            # In a real implementation, we would use the SummarizationService
+            # For now, we'll just create a simple summary based on the recent messages
+            
+            # For a proper implementation, use ChatGPT or similar to generate a better summary
+            from app.services.summarization_service import SummarizationService
+            
+            # Get the last 10 messages
+            recent_messages = session.history[-10:]
+            
+            # Format into a single text
+            conversation_text = "\n".join([
+                f"{'DM' if msg['sender'] == 'dm' else 'Player'}: {msg['message']}"
+                for msg in recent_messages
+            ])
+            
+            # Use summarization service if available
+            try:
+                summarization_service = SummarizationService()
+                summary = summarization_service.summarize_text(conversation_text, max_length=150, min_length=50)
+                session.update_session_summary(summary)
+                return
+            except Exception as e:
+                logger.error(f"Error using summarization service: {e}")
+                # Fall back to simple summary
+            
+            # Fall back to simple summary approach
+            # Count recent entities
+            entities = {}
+            for entity_name, entity_data in session.important_entities.items():
+                entity_type = entity_data.get('type', 'unknown')
+                if entity_type not in entities:
+                    entities[entity_type] = []
+                entities[entity_type].append(entity_name)
+            
+            # Create simple summary
+            summary_parts = []
+            summary_parts.append(f"Session has {len(session.history)} messages.")
+            
+            if 'npc' in entities and entities['npc']:
+                summary_parts.append(f"NPCs encountered: {', '.join(entities['npc'][:3])}.")
+            
+            if 'location' in entities and entities['location']:
+                summary_parts.append(f"Locations visited: {', '.join(entities['location'][:3])}.")
+            
+            if 'item' in entities and entities['item']:
+                summary_parts.append(f"Items found: {', '.join(entities['item'][:3])}.")
+            
+            if session.player_decisions:
+                recent_decisions = session.player_decisions[-3:]
+                decision_texts = [d.get('decision', '') for d in recent_decisions]
+                summary_parts.append(f"Recent decisions: {'; '.join(decision_texts)}.")
+            
+            session.update_session_summary(' '.join(summary_parts))
+            
+        except Exception as e:
+            logger.error(f"Error generating session summary: {e}")
+            session.update_session_summary("Summary generation failed.")
+    
+    @staticmethod
+    def _calculate_message_importance(message):
+        """
+        Calculate importance score for a message
+        
+        Args:
+            message (str): Message text
+            
+        Returns:
+            int: Importance score (1-10)
+        """
+        # Base importance
+        importance = 5
+        
+        # Adjust based on text length
+        if len(message) > 500:
+            importance += 1
+        
+        # Key terms indicating important information
+        important_terms = [
+            "quest", "mission", "objective", "task", "goal",
+            "important", "critical", "crucial", "essential", "vital",
+            "remember", "forget", "keep in mind", "note",
+            "secret", "hidden", "discover", "reveal", "find",
+            "key", "password", "code", "combination",
+            "treasure", "artifact", "item", "weapon", "armor",
+            "danger", "threat", "enemy", "villain", "boss",
+            "ally", "friend", "companion", "helper",
+            "location", "place", "map", "direction", "path"
+        ]
+        
+        # Check for important terms
+        for term in important_terms:
+            if term.lower() in message.lower():
+                importance += 1
+                # Avoid double-counting similar terms
+                break
+        
+        # Check for proper nouns (simplified approach)
+        words = message.split()
+        for word in words:
+            if len(word) > 1 and word[0].isupper() and word[1:].islower():
+                importance += 1
+                break
+        
+        # Cap importance
+        return min(10, importance)
+    
+    @staticmethod
+    def _get_latest_entities(session, limit=3):
+        """
+        Get the most recently updated entities
+        
+        Args:
+            session (GameSession): Game session
+            limit (int): Maximum number of entities to return
+            
+        Returns:
+            list: List of entities
+        """
+        try:
+            entities = []
+            for name, data in session.important_entities.items():
+                entities.append({
+                    'name': name,
+                    'type': data.get('type', 'unknown'),
+                    'description': data.get('description', ''),
+                    'importance': data.get('importance', 5),
+                    'updated_at': data.get('updated_at')
+                })
+            
+            # Sort by updated_at (most recent first)
+            entities.sort(key=lambda e: e.get('updated_at', ''), reverse=True)
+            
+            # Return limited number
+            return entities[:limit]
+            
+        except Exception as e:
+            logger.error(f"Error getting latest entities: {e}")
+            return []
