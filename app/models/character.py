@@ -95,7 +95,8 @@ class Character:
         )
     
     def to_dict(self):
-        """Convert Character instance to a dictionary"""
+        """Convert Character instance to a dictionary for JSON serialization"""
+        # First get the base dictionary with standard attributes
         data = {
             'name': self.name,
             'race': self.race,
@@ -111,14 +112,22 @@ class Character:
             'description': self.description,
             'user_id': self.user_id,
             'character_id': self.character_id,
-            'created_at': self.created_at,
-            'updated_at': self.updated_at,
-            'last_played': self.last_played,
+            'created_at': self.created_at.isoformat() if hasattr(self.created_at, 'isoformat') else self.created_at,
+            'updated_at': self.updated_at.isoformat() if hasattr(self.updated_at, 'isoformat') else self.updated_at,
+            'last_played': self.last_played.isoformat() if hasattr(self.last_played, 'isoformat') and self.last_played else None,
             'isDraft': self.is_draft,  # Use 'isDraft' for frontend compatibility
         }
         
         # Add completed_at only if it exists
         if self.completed_at:
-            data['completedAt'] = self.completed_at
-            
+            data['completedAt'] = self.completed_at.isoformat() if hasattr(self.completed_at, 'isoformat') else self.completed_at
+        
+        # Handle datetime conversion to make JSON serializable
+        for key, value in data.items():
+            if isinstance(value, dict):
+                # Convert any datetime objects in nested dictionaries
+                for nested_key, nested_value in value.items():
+                    if hasattr(nested_value, 'isoformat'):
+                        value[nested_key] = nested_value.isoformat()
+                        
         return data

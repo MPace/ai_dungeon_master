@@ -17,26 +17,47 @@ const character = characterData; // From global variable set in the HTML
  * Initialize the game interface
  */
 function initGameInterface() {
-    console.log('Initializing game interface with character:', character.name);
+    console.log('Initializing game interface...');
     
-    // Update character sheet
-    updateCharacterSheet();
+    // Ensure character data exists
+    if (typeof characterData === 'undefined') {
+        console.error('Character data is undefined!');
+        return;
+    }
     
-    // Set up event listeners
-    setupChatEvents();
-    setupDiceEvents();
-    setupLogControls();
-    setupMessageContextMenu();
+    console.log('Character data loaded:', characterData);
     
-    // Check if we're resuming a previous session
-    checkForExistingSession();
+    // Add character reference for compatibility
+    window.character = characterData;
     
-    // Ensure chat window is scrolled to bottom initially
-    scrollChatToBottom();
+    // Log character properties
+    console.log('Character name:', characterData.name);
+    console.log('Character abilities:', characterData.abilities);
     
-    // Handle window resize for mobile adjustments
-    window.addEventListener('resize', handleResize);
-    handleResize();
+    try {
+        // Update character sheet
+        updateCharacterSheet();
+        
+        // Set up event listeners
+        setupChatEvents();
+        setupDiceEvents();
+        setupLogControls();
+        setupMessageContextMenu();
+        
+        // Check if we're resuming a previous session
+        checkForExistingSession();
+        
+        // Ensure chat window is scrolled to bottom initially
+        scrollChatToBottom();
+        
+        // Handle window resize for mobile adjustments
+        window.addEventListener('resize', handleResize);
+        handleResize();
+        
+        console.log('Game interface initialized successfully');
+    } catch (error) {
+        console.error('Error during game interface initialization:', error);
+    }
 }
 
 /**
@@ -532,6 +553,11 @@ function sendToServer(message) {
     
     // Show typing indicator
     const chatWindow = document.getElementById('chatWindow');
+    if (!chatWindow) {
+        console.error('Chat window element not found');
+        return;
+    }
+    
     const typingDiv = document.createElement('div');
     typingDiv.classList.add('message', 'dm-message', 'typing-indicator');
     typingDiv.innerHTML = '<p>The DM is crafting a response...</p>';
@@ -539,6 +565,16 @@ function sendToServer(message) {
     
     // Scroll to show typing indicator
     scrollChatToBottom();
+    
+    // Use the global character variable
+    const character = window.character || window.characterData;
+    
+    if (!character) {
+        console.error('No character data available');
+        chatWindow.removeChild(typingDiv);
+        addMessageToChat('Error: Character data not available. Please refresh the page.', 'dm');
+        return;
+    }
     
     // Prepare data to send
     const data = {
@@ -554,7 +590,13 @@ function sendToServer(message) {
     });
     
     // Get CSRF token from meta tag
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (!csrfToken) {
+        console.error('CSRF token not found');
+        chatWindow.removeChild(typingDiv);
+        addMessageToChat('Error: Security token missing. Please refresh the page.', 'dm');
+        return;
+    }
     
     // Send API request
     fetch('/game/api/send-message', {
@@ -566,16 +608,21 @@ function sendToServer(message) {
         body: JSON.stringify(data)
     })
     .then(response => {
+        console.log('Response received:', response.status);
         if (!response.ok) {
             throw new Error(`Server returned ${response.status}: ${response.statusText}`);
         }
         return response.json();
     })
     .then(data => {
-        console.log('Received response:', data);
+        console.log('Received response data:', data);
         
         // Remove typing indicator
-        chatWindow.removeChild(typingDiv);
+        try {
+            chatWindow.removeChild(typingDiv);
+        } catch (e) {
+            console.warn('Could not remove typing indicator:', e);
+        }
         
         // Add response to chat
         addMessageToChat(data.response, 'dm');
@@ -620,7 +667,7 @@ function sendToServer(message) {
         try {
             chatWindow.removeChild(typingDiv);
         } catch (e) {
-            console.log('Could not remove typing indicator', e);
+            console.warn('Could not remove typing indicator:', e);
         }
         
         // Add error message
@@ -865,5 +912,16 @@ window.gameInterface = {
     showToast
 };
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', initGameInterface);
+// Ensure DOM ready event is properly registered and initialize
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM content loaded, initializing game interface');
+    
+    // Initialize with a slight delay to ensure everything is loaded
+    setTimeout(initGameInterface, 100);
+});
+
+// Add a global retry function for manual invocation if needed
+window.retryInitialization = function() {
+    console.log('Manually retrying initialization...');
+    initGameInterface();
+};
