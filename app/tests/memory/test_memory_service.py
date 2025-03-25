@@ -319,3 +319,97 @@ class TestMemoryService:
             
             # Result should match what store_memory returned
             assert result == {'success': True, 'memory': mock_memory}
+            
+    def test_find_memories_no_results(self, mock_db):
+        """Test finding memories when no results meet similarity threshold"""
+        # Setup
+        session_id = "test-session"
+        embedding = [0.1] * 384
+        
+        # Mock aggregate to return empty list (no matching memories)
+        mock_db.memory_vectors.aggregate.return_value = []
+        
+        # Call the function
+        result = MemoryService.find_similar_memories(
+            embedding=embedding,
+            session_id=session_id,
+            min_similarity=0.9  # Higher threshold to ensure no matches
+        )
+        
+        # Verify
+        assert result['success'] is True
+        assert len(result['memories']) == 0
+        
+    def test_find_memories_with_empty_embedding(self, mock_db):
+        """Test handling empty embedding vectors"""
+        # Setup
+        session_id = "test-session"
+        empty_embedding = []
+        
+        # Call the function
+        result = MemoryService.find_similar_memories(
+            embedding=empty_embedding,
+            session_id=session_id
+        )
+        
+        # Verify - should handle gracefully rather than crashing
+        assert result['success'] is False
+        assert 'error' in result
+        
+    def test_embedding_service_unavailable(self, mock_embedding_service):
+        """Test behavior when embedding service is unavailable"""
+        # Setup
+        session_id = "test-session"
+        content = "Test memory"
+        
+        # Configure embedding service to fail
+        mock_embedding_service.generate_embedding.side_effect = Exception("Embedding service unavailable")
+        
+        # Call the function
+        result = MemoryService.store_memory_with_text(
+            session_id=session_id,
+            content=content
+        )
+        
+        # Verify
+        assert result['success'] is False
+        assert 'error' in result
+        assert 'Embedding service' in result['error']
+        
+    def test_memory_type_filtering(self, mock_db):
+        """Test filtering memories by memory type"""
+        # Setup
+        session_id = "test-session"
+        embedding = [0.1] * 384
+        memory_type = "long_term"
+        
+        # Configure mock to return matching memories
+        mock_db.memory_vectors.aggregate.return_value = [
+            {
+                'content': 'Long-term memory',
+                'session_id': session_id,
+                'memory_type': 'long_term',
+                'embedding': [0.1] * 384,
+                'memory_id': 'memory1',
+                'similarity': 0.95,
+                'created_at': datetime.utcnow(),
+                '_id': 'ObjectId1'
+            }
+        ]
+        
+        # Patch for the query building
+        with patch.object(MemoryService, '_fallback_similarity_search') as mock_fallback:
+            # Call the function with memory type filter
+            MemoryService.find_similar_memories(
+                embedding=embedding,
+                session_id=session_id,
+                memory_type=memory_type
+            )
+            
+            # Verify the query included memory type filter (can check this when aggregate is called)
+            aggregate_call = mock_db.memory_vectors.aggregate.call_args[0][0]
+            match_stage = next((stage for stage in aggregate_call if '$match' in stage), None)
+            
+            # This will depend on the exact implementation, but there should be a $match stage with memory_type
+            assert match_stage is not None
+            assert 'memory_type' in match_stage.get('$match', {})
