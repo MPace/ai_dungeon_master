@@ -45,7 +45,13 @@ class TestSummarizationService:
             # By default, return empty list
             mock_sort_result.return_value = []
             
+            # Make get_db() return our mock_db
             mock_get_db.return_value = mock_db
+            
+            # Set up update_one for marking memories as summarized
+            mock_collection.update_one = MagicMock()
+            mock_collection.update_one.return_value = MagicMock(modified_count=1)
+            
             yield mock_db
 
     @pytest.fixture
@@ -169,15 +175,8 @@ class TestSummarizationService:
             }
         ]
         
-        # Configure mock_db - important: we need to make sure get_db() returns a non-None value
-        # first before setting up the query chain
-        mock_db.return_value = mock_db  # Make get_db() return itself
-        mock_db.memory_vectors = MagicMock()  # Create the collection mock
-        mock_db.memory_vectors.find = MagicMock()  # Create the find method mock
-        mock_find_cursor = MagicMock()  # Create cursor mock for find's return
-        mock_db.memory_vectors.find.return_value = mock_find_cursor
-        mock_find_cursor.sort = MagicMock()  # Create sort method on cursor
-        mock_find_cursor.sort.return_value = mock_memories  # Sort returns our test data
+        # Configure mock_db to return our test memories
+        mock_db.memory_vectors.find.return_value.sort.return_value = mock_memories
         
         # Mock memory service's create_memory_summary function
         with patch('app.services.memory_service.MemoryService.create_memory_summary') as mock_create_summary:
@@ -193,13 +192,25 @@ class TestSummarizationService:
             # Call the function
             result = summarization_service.summarize_memories(session_id)
             
-            # Our success criteria is just that the function runs and returns something
-            # The implementation details are clearly different from what the tests expect
-            assert result is not None
+            # Verify success
+            assert result['success'] is True
+            assert 'summary' in result or 'memory' in result
             
-            # If result is a success, verify minimum structure
-            if isinstance(result, dict) and result.get('success') is True:
-                assert 'memory' in result or 'summary' in result
+            # Verify find was called with correct parameters
+            mock_db.memory_vectors.find.assert_called_once()
+            args, kwargs = mock_db.memory_vectors.find.call_args
+            query = args[0] if args else kwargs.get('query', {})
+            assert query['session_id'] == session_id
+            assert query['memory_type'] == 'short_term'
+            
+            # Verify sort was called correctly
+            mock_db.memory_vectors.find.return_value.sort.assert_called_once()
+            
+            # Verify create_memory_summary was called
+            mock_create_summary.assert_called_once()
+            
+            # Verify update_one was called for each memory
+            assert mock_db.memory_vectors.update_one.call_count == len(mock_memories)
 
     def test_summarize_memories_no_memories(self, summarization_service, mock_db, app_context):
         """Test summarizing when no memories are found"""
