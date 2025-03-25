@@ -79,22 +79,20 @@ class TestMemoryService:
         assert result['success'] is False
         assert 'error' in result
 
-    def test_find_similar_memories_fallback(self, mock_db):
-        """Test fallback similarity search when vector search fails"""
-        # Setup
+    def test_find_similar_memories_with_vector_search(self, mock_db):
+        """Test finding similar memories using vector search"""
+        # Setup for vector search
         session_id = "test-session"
         embedding = [0.1] * 384
         
-        # Make the aggregate method raise an exception to trigger fallback
-        mock_db.memory_vectors.aggregate.side_effect = Exception("Vector search not available")
-        
-        # Mock the find method for fallback
+        # Mock the aggregate pipeline result
         mock_memory_data = [
             {
                 'content': 'Similar memory 1',
                 'session_id': session_id,
                 'embedding': [0.1] * 384,
                 'memory_id': 'memory1',
+                'similarity': 0.95,
                 'created_at': datetime.utcnow(),
                 '_id': 'ObjectId1'
             },
@@ -103,38 +101,32 @@ class TestMemoryService:
                 'session_id': session_id,
                 'embedding': [0.2] * 384,
                 'memory_id': 'memory2',
+                'similarity': 0.85,
                 'created_at': datetime.utcnow(),
                 '_id': 'ObjectId2'
             }
         ]
-        mock_db.memory_vectors.find.return_value = mock_memory_data
         
-        # Patch the cosine similarity calculation to return predictable values
-        with patch.object(MemoryService, '_cosine_similarity') as mock_cosine:
-            mock_cosine.side_effect = lambda a, b: 0.95 if a == [0.1] * 384 else 0.85
-            
-            # Also patch the _fallback_similarity_search method
-            with patch.object(MemoryService, '_fallback_similarity_search') as mock_fallback:
-                # Set up mock_fallback to return our mock memory data
-                for memory in mock_memory_data:
-                    memory['similarity'] = 0.95 if memory['memory_id'] == 'memory1' else 0.85
-                mock_fallback.return_value = mock_memory_data
-                
-                # Call the function
-                result = MemoryService.find_similar_memories(
-                    embedding=embedding,
-                    session_id=session_id,
-                    limit=5,
-                    min_similarity=0.7
-                )
-                
-                # Verify
-                assert result['success'] is True
-                assert len(result['memories']) == 2
-                assert isinstance(result['memories'][0], MemoryVector)
-                
-                # Verify fallback method was called
-                assert mock_fallback.called
+        # Configure mock to return our test data
+        mock_db.memory_vectors.aggregate.return_value = mock_memory_data
+        
+        # Call the function
+        result = MemoryService.find_similar_memories(
+            embedding=embedding,
+            session_id=session_id,
+            limit=5,
+            min_similarity=0.7
+        )
+        
+        # Verify
+        assert result['success'] is True
+        assert len(result['memories']) == 2
+        assert isinstance(result['memories'][0], MemoryVector)
+        assert result['memories'][0].content == 'Similar memory 1'
+        assert result['memories'][1].content == 'Similar memory 2'
+        
+        # Check that aggregate was called (no need to verify exact pipeline)
+        assert mock_db.memory_vectors.aggregate.called
 
     def test_find_similar_memories_fallback(self, mock_db):
         """Test fallback similarity search when vector search fails"""
