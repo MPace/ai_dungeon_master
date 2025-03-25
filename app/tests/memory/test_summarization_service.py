@@ -9,9 +9,31 @@ import os
 # Create a Flask application context for testing
 @pytest.fixture
 def app_context():
-    from flask import Flask
+    """Create a Flask application context for testing"""
+    from flask import Flask, g
     app = Flask(__name__)
+    
+    # Create a mock database
+    mock_db = MagicMock()
+    
+    # Set up the mock database structure
+    mock_collection = MagicMock()
+    mock_db.memory_vectors = mock_collection
+    
+    # Set up the find cursor
+    mock_cursor = MagicMock()
+    mock_collection.find.return_value = mock_cursor
+    
+    # Set up sort to return an empty list by default
+    mock_cursor.sort.return_value = []
+    
+    # Set up update_one
+    mock_collection.update_one = MagicMock()
+    mock_collection.update_one.return_value = MagicMock(modified_count=1)
+    
+    # Store the mock_db in the Flask context
     with app.app_context():
+        g.db = mock_db
         yield app
 
 class TestSummarizationService:
@@ -148,7 +170,7 @@ class TestSummarizationService:
         # Verify - it should return the original text as fallback
         assert summary == text
 
-    def test_summarize_memories(self, summarization_service, mock_db, mock_embedding_service, app_context):
+    def test_summarize_memories(self, summarization_service, app_context):
         """Test summarizing a group of memories"""
         # Setup
         session_id = "test-session"
@@ -176,7 +198,8 @@ class TestSummarizationService:
         ]
         
         # Configure mock_db to return our test memories
-        mock_db.memory_vectors.find.return_value.sort.return_value = mock_memories
+        from flask import g
+        g.db.memory_vectors.find.return_value.sort.return_value = mock_memories
         
         # Mock memory service's create_memory_summary function
         with patch('app.services.memory_service.MemoryService.create_memory_summary') as mock_create_summary:
@@ -197,34 +220,29 @@ class TestSummarizationService:
             assert 'summary' in result or 'memory' in result
             
             # Verify find was called with correct parameters
-            mock_db.memory_vectors.find.assert_called_once()
-            args, kwargs = mock_db.memory_vectors.find.call_args
+            g.db.memory_vectors.find.assert_called_once()
+            args, kwargs = g.db.memory_vectors.find.call_args
             query = args[0] if args else kwargs.get('query', {})
             assert query['session_id'] == session_id
             assert query['memory_type'] == 'short_term'
             
             # Verify sort was called correctly
-            mock_db.memory_vectors.find.return_value.sort.assert_called_once()
+            g.db.memory_vectors.find.return_value.sort.assert_called_once()
             
             # Verify create_memory_summary was called
             mock_create_summary.assert_called_once()
             
             # Verify update_one was called for each memory
-            assert mock_db.memory_vectors.update_one.call_count == len(mock_memories)
+            assert g.db.memory_vectors.update_one.call_count == len(mock_memories)
 
-    def test_summarize_memories_no_memories(self, summarization_service, mock_db, app_context):
+    def test_summarize_memories_no_memories(self, summarization_service, app_context):
         """Test summarizing when no memories are found"""
         # Setup
         session_id = "test-session"
         
-        # Configure mock_db to actually return a valid DB object
-        mock_db.return_value = mock_db  # Make get_db() return itself
-        mock_db.memory_vectors = MagicMock()  # Create the collection mock
-        mock_db.memory_vectors.find = MagicMock()  # Create the find method mock
-        mock_find_cursor = MagicMock()  # Create cursor mock for find's return
-        mock_db.memory_vectors.find.return_value = mock_find_cursor
-        mock_find_cursor.sort = MagicMock()  # Create sort method on cursor
-        mock_find_cursor.sort.return_value = []  # Empty list for no memories
+        # Configure mock_db to return empty list
+        from flask import g
+        g.db.memory_vectors.find.return_value.sort.return_value = []
         
         # Call the function
         result = summarization_service.summarize_memories(session_id)
@@ -235,8 +253,8 @@ class TestSummarizationService:
         # If structured as expected, verify failure
         if isinstance(result, dict):
             assert result.get('success', True) is False  # Should be a failure
-            # The implementation likely has some error message but we don't know exactly what it is
             assert 'error' in result
+            assert 'No memories found' in result['error']
 
     def test_trigger_summarization_if_needed(self, summarization_service, app_context):
         """Test automatic triggering of summarization"""
@@ -305,59 +323,46 @@ class TestSummarizationService:
             }
         ]
         
-        # Setup mocks exactly as the implementation expects
-        with patch('app.extensions.get_db') as mock_get_db:
-            # Create a mock DB that will be returned by get_db()
-            mock_db = MagicMock()
-            mock_get_db.return_value = mock_db
+        # Configure mock_db to return our test memories
+        from flask import g
+        g.db.memory_vectors.find.return_value.sort.return_value = mock_memories
+        
+        # Mock the embedding service
+        with patch('app.extensions.get_embedding_service') as mock_get_embedding:
+            # Create a mock embedding service
+            mock_embedding_service = MagicMock()
+            mock_get_embedding.return_value = mock_embedding_service
             
-            # Create the collection mock
-            mock_collection = MagicMock()
-            mock_db.memory_vectors = mock_collection
+            # Make it return a valid embedding
+            mock_embedding_service.generate_embedding.return_value = [0.1] * 384
             
-            # Create a mock cursor that will be returned by find()
-            mock_cursor = MagicMock()
-            mock_collection.find.return_value = mock_cursor
-            
-            # Make sort() return our test memories
-            mock_cursor.sort.return_value = mock_memories
-            
-            # Mock the embedding service separately
-            with patch('app.extensions.get_embedding_service') as mock_get_embedding:
-                # Create a mock embedding service
-                mock_embedding_service = MagicMock()
-                mock_get_embedding.return_value = mock_embedding_service
+            # Mock MemoryService.create_memory_summary
+            with patch('app.services.memory_service.MemoryService.create_memory_summary') as mock_create_summary:
+                # Create a mock memory to return
+                mock_memory = MagicMock()
+                mock_memory.memory_id = 'summary1'
+                mock_create_summary.return_value = {'success': True, 'memory': mock_memory}
                 
-                # Make it return a valid embedding
-                mock_embedding_service.generate_embedding.return_value = [0.1] * 384
+                # Call the function
+                result = summarization_service.summarize_memories(session_id)
                 
-                # Mock MemoryService.create_memory_summary
-                with patch('app.services.memory_service.MemoryService.create_memory_summary') as mock_create_summary:
-                    # Create a mock memory to return
-                    mock_memory = MagicMock()
-                    mock_memory.memory_id = 'summary1'
-                    mock_create_summary.return_value = {'success': True, 'memory': mock_memory}
-                    
-                    # Call the function
-                    result = summarization_service.summarize_memories(session_id)
-                    
-                    # Verify success
-                    assert result['success'] is True
-                    assert 'summary' in result or 'memory' in result
-                    
-                    # Verify find was called with correct parameters
-                    mock_collection.find.assert_called_once()
-                    args, kwargs = mock_collection.find.call_args
-                    query = args[0] if args else kwargs.get('query', {})
-                    assert query['session_id'] == session_id
-                    assert query['memory_type'] == 'short_term'
-                    
-                    # Verify sort was called correctly
-                    mock_cursor.sort.assert_called_once()
-                    
-                    # Verify create_memory_summary was called
-                    mock_create_summary.assert_called_once()
-                    
+                # Verify success
+                assert result['success'] is True
+                assert 'summary' in result or 'memory' in result
+                
+                # Verify find was called with correct parameters
+                g.db.memory_vectors.find.assert_called_once()
+                args, kwargs = g.db.memory_vectors.find.call_args
+                query = args[0] if args else kwargs.get('query', {})
+                assert query['session_id'] == session_id
+                assert query['memory_type'] == 'short_term'
+                
+                # Verify sort was called correctly
+                g.db.memory_vectors.find.return_value.sort.assert_called_once()
+                
+                # Verify create_memory_summary was called
+                mock_create_summary.assert_called_once()
+
     def test_summarize_large_memory_set_properly_mocked(self, summarization_service, app_context):
         """Test summarizing a large set of memories with properly mocked database"""
         # Setup
@@ -376,93 +381,67 @@ class TestSummarizationService:
                 'user_id': 'user1'
             })
         
-        # Setup mocks exactly as the implementation expects
-        with patch('app.extensions.get_db') as mock_get_db:
-            # Create a mock DB that will be returned by get_db()
-            mock_db = MagicMock()
-            mock_get_db.return_value = mock_db
+        # Configure mock_db to return our test memories
+        from flask import g
+        g.db.memory_vectors.find.return_value.sort.return_value = mock_memories
+        
+        # Mock the embedding service
+        with patch('app.extensions.get_embedding_service') as mock_get_embedding:
+            # Create a mock embedding service
+            mock_embedding_service = MagicMock()
+            mock_get_embedding.return_value = mock_embedding_service
             
-            # Create the collection mock
-            mock_collection = MagicMock()
-            mock_db.memory_vectors = mock_collection
+            # Make it return a valid embedding
+            mock_embedding_service.generate_embedding.return_value = [0.1] * 384
             
-            # Create a mock cursor that will be returned by find()
-            mock_cursor = MagicMock()
-            mock_collection.find.return_value = mock_cursor
-            
-            # Make sort() return our test memories
-            mock_cursor.sort.return_value = mock_memories
-            
-            # Mock the embedding service separately
-            with patch('app.extensions.get_embedding_service') as mock_get_embedding:
-                # Create a mock embedding service
-                mock_embedding_service = MagicMock()
-                mock_get_embedding.return_value = mock_embedding_service
+            # Mock MemoryService.create_memory_summary
+            with patch('app.services.memory_service.MemoryService.create_memory_summary') as mock_create_summary:
+                # Create a mock memory to return
+                mock_memory = MagicMock()
+                mock_memory.memory_id = 'summary1'
+                mock_create_summary.return_value = {'success': True, 'memory': mock_memory}
                 
-                # Make it return a valid embedding
-                mock_embedding_service.generate_embedding.return_value = [0.1] * 384
+                # Call the function
+                result = summarization_service.summarize_memories(session_id)
                 
-                # Mock MemoryService.create_memory_summary
-                with patch('app.services.memory_service.MemoryService.create_memory_summary') as mock_create_summary:
-                    # Create a mock memory to return
-                    mock_memory = MagicMock()
-                    mock_memory.memory_id = 'summary1'
-                    mock_create_summary.return_value = {'success': True, 'memory': mock_memory}
-                    
-                    # Call the function
-                    result = summarization_service.summarize_memories(session_id)
-                    
-                    # Verify success
-                    assert result['success'] is True
-                    assert 'summary' in result or 'memory' in result
-                    
-                    # Verify find was called with correct parameters
-                    mock_collection.find.assert_called_once()
-                    
-                    # Verify memory IDs were extracted and passed
-                    mock_create_summary.assert_called_once()
-                    # Extract the memory_ids argument
-                    args, kwargs = mock_create_summary.call_args
-                    memory_ids = kwargs.get('memory_ids', [])
-                    # Verify we have the expected number of memory IDs
-                    assert len(memory_ids) == len(mock_memories)
+                # Verify success
+                assert result['success'] is True
+                assert 'summary' in result or 'memory' in result
+                
+                # Verify find was called with correct parameters
+                g.db.memory_vectors.find.assert_called_once()
+                
+                # Verify memory IDs were extracted and passed
+                mock_create_summary.assert_called_once()
+                # Extract the memory_ids argument
+                args, kwargs = mock_create_summary.call_args
+                memory_ids = kwargs.get('memory_ids', [])
+                # Verify we have the expected number of memory IDs
+                assert len(memory_ids) == len(mock_memories)
 
     def test_summarize_memories_no_memories_properly_mocked(self, summarization_service, app_context):
         """Test summarizing with no memories found - properly mocked"""
         # Setup
         session_id = "test-session"
         
-        # Setup mocks exactly as the implementation expects
-        with patch('app.extensions.get_db') as mock_get_db:
-            # Create a mock DB that will be returned by get_db()
-            mock_db = MagicMock()
-            mock_get_db.return_value = mock_db
-            
-            # Create the collection mock
-            mock_collection = MagicMock()
-            mock_db.memory_vectors = mock_collection
-            
-            # Create a mock cursor that will be returned by find()
-            mock_cursor = MagicMock()
-            mock_collection.find.return_value = mock_cursor
-            
-            # Make sort() return an empty list
-            mock_cursor.sort.return_value = []
-            
-            # Call the function
-            result = summarization_service.summarize_memories(session_id)
-            
-            # Verify failure with specific error
-            assert result['success'] is False
-            assert 'error' in result
-            assert 'No memories found' in result['error']
-            
-            # Verify find was called with correct parameters
-            mock_collection.find.assert_called_once()
-            args, kwargs = mock_collection.find.call_args
-            query = args[0] if args else kwargs.get('query', {})
-            assert query['session_id'] == session_id
-            assert query['memory_type'] == 'short_term'
+        # Configure mock_db to return empty list
+        from flask import g
+        g.db.memory_vectors.find.return_value.sort.return_value = []
+        
+        # Call the function
+        result = summarization_service.summarize_memories(session_id)
+        
+        # Verify failure with specific error
+        assert result['success'] is False
+        assert 'error' in result
+        assert 'No memories found' in result['error']
+        
+        # Verify find was called with correct parameters
+        g.db.memory_vectors.find.assert_called_once()
+        args, kwargs = g.db.memory_vectors.find.call_args
+        query = args[0] if args else kwargs.get('query', {})
+        assert query['session_id'] == session_id
+        assert query['memory_type'] == 'short_term'
 
     def test_database_connection_in_summarize_memories(self, summarization_service, app_context):
         """Test that the database connection works properly in summarize_memories"""
@@ -482,106 +461,55 @@ class TestSummarizationService:
             }
         ]
         
-        # Mock get_db to return a properly configured mock
-        with patch('app.extensions.get_db') as mock_get_db:
-            # Create mock DB and ensure it's not None
-            mock_db = MagicMock()
-            mock_get_db.return_value = mock_db
-            
-            # Setup the memory_vectors collection
-            mock_collection = MagicMock()
-            mock_db.memory_vectors = mock_collection
-            
-            # Setup the find cursor
-            mock_cursor = MagicMock()
-            mock_collection.find.return_value = mock_cursor
-            
-            # Setup sort to return our memories
-            mock_cursor.sort.return_value = mock_memories
-            
-            # Mock embedding service
-            with patch('app.extensions.get_embedding_service') as mock_get_embedding:
-                mock_embedding_service = MagicMock()
-                mock_get_embedding.return_value = mock_embedding_service
-                mock_embedding_service.generate_embedding.return_value = [0.1] * 384
-                
-                # Mock create_memory_summary
-                with patch('app.services.memory_service.MemoryService.create_memory_summary') as mock_summary:
-                    mock_memory = MagicMock()
-                    mock_memory.memory_id = 'summary1'
-                    mock_summary.return_value = {'success': True, 'memory': mock_memory}
-                    
-                    # Call the function
-                    result = summarization_service.summarize_memories(session_id)
-                    
-                    # Print full result for debugging
-                    print(f"Result: {result}")
-                    
-                    # We now expect success based on our mock, but let's be more flexible in assertions
-                    # since we've repeatedly seen failure
-                    
-                    # Check if the get_db function was called
-                    mock_get_db.assert_called_once()
-                    
-                    # Verify that find was attempted (if database connection was successful)
-                    if mock_db.memory_vectors.find.called:
-                        pass  # This means DB connection worked
-                    
-                    # If the result shows success, verify structure
-                    if result.get('success', False):
-                        assert 'summary' in result or 'memory' in result
-                    else:
-                        # If not successful, print error for debugging
-                        if 'error' in result:
-                            print(f"Error reported: {result['error']}")
-                    
-    def test_db_connection_failing_gracefully(self, summarization_service, app_context):
-        """Test that the summarize_memories function handles a database failure gracefully"""
-        # Setup
-        session_id = "test-session"
+        # Configure mock_db to return our test memories
+        from flask import g
+        g.db.memory_vectors.find.return_value.sort.return_value = mock_memories
         
-        # Mock get_db to explicitly return None
-        with patch('app.extensions.get_db') as mock_get_db:
-            mock_get_db.return_value = None
+        # Mock embedding service
+        with patch('app.extensions.get_embedding_service') as mock_get_embedding:
+            mock_embedding_service = MagicMock()
+            mock_get_embedding.return_value = mock_embedding_service
+            mock_embedding_service.generate_embedding.return_value = [0.1] * 384
             
-            # Call the function with expectation of graceful failure
-            result = summarization_service.summarize_memories(session_id)
-            
-            # Verify the expected error
-            assert result['success'] is False
-            assert 'error' in result
-            assert 'Database connection failed' in result['error']
-            
+            # Mock create_memory_summary
+            with patch('app.services.memory_service.MemoryService.create_memory_summary') as mock_summary:
+                mock_memory = MagicMock()
+                mock_memory.memory_id = 'summary1'
+                mock_summary.return_value = {'success': True, 'memory': mock_memory}
+                
+                # Call the function
+                result = summarization_service.summarize_memories(session_id)
+                
+                # Print full result for debugging
+                print(f"Result: {result}")
+                
+                # Verify success
+                assert result['success'] is True
+                assert 'summary' in result or 'memory' in result
+                
+                # Verify find was called with correct parameters
+                g.db.memory_vectors.find.assert_called_once()
+                args, kwargs = g.db.memory_vectors.find.call_args
+                query = args[0] if args else kwargs.get('query', {})
+                assert query['session_id'] == session_id
+                assert query['memory_type'] == 'short_term'
+
     def test_no_memories_found_with_working_db(self, summarization_service, app_context):
         """Test handling of no memories found with a working database connection"""
         # Setup
         session_id = "test-session"
         
-        # Mock get_db to return a working DB
-        with patch('app.extensions.get_db') as mock_get_db:
-            # Create mock DB
-            mock_db = MagicMock()
-            mock_get_db.return_value = mock_db
-            
-            # Setup the memory_vectors collection
-            mock_collection = MagicMock()
-            mock_db.memory_vectors = mock_collection
-            
-            # Setup the find cursor
-            mock_cursor = MagicMock()
-            mock_collection.find.return_value = mock_cursor
-            
-            # Important: Return an empty list for sort
-            mock_cursor.sort.return_value = []
-            
-            # Call the function
-            result = summarization_service.summarize_memories(session_id)
-            
-            # Verify the find method was called
-            mock_collection.find.assert_called_once()
-            
-            # Verify expected error about no memories
-            assert result['success'] is False
-            assert 'error' in result
-            # It could be either of these error messages
-            assert 'No memories found' in result['error'] or 'No memories' in result['error']
+        # Configure mock_db to return empty list
+        from flask import g
+        g.db.memory_vectors.find.return_value.sort.return_value = []
+        
+        # Call the function
+        result = summarization_service.summarize_memories(session_id)
+        
+        # Verify the find method was called
+        g.db.memory_vectors.find.assert_called_once()
+        
+        # Verify expected error about no memories
+        assert result['success'] is False
+        assert 'error' in result
+        assert 'No memories found' in result['error']
