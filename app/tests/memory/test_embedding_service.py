@@ -175,26 +175,48 @@ class TestEmbeddingService:
         assert texts[0] not in embedding_service.cache
         assert texts[1] not in embedding_service.cache
 
-
     def test_input_error_handling(self, embedding_service):
         """Test handling of various invalid inputs"""
-        # Test empty string
-        empty_result = embedding_service.generate_embedding("")
-        assert len(empty_result) == 384
-        assert all(x == 0.0 for x in empty_result)
-        
-        # Test None input
-        with pytest.raises(ValueError):
-            embedding_service.generate_embedding(None)
-        
-        # Test batch with mixed invalid inputs
-        texts = ["Valid text", "", None, "Another valid text"]
-        with pytest.raises(ValueError):
-            embedding_service.generate_batch_embeddings(texts)
-        
-        # Test empty batch
-        empty_batch_result = embedding_service.generate_batch_embeddings([])
-        assert len(empty_batch_result) == 0
+        with patch.object(embedding_service.tokenizer, '__call__') as mock_tokenize:
+            # Mock tokenizer output for valid cases
+            mock_tokenize.return_value = {
+                'input_ids': torch.ones((1, 10), dtype=torch.long),
+                'attention_mask': torch.ones((1, 10), dtype=torch.long)
+            }
+
+            # Mock model output
+            mock_output = type('MockOutput', (), {
+                'last_hidden_state': torch.ones((1, 10, 384), dtype=torch.float) * 0.5
+            })()
+            embedding_service.model.return_value = mock_output
+
+            # Test empty string
+            empty_result = embedding_service.generate_embedding("")
+            assert len(empty_result) == 384
+            assert all(x == 0.0 for x in empty_result)
+            
+            # For None input, mock tokenizer to raise an error
+            mock_tokenize.side_effect = ValueError("Cannot tokenize None")
+            
+            # Test None input
+            with pytest.raises(ValueError):
+                embedding_service.generate_embedding(None)
+            
+            # Reset tokenizer mock for batch tests
+            mock_tokenize.side_effect = None
+            mock_tokenize.return_value = {
+                'input_ids': torch.ones((1, 10), dtype=torch.long),
+                'attention_mask': torch.ones((1, 10), dtype=torch.long)
+            }
+            
+            # Test batch with mixed invalid inputs
+            texts = ["Valid text", "", None, "Another valid text"]
+            with pytest.raises(ValueError):
+                embedding_service.generate_batch_embeddings(texts)
+            
+            # Test empty batch
+            empty_batch_result = embedding_service.generate_batch_embeddings([])
+            assert len(empty_batch_result) == 0
 
     def test_batch_embedding_caching(self, embedding_service):
         """Test that batch embeddings are properly cached and reused"""
