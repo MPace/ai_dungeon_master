@@ -65,17 +65,25 @@ class EmbeddingService:
         Returns:
             list: Vector embedding as a list of floats
         """
+
+        print(f"Cache before check: {self.cache.keys()}")
+        print(f"Text to embed: {text}")
+        print(f"Text in cache: {text in self.cache}")
+
         # Check cache first
         if text in self.cache:
+            print(f"Cache hit")
             self.cache_hits += 1
             # Move this entry to the "front" of the cache
             embedding = self.cache.pop(text)
             self.cache[text] = embedding
             return embedding
         
+        print(f"Cache miss")
         self.cache_misses += 1
         
         try:
+            print(f"Preparing inputs")
             # Prepare inputs
             inputs = self.tokenizer(
                 text,
@@ -84,13 +92,18 @@ class EmbeddingService:
                 truncation=True,
                 max_length=self.max_sequence_length
             )
-            
+            print(f'Input keys: {inputs.keys()}')
+
+            print(f"Moving inputs to device")
             # Move inputs to the same device as the model
             inputs = {k: v.to(self.device) for k, v in inputs.items()}
             
+            print(f'Calling model...')
             # Generate token embeddings
             with torch.no_grad():
                 outputs = self.model(**inputs)
+
+            print(f'Output attributes: {dir(outputs)}')
             
             # Mean pooling - take the mean of all token embeddings
             token_embeddings = outputs.last_hidden_state
