@@ -133,15 +133,7 @@ class EmbeddingService:
             return [0.0] * self.embedding_dim
     
     def generate_batch_embeddings(self, texts: List[str]) -> List[List[float]]:
-        """
-        Generate embeddings for a batch of texts
-        
-        Args:
-            texts (list): List of text strings
-            
-        Returns:
-            list: List of embeddings
-        """
+        """Generate embeddings for a batch of texts"""
         if not texts:
             return []
         
