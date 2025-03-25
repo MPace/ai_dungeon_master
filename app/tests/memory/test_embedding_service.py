@@ -137,3 +137,67 @@ class TestEmbeddingService:
             # Check that we got a zero vector of the correct size
             assert len(embedding) == 384
             assert all(x == 0.0 for x in embedding)
+
+    def test_cache_size_limit(self, embedding_service):
+        """Test that cache respects its size limit"""
+        # Reduce cache size for testing
+        embedding_service.cache_size = 2
+        
+        texts = [f"Text {i}" for i in range(4)]  # Generate 4 different texts
+        
+        with patch.object(embedding_service.tokenizer, '__call__') as mock_tokenize:
+            mock_tokenize.return_value = {
+                'input_ids': torch.ones((1, 10), dtype=torch.long),
+                'attention_mask': torch.ones((1, 10), dtype=torch.long)
+            }
+            
+            mock_output = type('MockOutput', (), {
+                'last_hidden_state': torch.ones((1, 10, 384), dtype=torch.float) * 0.5
+            })()
+            embedding_service.model.return_value = mock_output
+            
+            # Generate embeddings for all texts
+            for text in texts:
+                embedding_service.generate_embedding(text)
+            
+            # Check cache size hasn't exceeded limit
+            assert len(embedding_service.cache) <= 2
+            
+            # Check that only the most recent texts are cached
+            assert texts[2] in embedding_service.cache
+            assert texts[3] in embedding_service.cache
+            assert texts[0] not in embedding_service.cache
+            assert texts[1] not in embedding_service.cache
+
+    def test_batch_embedding_caching(self, embedding_service):
+        """Test that batch embeddings are properly cached and reused"""
+        texts = ["First text", "Second text", "Third text"]
+        repeated_texts = ["First text", "New text", "Third text"]  # 2 texts should hit cache
+        
+        with patch.object(embedding_service.tokenizer, '__call__') as mock_tokenize:
+            # Mock tokenizer output for first batch
+            mock_tokenize.return_value = {
+                'input_ids': torch.ones((3, 10), dtype=torch.long),
+                'attention_mask': torch.ones((3, 10), dtype=torch.long)
+            }
+
+            # Mock model output
+            mock_output = type('MockOutput', (), {
+                'last_hidden_state': torch.ones((3, 10, 384), dtype=torch.float) * 0.5
+            })()
+            embedding_service.model.return_value = mock_output
+
+            # First batch
+            first_embeddings = embedding_service.generate_batch_embeddings(texts)
+            
+            # Second batch with some repeated texts
+            second_embeddings = embedding_service.generate_batch_embeddings(repeated_texts)
+            
+            # Verify cache behavior
+            cache_stats = embedding_service.get_cache_stats()
+            assert cache_stats['cache_hits'] == 2  # Two texts were reused
+            assert cache_stats['cache_misses'] == 4  # Three from first batch, one new from second
+            
+            # Verify embeddings match for cached texts
+            assert first_embeddings[0] == second_embeddings[0]  # "First text"
+            assert first_embeddings[2] == second_embeddings[2]  # "Third text"
