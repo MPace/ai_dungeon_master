@@ -266,3 +266,54 @@ class TestSummarizationService:
                 if 'success' in result:
                     assert result['success'] is False
                     assert not mock_summarize.called
+
+    def test_summarize_large_memory_set(self, summarization_service, mock_db, app_context):
+        """Test summarizing a large set of memories without performance issues"""
+        # Setup
+        session_id = "test-session"
+        
+        # Create 100 mock memories
+        mock_memories = []
+        for i in range(100):
+            mock_memories.append({
+                'content': f'Memory {i} about the quest with some details.',
+                'session_id': session_id,
+                'memory_id': f'memory{i}',
+                'memory_type': 'short_term',
+                'created_at': datetime.utcnow() - timedelta(hours=i),
+                'character_id': 'char1',
+                'user_id': 'user1'
+            })
+        
+        # Configure mock_db
+        mock_db.return_value = mock_db
+        mock_db.memory_vectors = MagicMock()
+        mock_db.memory_vectors.find = MagicMock()
+        mock_find_cursor = MagicMock()
+        mock_db.memory_vectors.find.return_value = mock_find_cursor
+        mock_find_cursor.sort = MagicMock()
+        mock_find_cursor.sort.return_value = mock_memories
+        
+        # Set up mock for memory summary creation
+        with patch('app.services.memory_service.MemoryService.create_memory_summary') as mock_create_summary:
+            mock_memory = MagicMock()
+            mock_memory.memory_id = 'summary1'
+            mock_create_summary.return_value = {'success': True, 'memory': mock_memory}
+            
+            # Call with timeout to catch performance issues
+            import time
+            start_time = time.time()
+            
+            result = summarization_service.summarize_memories(session_id)
+            
+            end_time = time.time()
+            execution_time = end_time - start_time
+            
+            # Verify results
+            assert result is not None
+            
+            # Check performance - execution shouldn't take too long
+            assert execution_time < 2.0, f"Summarization took too long: {execution_time} seconds"
+            
+            # Verify summarizer was called only once (efficient batching)
+            assert summarization_service.summarizer.call_count == 1
