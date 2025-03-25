@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timedelta
 import numpy as np
 from transformers import pipeline
-from app.extensions import get_embedding_service
+from app.extensions import get_embedding_service, get_db
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +45,8 @@ class SummarizationService:
     def summarize_memories(self, session_id: str, memory_ids: Optional[List[str]] = None, 
                            time_window: Optional[timedelta] = None) -> Dict[str, Any]:
         """Summarize a group of memories"""
-        from app.services.character_service import get_db_for_service
-        db = get_db_for_service()
+        
+        db = get_db()
         if db is None:
             return {'success': False, 'error': 'Database connection failed'}
             
