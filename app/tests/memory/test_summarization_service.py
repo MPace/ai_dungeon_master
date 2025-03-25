@@ -513,3 +513,110 @@ class TestSummarizationService:
         assert result['success'] is False
         assert 'error' in result
         assert 'No memories found' in result['error']
+
+    def test_summarize_memories(app_context, mock_summarizer, mock_embedding_service):
+        """Test successful memory summarization"""
+        from flask import g
+        
+        # Set up mock memories
+        mock_memories = [
+            {'memory_id': '1', 'content': 'Memory 1', 'created_at': datetime.utcnow()},
+            {'memory_id': '2', 'content': 'Memory 2', 'created_at': datetime.utcnow()}
+        ]
+        
+        # Configure mock database
+        g.db.memory_vectors.find.return_value.sort.return_value = mock_memories
+        
+        # Create service instance
+        service = SummarizationService()
+        service.summarizer = mock_summarizer
+        
+        # Test summarization
+        result = service.summarize_memories('test_session')
+        
+        # Verify result
+        assert result['success'] is True
+        assert 'summary' in result
+        assert result['summary'].content == 'Test summary'
+        
+        # Verify database calls
+        g.db.memory_vectors.find.assert_called_once_with({
+            'session_id': 'test_session',
+            'memory_type': 'short_term'
+        })
+        
+        # Verify update_one was called for each memory
+        assert g.db.memory_vectors.update_one.call_count == 2
+
+    def test_summarize_memories_no_memories(app_context, mock_summarizer, mock_embedding_service):
+        """Test handling of no memories to summarize"""
+        from flask import g
+        
+        # Configure mock database to return empty list
+        g.db.memory_vectors.find.return_value.sort.return_value = []
+        
+        # Create service instance
+        service = SummarizationService()
+        service.summarizer = mock_summarizer
+        
+        # Test summarization
+        result = service.summarize_memories('test_session')
+        
+        # Verify result
+        assert result['success'] is False
+        assert result['error'] == 'No memories found to summarize'
+
+    def test_summarize_memories_db_error(app_context, mock_summarizer, mock_embedding_service):
+        """Test handling of database connection error"""
+        from flask import g
+        
+        # Configure mock database to return None
+        g.db = None
+        
+        # Create service instance
+        service = SummarizationService()
+        service.summarizer = mock_summarizer
+        
+        # Test summarization
+        result = service.summarize_memories('test_session')
+        
+        # Verify result
+        assert result['success'] is False
+        assert result['error'] == 'Database connection failed'
+
+    def test_summarize_memories_no_summarizer(app_context, mock_embedding_service):
+        """Test handling of missing summarizer"""
+        from flask import g
+        
+        # Configure mock database
+        g.db.memory_vectors.find.return_value.sort.return_value = []
+        
+        # Create service instance without summarizer
+        service = SummarizationService()
+        
+        # Test summarization
+        result = service.summarize_memories('test_session')
+        
+        # Verify result
+        assert result['success'] is False
+        assert result['error'] == 'Summarizer not initialized'
+
+    def test_summarize_memories_no_embedding_service(app_context, mock_summarizer):
+        """Test handling of missing embedding service"""
+        from flask import g
+        
+        # Configure mock database
+        g.db.memory_vectors.find.return_value.sort.return_value = [
+            {'memory_id': '1', 'content': 'Memory 1', 'created_at': datetime.utcnow()}
+        ]
+        
+        # Create service instance
+        service = SummarizationService()
+        service.summarizer = mock_summarizer
+        
+        # Test summarization
+        result = service.summarize_memories('test_session')
+        
+        # Verify result
+        assert result['success'] is False
+        assert result['error'] == 'Embedding service not available'

@@ -46,14 +46,17 @@ class SummarizationService:
                            time_window: Optional[timedelta] = None) -> Dict[str, Any]:
         """Summarize a group of memories"""
         
-        db = get_db()
-        if db is None:
-            return {'success': False, 'error': 'Database connection failed'}
-            
-        if not self.summarizer:
-            return {'success': False, 'error': 'Summarizer not initialized'}
-            
         try:
+            # Get database connection
+            db = get_db()
+            if db is None:
+                logger.error("Database connection failed")
+                return {'success': False, 'error': 'Database connection failed'}
+            
+            if not self.summarizer:
+                logger.error("Summarizer not initialized")
+                return {'success': False, 'error': 'Summarizer not initialized'}
+            
             # Build query for memories to summarize
             query = {
                 'session_id': session_id,
@@ -73,6 +76,7 @@ class SummarizationService:
             memories = list(db.memory_vectors.find(query).sort('created_at', 1))
             
             if not memories:
+                logger.info(f"No memories found for session {session_id}")
                 return {'success': False, 'error': 'No memories found to summarize'}
                 
             # Extract text content from memories
@@ -87,6 +91,7 @@ class SummarizationService:
             # Get embedding service
             embedding_service = get_embedding_service()
             if not embedding_service:
+                logger.error("Embedding service not available")
                 return {'success': False, 'error': 'Embedding service not available'}
                 
             # Generate embedding for summary
@@ -116,6 +121,7 @@ class SummarizationService:
                 
                 return {'success': True, 'summary': summary_result['memory']}
             else:
+                logger.error("Failed to store summary memory")
                 return {'success': False, 'error': 'Failed to store summary memory'}
                 
         except Exception as e:
