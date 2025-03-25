@@ -180,19 +180,25 @@ class TestEmbeddingService:
         texts = ["First text", "Second text", "Third text"]
         repeated_texts = ["First text", "New text", "Third text"]  # 2 texts should hit cache
         
-        with patch.object(embedding_service.tokenizer, '__call__') as mock_tokenize:
-            # Mock tokenizer output for first batch
-            mock_tokenize.return_value = {
-                'input_ids': torch.ones((3, 10), dtype=torch.long),
-                'attention_mask': torch.ones((3, 10), dtype=torch.long)
+        # We need to patch both the tokenizer and model separately
+        with patch.object(embedding_service.tokenizer, '__call__') as mock_tokenize, \
+            patch.object(embedding_service.model, '__call__') as mock_model_call:
+            
+            # Mock tokenizer output for all batches
+            mock_tokenize.side_effect = lambda texts, **kwargs: {
+                'input_ids': torch.ones((len(texts) if isinstance(texts, list) else 1, 10), dtype=torch.long),
+                'attention_mask': torch.ones((len(texts) if isinstance(texts, list) else 1, 10), dtype=torch.long)
             }
-
-            # Mock model output
-            mock_output = type('MockOutput', (), {
-                'last_hidden_state': torch.ones((3, 10, 384), dtype=torch.float) * 0.5
-            })()
-            embedding_service.model.return_value = mock_output
-
+            
+            # Mock model output for all batches
+            def model_side_effect(**kwargs):
+                batch_size = kwargs.get('input_ids', torch.ones(1)).shape[0]
+                mock_output = MagicMock()
+                mock_output.last_hidden_state = torch.ones((batch_size, 10, 384), dtype=torch.float) * 0.5
+                return mock_output
+                
+            mock_model_call.side_effect = model_side_effect
+            
             # First batch
             first_embeddings = embedding_service.generate_batch_embeddings(texts)
             
