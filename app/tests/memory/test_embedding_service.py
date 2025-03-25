@@ -68,18 +68,11 @@ class TestEmbeddingService:
         """Test that embeddings are cached and reused"""
         test_text = "This is a test for caching"
         
-        with patch.object(embedding_service.tokenizer, '__call__') as mock_tokenize:
+        with patch.object(embedding_service.tokenizer, '__call__') as mock_model_call:
             # Mock tokenizer output
-            mock_tokenize.return_value = {
-                'input_ids': torch.ones((1, 10), dtype=torch.long),
-                'attention_mask': torch.ones((1, 10), dtype=torch.long)
-            }
-
-            # Mock model output
-            mock_output = type('MockOutput', (), {
-                'last_hidden_state': torch.ones((1, 10, 384), dtype=torch.float) * 0.5
-            })()
-            embedding_service.model.return_value = mock_output
+            mock_output = MagicMock()
+            mock_output.last_hidden_state = torch.ones((1, 10, 384), dtype=torch.float) * 0.5
+            mock_model_call.return_value = mock_output
 
             # First call should compute the embedding
             first_embedding = embedding_service.generate_embedding(test_text)
