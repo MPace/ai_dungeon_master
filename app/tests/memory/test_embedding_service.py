@@ -175,6 +175,27 @@ class TestEmbeddingService:
         assert texts[0] not in embedding_service.cache
         assert texts[1] not in embedding_service.cache
 
+
+    def test_input_error_handling(self, embedding_service):
+        """Test handling of various invalid inputs"""
+        # Test empty string
+        empty_result = embedding_service.generate_embedding("")
+        assert len(empty_result) == 384
+        assert all(x == 0.0 for x in empty_result)
+        
+        # Test None input
+        with pytest.raises(ValueError):
+            embedding_service.generate_embedding(None)
+        
+        # Test batch with mixed invalid inputs
+        texts = ["Valid text", "", None, "Another valid text"]
+        with pytest.raises(ValueError):
+            embedding_service.generate_batch_embeddings(texts)
+        
+        # Test empty batch
+        empty_batch_result = embedding_service.generate_batch_embeddings([])
+        assert len(empty_batch_result) == 0
+
     def test_batch_embedding_caching(self, embedding_service):
         """Test that batch embeddings are properly cached and reused"""
         
@@ -235,22 +256,4 @@ class TestEmbeddingService:
             # Restore the original method
             embedding_service.generate_batch_embeddings = original_generate_batch_embeddings
 
-    def test_input_error_handling(self, embedding_service):
-        """Test handling of various invalid inputs"""
-        # Test empty string
-        empty_result = embedding_service.generate_embedding("")
-        assert len(empty_result) == 384
-        assert all(x == 0.0 for x in empty_result)
-        
-        # Test None input
-        with pytest.raises(ValueError):
-            embedding_service.generate_embedding(None)
-        
-        # Test batch with mixed invalid inputs
-        texts = ["Valid text", "", None, "Another valid text"]
-        with pytest.raises(ValueError):
-            embedding_service.generate_batch_embeddings(texts)
-        
-        # Test empty batch
-        empty_batch_result = embedding_service.generate_batch_embeddings([])
-        assert len(empty_batch_result) == 0
+    
