@@ -144,14 +144,16 @@ class TestMemoryService:
                 'session_id': session_id,
                 'embedding': [0.1] * 384,
                 'memory_id': 'memory1',
-                'created_at': datetime.utcnow()
+                'created_at': datetime.utcnow(),
+                '_id': 'ObjectId1'
             },
             {
                 'content': 'Similar memory 2',
                 'session_id': session_id,
                 'embedding': [0.2] * 384,
                 'memory_id': 'memory2',
-                'created_at': datetime.utcnow()
+                'created_at': datetime.utcnow(),
+                '_id': 'ObjectId2'
             }
         ]
         mock_db.memory_vectors.find.return_value = mock_memory_data
