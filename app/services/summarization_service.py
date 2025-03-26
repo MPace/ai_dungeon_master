@@ -2,22 +2,24 @@
 from typing import List, Dict, Any, Optional
 import logging
 from datetime import datetime, timedelta
-import numpy as np
+import os
 from transformers import pipeline
 from app.extensions import get_embedding_service, get_db
+from app.services.memory_service import MemoryService
 
 logger = logging.getLogger(__name__)
 
 class SummarizationService:
     """Service for abstractive summarization of memories"""
     
-    def __init__(self, model_name="facebook/bart-large-cnn"):
+    def __init__(self, model_name=None):
         """Initialize the summarization service with a model"""
-        self.model_name = model_name
+        # Get model name from environment variable or use default
+        self.model_name = model_name or os.environ.get("SUMMARIZATION_MODEL", "facebook/bart-large-cnn")
         self.summarizer = None
         try:
-            self.summarizer = pipeline("summarization", model=model_name)
-            logger.info(f"Summarization model loaded: {model_name}")
+            self.summarizer = pipeline("summarization", model=self.model_name)
+            logger.info(f"Summarization model loaded: {self.model_name}")
         except Exception as e:
             logger.error(f"Error loading summarization model: {e}")
     
@@ -97,11 +99,10 @@ class SummarizationService:
             # Generate embedding for summary
             summary_embedding = embedding_service.generate_embedding(summary_text)
             
-            # Create a summary memory
-            from app.services.memory_service import MemoryService
-            
+            # Extract memory IDs
             summary_memory_ids = [memory.get('memory_id') for memory in memories if 'memory_id' in memory]
             
+            # Create a summary memory
             summary_result = MemoryService.create_memory_summary(
                 memory_ids=summary_memory_ids,
                 summary_content=summary_text,
@@ -112,7 +113,7 @@ class SummarizationService:
             )
             
             if summary_result['success']:
-                # Optionally, update the summarized memories to mark them as summarized
+                # Update the summarized memories to mark them as summarized
                 for memory_id in summary_memory_ids:
                     db.memory_vectors.update_one(
                         {'memory_id': memory_id},
@@ -126,20 +127,26 @@ class SummarizationService:
                 
         except Exception as e:
             logger.error(f"Error summarizing memories: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
     def trigger_summarization_if_needed(self, session_id: str) -> Dict[str, Any]:
         """Check if summarization is needed and trigger it if so"""
-        from app.services.memory_service import MemoryService
-        
-        memory_service = MemoryService()
-        
-        # Check if summarization should be triggered
-        if memory_service.check_summarization_triggers(session_id):
-            # Get memories from the last hour
-            time_window = timedelta(minutes=60)
+        db = get_db()
+        if db is None:
+            return {'success': False, 'error': 'Database connection failed'}
             
-            # Summarize memories
+        # Check volume-based trigger
+        memory_count = db.memory_vectors.count_documents({
+            'session_id': session_id,
+            'memory_type': 'short_term',
+            'is_summarized': {'$ne': True}  # Only count non-summarized memories
+        })
+        
+        # Trigger summarization if we have enough memories
+        if memory_count >= 10:
+            time_window = timedelta(minutes=60)
             return self.summarize_memories(session_id, time_window=time_window)
         else:
             return {'success': False, 'message': 'Summarization not needed'}

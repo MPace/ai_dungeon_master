@@ -5,8 +5,9 @@ import pytest
 from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
 import os
+from app.services.summarization_service import SummarizationService
 
-# Create a Flask application context for testing
+# Create a Flask application context for testing - moved outside class
 @pytest.fixture
 def app_context():
     """Create a Flask application context for testing"""
@@ -36,72 +37,70 @@ def app_context():
         g.db = mock_db
         yield app
 
+# Moved these fixtures outside the class to make them available globally
+@pytest.fixture
+def mock_summarizer():
+    """Mock the actual summarizer function directly"""
+    with patch('app.services.summarization_service.pipeline') as mock_pipeline:
+        # Create a mock summarizer function
+        mock_summarizer = MagicMock()
+        mock_summarizer.return_value = [{'summary_text': 'This is a summarized version of the text.'}]
+        mock_pipeline.return_value = mock_summarizer
+        yield mock_summarizer
+
+@pytest.fixture
+def mock_db():
+    """Mock MongoDB connection"""
+    with patch('app.extensions.get_db') as mock_get_db:
+        # Create a proper chain of mocks
+        mock_db = MagicMock()
+        mock_collection = MagicMock()
+        mock_find_result = MagicMock()
+        mock_sort_result = MagicMock()
+        
+        # Set up the chain
+        mock_db.memory_vectors = mock_collection
+        mock_collection.find.return_value = mock_find_result
+        mock_find_result.sort.return_value = mock_sort_result
+        
+        # By default, return empty list
+        mock_sort_result.return_value = []
+        
+        # Make get_db() return our mock_db
+        mock_get_db.return_value = mock_db
+        
+        # Set up update_one for marking memories as summarized
+        mock_collection.update_one = MagicMock()
+        mock_collection.update_one.return_value = MagicMock(modified_count=1)
+        
+        yield mock_db
+
+@pytest.fixture
+def mock_embedding_service():
+    """Mock EmbeddingService"""
+    with patch('app.extensions.get_embedding_service') as mock_get_service:
+        mock_service = MagicMock()
+        # Configure the mock to return predictable embeddings
+        mock_service.generate_embedding.return_value = [0.1] * 384
+        mock_get_service.return_value = mock_service
+        yield mock_service
+
+@pytest.fixture
+def summarization_service(mock_summarizer, app_context):
+    """Create a SummarizationService with mocked components"""
+    # Set model name environment variable if needed
+    os.environ.setdefault('SUMMARIZATION_MODEL', 'facebook/bart-large-cnn')
+    
+    # Create the service
+    service = SummarizationService()
+    
+    # Replace the summarizer with our mock directly
+    service.summarizer = mock_summarizer
+    
+    return service
+
 class TestSummarizationService:
     """Test suite for SummarizationService"""
-
-    @pytest.fixture
-    def mock_summarizer(self):
-        """Mock the actual summarizer function directly"""
-        with patch('app.services.summarization_service.pipeline') as mock_pipeline:
-            # Create a mock summarizer function
-            mock_summarizer = MagicMock()
-            mock_summarizer.return_value = [{'summary_text': 'This is a summarized version of the text.'}]
-            mock_pipeline.return_value = mock_summarizer
-            yield mock_summarizer
-
-    @pytest.fixture
-    def mock_db(self):
-        """Mock MongoDB connection"""
-        with patch('app.extensions.get_db') as mock_get_db:
-            # Create a proper chain of mocks
-            mock_db = MagicMock()
-            mock_collection = MagicMock()
-            mock_find_result = MagicMock()
-            mock_sort_result = MagicMock()
-            
-            # Set up the chain
-            mock_db.memory_vectors = mock_collection
-            mock_collection.find.return_value = mock_find_result
-            mock_find_result.sort.return_value = mock_sort_result
-            
-            # By default, return empty list
-            mock_sort_result.return_value = []
-            
-            # Make get_db() return our mock_db
-            mock_get_db.return_value = mock_db
-            
-            # Set up update_one for marking memories as summarized
-            mock_collection.update_one = MagicMock()
-            mock_collection.update_one.return_value = MagicMock(modified_count=1)
-            
-            yield mock_db
-
-    @pytest.fixture
-    def mock_embedding_service(self):
-        """Mock EmbeddingService"""
-        with patch('app.extensions.get_embedding_service') as mock_get_service:
-            mock_service = MagicMock()
-            # Configure the mock to return predictable embeddings
-            mock_service.generate_embedding.return_value = [0.1] * 384
-            mock_get_service.return_value = mock_service
-            yield mock_service
-
-    @pytest.fixture
-    def summarization_service(self, mock_summarizer, app_context):
-        """Create a SummarizationService with mocked components"""
-        # Force import of the service after mocks are set up
-        from app.services.summarization_service import SummarizationService
-        
-        # Set model name environment variable if needed
-        os.environ.setdefault('SUMMARIZATION_MODEL', 'facebook/bart-large-cnn')
-        
-        # Create the service
-        service = SummarizationService()
-        
-        # Replace the summarizer with our mock directly
-        service.summarizer = mock_summarizer
-        
-        return service
 
     def test_initialization(self, app_context):
         """Test SummarizationService initialization"""
@@ -110,8 +109,7 @@ class TestSummarizationService:
             mock_summarizer = MagicMock()
             mock_pipeline.return_value = mock_summarizer
             
-            # Now import and create the service
-            from app.services.summarization_service import SummarizationService
+            # Now create the service
             service = SummarizationService()
             
             # Basic assertions
@@ -183,7 +181,7 @@ class TestSummarizationService:
         # Configure mock database
         g.db.memory_vectors.find.return_value.sort.return_value = mock_memories
         
-        # Create service instance
+        # Create service instance - use the actual class
         service = SummarizationService()
         service.summarizer = mock_summarizer
         
@@ -416,6 +414,7 @@ class TestSummarizationService:
         
         # Create service instance without summarizer
         service = SummarizationService()
+        service.summarizer = None
         
         # Test summarization
         result = service.summarize_memories('test_session')
