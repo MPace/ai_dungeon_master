@@ -1,8 +1,8 @@
 """
-Summarization Service using Hugging Face Inference API
+Summarization Service using Modal API
 
-This service handles text summarization by using the Hugging Face Inference API 
-instead of running models locally, significantly reducing resource requirements.
+This service handles text summarization by using the Modal API
+instead of Hugging Face, significantly reducing resource requirements.
 """
 from typing import List, Dict, Any, Optional
 import logging
@@ -16,32 +16,32 @@ from app.services.memory_service import MemoryService
 logger = logging.getLogger(__name__)
 
 class SummarizationService:
-    """Service for abstractive summarization of memories using Hugging Face Inference API"""
+    """Service for abstractive summarization of memories using Modal API"""
     
     def __init__(self, api_url=None, api_token=None):
         """
-        Initialize the summarization service with Hugging Face Inference API credentials
+        Initialize the summarization service with Modal API credentials
         
         Args:
-            api_url: The Hugging Face Inference API endpoint URL (optional, defaults to env variable)
-            api_token: The Hugging Face API token (optional, defaults to env variable)
+            api_url: The Modal API endpoint URL (optional, defaults to env variable)
+            api_token: The Modal API token (optional, defaults to env variable)
         """
         # Get API URL and token from parameters or environment variables
-        self.api_url = api_url or os.environ.get("HF_API_URL")
-        self.api_token = api_token or os.environ.get("HF_API_TOKEN")
+        self.api_url = api_url or os.environ.get("MODAL_API_URL")
+        self.api_token = api_token or os.environ.get("MODAL_API_TOKEN")
         
         # Check if we have the required credentials
         if not self.api_url:
-            logger.warning("No Hugging Face API URL provided. Summarization will not work.")
+            logger.warning("No Modal API URL provided. Summarization will not work.")
         
         if not self.api_token:
-            logger.warning("No Hugging Face API token provided. Summarization will not work.")
+            logger.warning("No Modal API token provided. Summarization will not work.")
         
-        logger.info(f"Summarization service initialized with Hugging Face Inference API")
+        logger.info(f"Summarization service initialized with Modal API")
     
     def summarize_text(self, text: str, max_length: int = 150, min_length: int = 30) -> str:
         """
-        Summarize a single text using Hugging Face Inference API
+        Summarize a single text using Modal API
         
         Args:
             text: The text to summarize
@@ -52,11 +52,11 @@ class SummarizationService:
             str: The summarized text, or the original text if summarization fails
         """
         if not self.api_url or not self.api_token:
-            logger.error("Hugging Face API credentials not configured")
+            logger.error("Modal API credentials not configured")
             return text
             
         try:
-            # Truncate text if it's too long - most models have a limit around 1024 tokens
+            # Truncate text if it's too long - most models have a limit around 4096 tokens
             # This is a simple character-based truncation, tokens would be more accurate
             if len(text) > 4000:  # Conservative limit to ensure we're under model's context window
                 logger.info(f"Truncating text from {len(text)} characters to 4000")
@@ -68,8 +68,9 @@ class SummarizationService:
                 "Content-Type": "application/json"
             }
             
+            # Modal API expects a different format than Hugging Face
             payload = {
-                "inputs": text,
+                "text": text,
                 "parameters": {
                     "max_length": max_length,
                     "min_length": min_length,
@@ -78,24 +79,20 @@ class SummarizationService:
             }
             
             # Send request to API
-            logger.debug(f"Sending text to Hugging Face API for summarization: {text[:100]}...")
+            logger.debug(f"Sending text to Modal API for summarization: {text[:100]}...")
             response = requests.post(self.api_url, headers=headers, json=payload, timeout=30)
             
             # Check for successful response
             if response.status_code == 200:
                 result = response.json()
                 
-                # Handle different response formats from different models
-                if isinstance(result, list) and len(result) > 0:
-                    # Format for models like BART, T5, etc.
-                    if isinstance(result[0], dict) and 'summary_text' in result[0]:
-                        return result[0]['summary_text']
-                    # Some models return just the generated text
-                    elif isinstance(result[0], str):
-                        return result[0]
-                # Some endpoints return a dict with generated_text
-                elif isinstance(result, dict) and 'generated_text' in result:
-                    return result['generated_text']
+                # Handle Modal API response format which might be different from Hugging Face
+                if 'summary' in result:
+                    return result['summary']
+                elif 'result' in result:
+                    return result['result']
+                elif 'output' in result:
+                    return result['output']
                 
                 # If we can't parse the result, log it and return original text
                 logger.warning(f"Unexpected API response format: {response.text[:200]}")
@@ -131,7 +128,7 @@ class SummarizationService:
                 return {'success': False, 'error': 'Database connection failed'}
             
             if not self.api_url or not self.api_token:
-                logger.error("Hugging Face API credentials not configured")
+                logger.error("Modal API credentials not configured")
                 return {'success': False, 'error': 'Summarization service not properly configured'}
             
             # Build query for memories to summarize
@@ -177,7 +174,7 @@ class SummarizationService:
             summary_embedding = embedding_service.generate_embedding(summary_text)
             
             # Extract memory IDs
-            summary_memory_ids = [memory.get('memory_id') for memory in memories if 'memory_id' in memory]
+            summary_memory_ids = [memory.get('memory_id', '') for memory in memories if 'memory_id' in memory]
             
             # Create a summary memory
             summary_result = MemoryService.create_memory_summary(
@@ -190,9 +187,22 @@ class SummarizationService:
             )
             
             if summary_result.get('success', False):
-                # Update the summarized memories to mark them as summarized
-                summary_id = summary_result['memory'].memory_id if hasattr(summary_result['memory'], 'memory_id') else summary_result['memory'].get('memory_id')
+                # Get the memory ID - handle both object and dictionary cases for test compatibility
+                memory_obj = summary_result.get('memory')
                 
+                # Determine how to get the memory_id based on the type of memory_obj
+                if hasattr(memory_obj, 'memory_id'):
+                    # It's an object with attributes
+                    summary_id = memory_obj.memory_id
+                elif isinstance(memory_obj, dict) and 'memory_id' in memory_obj:
+                    # It's a dictionary with a memory_id key
+                    summary_id = memory_obj['memory_id']
+                else:
+                    # Fallback - use a placeholder ID
+                    logger.warning("Could not determine memory ID from summary result")
+                    summary_id = "unknown"
+                
+                # Update the summarized memories to mark them as summarized
                 for memory_id in summary_memory_ids:
                     db.memory_vectors.update_one(
                         {'memory_id': memory_id},
@@ -200,7 +210,7 @@ class SummarizationService:
                     )
                 
                 logger.info(f"Successfully summarized {len(memories)} memories into summary ID: {summary_id}")
-                return {'success': True, 'summary': summary_result['memory']}
+                return {'success': True, 'summary': memory_obj}
             else:
                 logger.error(f"Failed to store summary memory: {summary_result.get('error', 'Unknown error')}")
                 return {'success': False, 'error': 'Failed to store summary memory'}

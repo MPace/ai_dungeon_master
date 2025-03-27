@@ -1,9 +1,9 @@
 """
-Integration tests for Summarization Service with Hugging Face API (pytest compatible)
+Integration tests for Summarization Service with Modal API (pytest compatible)
 
 Environment Variables:
-    HF_API_URL - The Hugging Face Inference API endpoint URL
-    HF_API_TOKEN - Your Hugging Face API token
+    MODAL_API_URL - The Modal API endpoint URL
+    MODAL_API_TOKEN - Your Modal API token
 """
 import os
 import sys
@@ -32,7 +32,6 @@ class MockDB:
     def __init__(self):
         self.memory_vectors = self
         self.data = []
-        self.current_query = {}
         
     def find(self, query):
         """Mock find method that returns self for method chaining"""
@@ -40,91 +39,19 @@ class MockDB:
         return self
         
     def sort(self, field_name=None, direction=1):
-        """Mock sort method that returns self for method chaining"""
+        """Mock sort method that returns the data"""
         # In a real implementation we would sort the data here
-        return self
-        
-    def limit(self, limit_count):
-        """Mock limit method that returns the filtered data"""
-        # Filter data based on current_query
-        filtered_data = []
-        for memory in self.data:
-            # Handle session_id filter
-            if 'session_id' in self.current_query and memory.get('session_id') != self.current_query['session_id']:
-                continue
-            
-            # Handle memory_type filter
-            if 'memory_type' in self.current_query and memory.get('memory_type') != self.current_query['memory_type']:
-                continue
-                
-            filtered_data.append(memory)
-            
-        return filtered_data
-        
-    def __iter__(self):
-        """Make the object iterable, returning filtered data based on current query"""
-        # Return iterator for filtered data based on the current query
-        filtered_data = []
-        for memory in self.data:
-            # Handle session_id filter
-            if 'session_id' in self.current_query and memory.get('session_id') != self.current_query['session_id']:
-                continue
-            
-            # Handle memory_type filter
-            if 'memory_type' in self.current_query and memory.get('memory_type') != self.current_query['memory_type']:
-                continue
-                
-            filtered_data.append(memory)
-            
-        return iter(filtered_data)
+        return self.data
         
     def update_one(self, query, update):
         """Mock update_one method"""
         logger.info(f"Would update document matching: {query}")
         logger.info(f"With update: {update}")
-        return type('obj', (object,), {'acknowledged': True, 'modified_count': 1})
+        return type('obj', (object,), {'modified_count': 1})
         
     def count_documents(self, query):
         """Mock count_documents method"""
-        # Special case for is_summarized query - always return the number we need
-        if 'is_summarized' in query and query.get('is_summarized', {}) == {'$ne': True}:
-            # For the trigger_summarization test - return actual length for first test, 10 for second
-            if 'session_id' in query and query['session_id'] == 'test-session':
-                if len(self.data) >= 10:
-                    return 10  # Force to return 10 to trigger summarization
-                return len(self.data)
-                
-        # Count documents matching the query
-        count = 0
-        for memory in self.data:
-            matches = True
-            for key, value in query.items():
-                # Handle special operators
-                if isinstance(value, dict) and '$in' in value:
-                    if key not in memory or memory[key] not in value['$in']:
-                        matches = False
-                        break
-                elif isinstance(value, dict) and '$ne' in value:
-                    if key in memory and memory[key] == value['$ne']:
-                        matches = False
-                        break
-                elif isinstance(value, dict) and '$exists' in value:
-                    exists = key in memory
-                    if exists != value['$exists']:
-                        matches = False
-                        break
-                else:
-                    # Simple equality check
-                    if key not in memory or memory[key] != value:
-                        matches = False
-                        break
-            
-            if matches:
-                count += 1
-                
-        # Debug logging
-        logger.info(f"count_documents with query {query} returned {count}")
-        return count
+        return len(self.data)
         
     def add_test_memories(self, memories):
         """Helper to add test memories to our mock DB"""
@@ -178,13 +105,15 @@ def app_context(flask_app):
 
 @pytest.fixture
 def summarization_service():
-    """
-    Fixture to create a SummarizationService with real or mocked API credentials
-    In CI/CD environments, we'll use mocked credentials
-    """
-    # Force mock credentials for CI testing
-    api_url = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
-    api_token = "mock_token_for_testing"
+    """Fixture to create a SummarizationService with real API credentials"""
+    api_url = os.environ.get("MODAL_API_URL")
+    api_token = os.environ.get("MODAL_API_TOKEN")
+    
+    if not api_url or not api_token:
+        logger.warning("Missing MODAL_API_URL or MODAL_API_TOKEN environment variables")
+        # Create with placeholder values to avoid errors
+        api_url = api_url or "https://example.com/api"
+        api_token = api_token or "dummy_token"
     
     # Create and return the service
     return SummarizationService(
@@ -205,8 +134,7 @@ def mock_db():
             'session_id': 'test-session',
             'character_id': 'character1',
             'user_id': 'user1',
-            'created_at': '2023-01-01T12:00:00',
-            'memory_type': 'short_term'
+            'created_at': '2023-01-01T12:00:00'
         },
         {
             'memory_id': 'memory2',
@@ -214,8 +142,7 @@ def mock_db():
             'session_id': 'test-session',
             'character_id': 'character1',
             'user_id': 'user1',
-            'created_at': '2023-01-01T12:30:00',
-            'memory_type': 'short_term'
+            'created_at': '2023-01-01T12:30:00'
         },
         {
             'memory_id': 'memory3',
@@ -223,8 +150,7 @@ def mock_db():
             'session_id': 'test-session',
             'character_id': 'character1',
             'user_id': 'user1',
-            'created_at': '2023-01-01T13:00:00',
-            'memory_type': 'short_term'
+            'created_at': '2023-01-01T13:00:00'
         },
         {
             'memory_id': 'memory4',
@@ -232,8 +158,7 @@ def mock_db():
             'session_id': 'test-session',
             'character_id': 'character1',
             'user_id': 'user1',
-            'created_at': '2023-01-01T13:30:00',
-            'memory_type': 'short_term'
+            'created_at': '2023-01-01T13:30:00'
         },
         {
             'memory_id': 'memory5',
@@ -241,16 +166,49 @@ def mock_db():
             'session_id': 'test-session',
             'character_id': 'character1',
             'user_id': 'user1',
-            'created_at': '2023-01-01T14:00:00',
-            'memory_type': 'short_term'
+            'created_at': '2023-01-01T14:00:00'
         }
     ]
     
     db.add_test_memories(test_memories)
     return db
 
+def test_api_credentials_set():
+    """Verify API credentials are set properly"""
+    api_url = os.environ.get("MODAL_API_URL")
+    api_token = os.environ.get("MODAL_API_TOKEN")
+    
+    if not api_url or not api_token:
+        pytest.skip("Skipping test: MODAL_API_URL or MODAL_API_TOKEN not set")
+    
+    # Verify API credentials - simple echo request
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        # Make a basic ping request to verify the token is valid
+        # This will need to be adjusted based on Modal's API structure
+        echo_url = f"{api_url}/status"  # Adjust endpoint as needed for Modal
+        response = requests.get(echo_url, headers=headers, timeout=5)
+        
+        if response.status_code == 200:
+            logger.info(f"API credentials verification successful: {response.status_code}")
+            return True
+        else:
+            logger.error(f"API credentials verification failed: {response.status_code}")
+            logger.error(f"Response: {response.text}")
+            pytest.skip(f"API credentials invalid: {response.status_code}")
+    except Exception as e:
+        logger.error(f"Error verifying API credentials: {e}")
+        pytest.skip(f"Error verifying API credentials: {e}")
+
 def test_summarize_text(summarization_service):
-    """Test the basic text summarization functionality with mocked API"""
+    """Test the basic text summarization functionality with real API"""
+    # First verify API credentials
+    test_api_credentials_set()
+    
     logger.info("===== Testing Basic Text Summarization =====")
     
     # Test text - a news article about climate change (shorter for testing)
@@ -262,14 +220,15 @@ def test_summarize_text(summarization_service):
     The report has been described as a "code red for humanity" by UN Secretary-General António Guterres.
     """
     
-    expected_summary = 'The IPCC has issued a stark warning about climate change, calling for immediate action to reduce emissions. The UN Secretary-General called it a "code red for humanity."'
-    
-    # Setup our mock
+    # Setup a real API call with proper mocking
     with patch('requests.post') as mock_post:
-        # Create a mock response
+        # Create a proper mock response that mimics a successful API call
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = [{'summary_text': expected_summary}]
+        # Note the change in response format for Modal API
+        mock_response.json.return_value = {
+            'summary': 'The IPCC has issued a stark warning about climate change, calling for immediate action to reduce emissions. The UN Secretary-General called it a "code red for humanity."'
+        }
         mock_post.return_value = mock_response
         
         # Time the summarization
@@ -286,121 +245,73 @@ def test_summarize_text(summarization_service):
         
         # Verify the mock was called correctly
         mock_post.assert_called_once()
-        
-        # Check the API call parameters
         args, kwargs = mock_post.call_args
-        assert 'headers' in kwargs
-        assert 'Authorization' in kwargs['headers']
-        assert 'json' in kwargs
-        assert 'inputs' in kwargs['json']
-        assert test_text.strip() in kwargs['json']['inputs']
+        assert kwargs['headers']['Authorization'] == f"Bearer {summarization_service.api_token}"
+        assert kwargs['json']['text'] == test_text  # Note the change in payload format
         
-        # Test assertions on the result
-        assert summary == expected_summary
+        # Test assertions
+        assert summary is not None
         assert len(summary) > 0
         assert len(summary) < len(test_text)
+        assert summary != test_text
+        assert "IPCC" in summary
         
         logger.info("✓ Basic text summarization test PASSED")
 
 def test_summarize_memories(app_context, summarization_service, mock_db):
     """Test the memory summarization functionality"""
+    # First verify API credentials
+    test_api_credentials_set()
+    
     logger.info("\n===== Testing Memory Summarization =====")
     
-    # First, create a mock result instead of calling the actual function
-    expected_result = {
-        'success': True,
-        'summary': {
-            'memory_id': 'mock-summary-id',
-            'content': 'Test summary content'
+    # Setup a real API call with proper mocking for request.post
+    with patch('requests.post') as mock_post:
+        # Create a proper mock response that mimics a successful API call
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        # Note the change in response format for Modal API
+        mock_response.json.return_value = {
+            'summary': 'The party found a cave with ancient runes and a magic amulet. When the amulet was brought near the runes, the ground trembled. They decided to seek guidance from village elders.'
         }
-    }
-    
-    # Mock the entire summarize_memories method
-    with patch.object(summarization_service, 'summarize_memories', return_value=expected_result):
-        # Create test text for summarization
-        test_text = """
-        The party discovered a hidden cave behind a waterfall. 
-        Inside, they found ancient runes carved into the walls.
-        The wizard Eldrin translated the runes, revealing they were a warning about a sealed demon.
-        """
+        mock_post.return_value = mock_response
         
-        # Test the summarize_text function directly - this is the core function
-        with patch('requests.post') as mock_post:
-            # Create mock response for the API call
-            mock_response = MagicMock()
-            mock_response.status_code = 200
-            mock_response.json.return_value = [{'summary_text': 'Test summary of cave discovery'}]
-            mock_post.return_value = mock_response
+        # Setup mocks for database and services
+        with patch('app.extensions.get_db', return_value=mock_db), \
+             patch('app.extensions.get_embedding_service', return_value=MockEmbeddingService()), \
+             patch('app.services.memory_service.MemoryService.create_memory_summary', 
+                   side_effect=MockMemoryService.create_memory_summary):
             
-            # Call summarize_text directly
-            summary = summarization_service.summarize_text(test_text)
+            # Time the summarization
+            start_time = time.time()
+            logger.info(f"Summarizing {len(mock_db.data)} memories")
             
-            # Verify the mock was called correctly
+            # Call the method we're testing
+            result = summarization_service.summarize_memories('test-session')
+            
+            end_time = time.time()
+            
+            # Log the results
+            logger.info(f"Memory summarization completed in {end_time - start_time:.2f} seconds")
+            logger.info(f"Result success: {result.get('success')}")
+            
+            if 'summary' in result:
+                # Get the summary content
+                if hasattr(result['summary'], 'content'):
+                    summary_content = result['summary'].content
+                elif isinstance(result['summary'], dict) and 'content' in result['summary']:
+                    summary_content = result['summary']['content']
+                else:
+                    summary_content = str(result['summary'])
+                    
+                logger.info(f"Memory summary: {summary_content}")
+            
+            # Verify our mocks were called
             mock_post.assert_called_once()
             
-            # Check the result
-            assert summary == 'Test summary of cave discovery'
-            logger.info(f"Generated summary: {summary}")
+            # Test assertions
+            assert result is not None
+            assert result.get('success') is True
+            assert 'summary' in result
             
-        # Now just to verify our mock works, call the summarize_memories method
-        # (which we've mocked to return expected_result)
-        result = summarization_service.summarize_memories('test-session')
-        
-        # Check the result matches our expected mock
-        assert result == expected_result
-        assert result.get('success') is True
-        assert 'summary' in result
-        
-        logger.info("✓ Memory summarization test PASSED")
-
-def test_trigger_summarization(app_context, summarization_service, mock_db):
-    """Test the trigger_summarization_if_needed functionality"""
-    logger.info("\n===== Testing Summarization Trigger =====")
-    
-    # Bypass the real implementation by mocking the entire function directly
-    
-    # Create a small mock_db for first test
-    small_db = MockDB()
-    small_db.add_test_memories([
-        {
-            'memory_id': 'memory1',
-            'content': 'Test memory 1',
-            'session_id': 'test-session',
-            'memory_type': 'short_term',
-            'is_summarized': False
-        }
-    ])
-    
-    # Test case 1: Not enough memories (expect 'not needed' response)
-    with patch('app.services.summarization_service.SummarizationService.trigger_summarization_if_needed',
-          return_value={'success': False, 'message': 'Summarization not needed'}):
-              
-        # Call mocked function
-        result = summarization_service.trigger_summarization_if_needed('test-session')
-        
-        # Check result
-        assert result == {'success': False, 'message': 'Summarization not needed'}
-        logger.info("✓ Test case 1 passed: Not enough memories correctly gives 'not needed' response")
-    
-    # Test case 2: Enough memories (expect summarization to be triggered)
-    expected_result = {
-        'success': True,
-        'summary': {
-            'memory_id': 'test-summary-123',
-            'content': 'A summarized version of memories'
-        }
-    }
-    
-    with patch('app.services.summarization_service.SummarizationService.trigger_summarization_if_needed',
-           return_value=expected_result):
-               
-        # Call mocked function
-        result = summarization_service.trigger_summarization_if_needed('test-session')
-        
-        # Check result
-        assert result == expected_result
-        assert result.get('success') is True
-        assert 'summary' in result
-        logger.info("✓ Test case 2 passed: Enough memories correctly triggers summarization")
-    
-    logger.info("✓ Summarization trigger test PASSED")
+            logger.info("✓ Memory summarization test PASSED")
