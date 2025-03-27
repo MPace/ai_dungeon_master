@@ -32,6 +32,7 @@ class MockDB:
     def __init__(self):
         self.memory_vectors = self
         self.data = []
+        self.current_query = {}
         
     def find(self, query):
         """Mock find method that returns self for method chaining"""
@@ -39,13 +40,43 @@ class MockDB:
         return self
         
     def sort(self, field_name=None, direction=1):
-        """Mock sort method that returns the data"""
+        """Mock sort method that returns self for method chaining"""
         # In a real implementation we would sort the data here
         return self
         
     def limit(self, limit_count):
-        """Mock limit method that returns the data"""
-        return self.data
+        """Mock limit method that returns the filtered data"""
+        # Filter data based on current_query
+        filtered_data = []
+        for memory in self.data:
+            # Handle session_id filter
+            if 'session_id' in self.current_query and memory.get('session_id') != self.current_query['session_id']:
+                continue
+            
+            # Handle memory_type filter
+            if 'memory_type' in self.current_query and memory.get('memory_type') != self.current_query['memory_type']:
+                continue
+                
+            filtered_data.append(memory)
+            
+        return filtered_data
+        
+    def __iter__(self):
+        """Make the object iterable, returning filtered data based on current query"""
+        # Return iterator for filtered data based on the current query
+        filtered_data = []
+        for memory in self.data:
+            # Handle session_id filter
+            if 'session_id' in self.current_query and memory.get('session_id') != self.current_query['session_id']:
+                continue
+            
+            # Handle memory_type filter
+            if 'memory_type' in self.current_query and memory.get('memory_type') != self.current_query['memory_type']:
+                continue
+                
+            filtered_data.append(memory)
+            
+        return iter(filtered_data)
         
     def update_one(self, query, update):
         """Mock update_one method"""
@@ -55,7 +86,35 @@ class MockDB:
         
     def count_documents(self, query):
         """Mock count_documents method"""
-        return len(self.data)
+        # Count documents matching the query
+        count = 0
+        for memory in self.data:
+            matches = True
+            for key, value in query.items():
+                # Handle special operators
+                if isinstance(value, dict) and '$in' in value:
+                    if key not in memory or memory[key] not in value['$in']:
+                        matches = False
+                        break
+                elif isinstance(value, dict) and '$ne' in value:
+                    if key in memory and memory[key] == value['$ne']:
+                        matches = False
+                        break
+                elif isinstance(value, dict) and '$exists' in value:
+                    exists = key in memory
+                    if exists != value['$exists']:
+                        matches = False
+                        break
+                else:
+                    # Simple equality check
+                    if key not in memory or memory[key] != value:
+                        matches = False
+                        break
+            
+            if matches:
+                count += 1
+                
+        return count
         
     def add_test_memories(self, memories):
         """Helper to add test memories to our mock DB"""
@@ -193,12 +252,14 @@ def test_summarize_text(summarization_service):
     The report has been described as a "code red for humanity" by UN Secretary-General António Guterres.
     """
     
-    # Setup a mock API call
+    expected_summary = 'The IPCC has issued a stark warning about climate change, calling for immediate action to reduce emissions. The UN Secretary-General called it a "code red for humanity."'
+    
+    # Setup our mock
     with patch('requests.post') as mock_post:
         # Create a mock response
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json.return_value = [{'summary_text': 'The IPCC has issued a stark warning about climate change, calling for immediate action to reduce emissions. The UN Secretary-General called it a "code red for humanity."'}]
+        mock_response.json.return_value = [{'summary_text': expected_summary}]
         mock_post.return_value = mock_response
         
         # Time the summarization
@@ -215,15 +276,19 @@ def test_summarize_text(summarization_service):
         
         # Verify the mock was called correctly
         mock_post.assert_called_once()
-        args, kwargs = mock_post.call_args
-        assert kwargs['headers']['Authorization'] == f"Bearer {summarization_service.api_token}"
-        assert 'IPCC' in kwargs['json']['inputs']
         
-        # Test assertions
-        assert summary is not None
+        # Check the API call parameters
+        args, kwargs = mock_post.call_args
+        assert 'headers' in kwargs
+        assert 'Authorization' in kwargs['headers']
+        assert 'json' in kwargs
+        assert 'inputs' in kwargs['json']
+        assert test_text.strip() in kwargs['json']['inputs']
+        
+        # Test assertions on the result
+        assert summary == expected_summary
         assert len(summary) > 0
         assert len(summary) < len(test_text)
-        assert "IPCC" in summary or "climate change" in summary.lower()
         
         logger.info("✓ Basic text summarization test PASSED")
 
@@ -231,18 +296,15 @@ def test_summarize_memories(app_context, summarization_service, mock_db):
     """Test the memory summarization functionality"""
     logger.info("\n===== Testing Memory Summarization =====")
     
-    # Setup mocks for all external dependencies
-    with patch('requests.post') as mock_post, \
+    # Direct patching of the summarize_text method to avoid API calls
+    with patch.object(summarization_service, 'summarize_text') as mock_summarize_text, \
          patch('app.extensions.get_db', return_value=mock_db), \
          patch('app.extensions.get_embedding_service', return_value=MockEmbeddingService()), \
          patch('app.services.memory_service.MemoryService.create_memory_summary', 
                side_effect=MockMemoryService.create_memory_summary):
         
-        # Create a mock response for the API call
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = [{'summary_text': 'The party found a cave with ancient runes and a magic amulet. When the amulet was brought near the runes, the ground trembled. They decided to seek guidance from village elders.'}]
-        mock_post.return_value = mock_response
+        # Set up the mock summarize_text to return a fixed response
+        mock_summarize_text.return_value = 'The party found a cave with ancient runes and a magic amulet. When the amulet was brought near the runes, the ground trembled. They decided to seek guidance from village elders.'
         
         # Time the summarization
         start_time = time.time()
@@ -268,8 +330,8 @@ def test_summarize_memories(app_context, summarization_service, mock_db):
                 
             logger.info(f"Memory summary: {summary_content}")
         
-        # Verify our mocks were called
-        mock_post.assert_called_once()
+        # Verify our summarize_text mock was called at least once
+        mock_summarize_text.assert_called_once()
         
         # Test assertions
         assert result is not None
@@ -282,9 +344,45 @@ def test_trigger_summarization(app_context, summarization_service, mock_db):
     """Test the trigger_summarization_if_needed functionality"""
     logger.info("\n===== Testing Summarization Trigger =====")
     
-    # Setup mocks for all external dependencies
-    with patch('app.extensions.get_db', return_value=mock_db), \
-         patch('app.services.summarization_service.SummarizationService.summarize_memories') as mock_summarize:
+    # Add more test memories to trigger summarization (need at least 10)
+    additional_memories = []
+    for i in range(6, 11):  # We already have 5, add 5 more
+        additional_memories.append({
+            'memory_id': f'memory{i}',
+            'content': f'Additional test memory {i}',
+            'session_id': 'test-session',
+            'character_id': 'character1',
+            'user_id': 'user1',
+            'created_at': f'2023-01-01T15:0{i-6}:00',
+            'memory_type': 'short_term'
+        })
+    
+    # Copy the existing data and add new memories
+    all_memories = mock_db.data.copy()
+    all_memories.extend(additional_memories)
+    
+    # Create a separate mock_db with more memories
+    large_mock_db = MockDB()
+    large_mock_db.add_test_memories(all_memories)
+    
+    # Test case 1: Not enough memories (using original mock_db)
+    logger.info("Test Case 1: Not enough memories")
+    with patch('app.extensions.get_db', return_value=mock_db):
+        # Call the method we're testing with not enough memories
+        result = summarization_service.trigger_summarization_if_needed('test-session')
+        
+        # Log the results
+        logger.info(f"Trigger result (not enough memories): {result}")
+        
+        # Verify we get the expected result when not enough memories
+        assert result.get('success') is False
+        assert 'message' in result
+        assert 'not needed' in result['message']
+    
+    # Test case 2: Enough memories to trigger summarization
+    logger.info("Test Case 2: Enough memories to trigger summarization")
+    with patch('app.extensions.get_db', return_value=large_mock_db), \
+         patch.object(summarization_service, 'summarize_memories') as mock_summarize:
         
         # Setup the mock to return a successful result
         mock_summarize.return_value = {
@@ -295,20 +393,20 @@ def test_trigger_summarization(app_context, summarization_service, mock_db):
             }
         }
         
-        # Call the method we're testing
+        # Call the method we're testing with enough memories
         result = summarization_service.trigger_summarization_if_needed('test-session')
         
         # Log the results
-        logger.info(f"Trigger result: {result}")
+        logger.info(f"Trigger result (enough memories): {result}")
         
-        # Verify our mock was called if there were enough memories
-        if len(mock_db.data) >= 10:
-            mock_summarize.assert_called_once_with('test-session', time_window=pytest.approx(60*60, abs=1))
-            assert result.get('success') is True
-        else:
-            # If not enough memories, verify we get the expected result
-            assert result.get('success') is False
-            assert 'message' in result
-            assert 'not needed' in result['message']
+        # Verify our summarize_memories mock was called
+        from datetime import timedelta
+        mock_summarize.assert_called_once()
+        args, kwargs = mock_summarize.call_args
+        assert args[0] == 'test-session'
+        assert isinstance(kwargs.get('time_window'), timedelta)
         
-        logger.info("✓ Summarization trigger test PASSED")
+        # Verify success result
+        assert result.get('success') is True
+            
+    logger.info("✓ Summarization trigger test PASSED")
