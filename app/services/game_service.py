@@ -160,8 +160,10 @@ class GameService:
                     
                     # Get character data
                     character_result = CharacterService.get_character(session.character_id, user_id)
-                    if character_result is None or not character_result.get('success', False):
-                        return {'success': False, 'error': 'Character not found'}
+                    if character_result is None:
+                        return {'success': False, 'error': 'Failed to retrieve character data'}
+                    if not character_result.get('success', False):
+                        return {'success': False, 'error': character_result.get('error', 'Character not found')}
                     
                     character = character_result.get('character')
                     
@@ -170,7 +172,7 @@ class GameService:
                         content=message,
                         memory_type='short_term',
                         session_id=session_id,
-                        character_id=character.character_id if hasattr(character, 'character_id') else character.get('character_id'),
+                        character_id=character.character_id,
                         user_id=user_id,
                         importance=GameService._calculate_message_importance(message),
                         metadata={'sender': 'player'}
@@ -199,7 +201,7 @@ class GameService:
                         content=ai_response.response_text,
                         memory_type='short_term',
                         session_id=session_id,
-                        character_id=character.character_id if hasattr(character, 'character_id') else character.get('character_id'),
+                        character_id=character.character_id,
                         user_id=user_id,
                         importance=GameService._calculate_message_importance(ai_response.response_text),
                         metadata={'sender': 'dm'}
