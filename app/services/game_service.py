@@ -257,7 +257,7 @@ class GameService:
             
             # Step 12: Save session to database
             db = get_db()
-            if not db:
+            if db is None:
                 return {'success': False, 'error': 'Database connection error'}
             
             result = db.sessions.update_one(
