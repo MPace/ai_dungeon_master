@@ -79,9 +79,8 @@ class SummarizationService:
                 }
             }
             
-            print(f"Sending request to: {self.api_url}")
-            print("payload")
-            print({
+            logger.info(f"Sending request to: {self.api_url}")
+            logger.debug("payload %s", {
                 "text": text,
                 "parameters": {
                     "max_length": max_length,
@@ -94,8 +93,8 @@ class SummarizationService:
             logger.debug(f"Sending text to Modal API for summarization: {text[:100]}...")
             response = requests.post(self.api_url, headers=headers, json=payload, timeout=30)
             
-            print("Response status", response.status_code)
-            print("Response body:", response.text)
+            logger.info("Response status", response.status_code)
+            logger.debug("Response body:", response.text)
 
             # Check for successful response
             if response.status_code == 200:
