@@ -151,7 +151,10 @@ def send_message():
         # Send message and get response
         result = GameService.send_message(session_id, message, user_id)
         
-        if result['success']:
+        if result is None:
+            return jsonify({'error': 'Internal server error: No response from game service'}), 500
+
+        if result.get('success', False):
             return jsonify({
                 'response': result['response'],
                 'session_id': result['session_id'],
