@@ -12,8 +12,11 @@ import json
 from datetime import datetime, timedelta
 from app.extensions import get_embedding_service, get_db
 from app.services.memory_service import MemoryService
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
+
+load_dotenv()
 
 class SummarizationService:
     """Service for abstractive summarization of memories using Modal API"""
