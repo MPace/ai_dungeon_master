@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class LangchainService:
     """Service for orchestrating AI interactions using Langchain"""
     
-    def __init__(self, api_key=None, model_name="gpt-3.5-turbo"):
+    def __init__(self, api_key=None, model_name="gpt-4"):
         """Initialize Langchain service with API key and model"""
         self.api_key = api_key
         self.model_name = model_name
@@ -24,30 +24,20 @@ class LangchainService:
         self.llm = self._create_llm()
         
     def _create_llm(self):
-        """Create LLM instance"""
+
         try:
             if not self.api_key:
-                # Get from config or environment in a real implementation
+                # Get from config or environment
                 from flask import current_app
                 self.api_key = current_app.config.get('AI_API_KEY')
-                self.model_name = current_app.config.get('AI_MODEL', self.model_name)
+                self.model_name = current_app.config.get('AI_MODEL', )
             
-            # Use xAI model if configured
-            if self.model_name.startswith('grok'):
-                # This would need to be implemented with the appropriate API
-                # For now, fallback to OpenAI
-                return ChatOpenAI(
-                    openai_api_key=self.api_key,
-                    model_name="gpt-3.5-turbo",
-                    temperature=0.7
-                )
-            else:
-                # Default to OpenAI
-                return ChatOpenAI(
-                    openai_api_key=self.api_key,
-                    model_name=self.model_name,
-                    temperature=0.7
-                )
+            # Use OpenAI's models
+            return ChatOpenAI(
+                openai_api_key=self.api_key,
+                model_name=self.model_name,  # This should be 'gpt-4' or similar
+                temperature=0.7
+            )
         except Exception as e:
             logger.error(f"Error creating LLM: {e}")
             return None

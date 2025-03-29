@@ -11,8 +11,8 @@ class Config:
     MONGO_URI = os.environ.get('MONGO_URI', '')
     
     # AI Service
-    AI_API_KEY = os.environ.get('AI_API_KEY', '')
-    AI_MODEL = os.environ.get('AI_MODEL', 'grok-2-latest')
+    AI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+    AI_MODEL = os.environ.get('OPERNAI_MODEL', 'gpt-4o')
     
     # Logging
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')

@@ -820,7 +820,7 @@ class GameService:
             full_text = " ".join(message_texts)
             
             # Call the BART summarization service
-            summary = summarization_service.summarize(
+            summary = summarization_service.summarize_text(
                 text=full_text,
                 session_id=session.session_id,
                 max_length=150  # Adjust based on your requirements
