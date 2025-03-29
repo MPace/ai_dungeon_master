@@ -250,7 +250,9 @@ class GameService:
                 
                 if characters_result['success'] and characters_result['characters']:
                     if len(characters_result['characters']) > 0:
-                        character_id = characters_result['characters'][0].character_id
+                        # Handle both dictionary and object formats
+                        first_character = characters_result['characters'][0]
+                        character_id = first_character.character_id if hasattr(first_character, 'character_id') else first_character.get('character_id')
                         logger.info(f"Using first character: {character_id}")
                     else:
                         return {'success': False, 'error': 'No characters found for this user'}
