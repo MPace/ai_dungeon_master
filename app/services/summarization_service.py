@@ -29,6 +29,7 @@ class SummarizationService:
         # Get API URL and token from parameters or environment variables
         self.api_url = api_url or os.environ.get("MODAL_API_URL")
         self.api_token = api_token or os.environ.get("MODAL_API_TOKEN")
+        print(f"Modal API IRL loaded: {self.api_url}")
         
         # Check if we have the required credentials
         if not self.api_url:
