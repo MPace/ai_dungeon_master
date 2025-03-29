@@ -822,8 +822,8 @@ class GameService:
             # Call the BART summarization service
             summary = summarization_service.summarize_text(
                 text=full_text,
-                session_id=session.session_id,
-                max_length=150  # Adjust based on your requirements
+                max_length=150,
+                min_length=30    # Adjust based on your requirements
             )
             
             # Update the session summary
