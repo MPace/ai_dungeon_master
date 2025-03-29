@@ -29,7 +29,7 @@ class SummarizationService:
         # Get API URL and token from parameters or environment variables
         self.api_url = api_url or os.environ.get("MODAL_API_URL")
         self.api_token = api_token or os.environ.get("MODAL_API_TOKEN")
-        print(f"Modal API IRL loaded: {self.api_url}")
+        print(f"Modal API URL loaded: {self.api_url}")
         
         # Check if we have the required credentials
         if not self.api_url:
@@ -40,7 +40,7 @@ class SummarizationService:
         
         logger.info(f"Summarization service initialized with Modal API")
     
-    def summarize_text(self, text: str, max_length: int = 150, min_length: int = 30) -> str:
+    def summarize_text(self, text: str, max_length: int = 150, min_length: int = 30, do_sample: bool = False) -> str:
         """
         Summarize a single text using Modal API
         
@@ -79,10 +79,24 @@ class SummarizationService:
                 }
             }
             
+            print(f"Sending request to: {self.api_url}")
+            print("payload")
+            print({
+                "text": text,
+                "parameters": {
+                    "max_length": max_length,
+                    "min_length": min_length,
+                    "do_sample": do_sample
+                }
+            })
+
             # Send request to API
             logger.debug(f"Sending text to Modal API for summarization: {text[:100]}...")
             response = requests.post(self.api_url, headers=headers, json=payload, timeout=30)
             
+            print("Response status", response.status_code)
+            print("Response body:", response.text)
+
             # Check for successful response
             if response.status_code == 200:
                 result = response.json()
