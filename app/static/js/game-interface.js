@@ -65,19 +65,6 @@ function initGameInterface() {
  */
 function handleResize() {
     const chatWindow = document.getElementById('chatWindow');
-    const sidebar = document.querySelector('.sidebar-column');
-    const diceRoller = document.querySelector('.dice-roller-container');
-    
-    // Keep dice roller on the right side regardless of screen size
-    // Just adjust its position slightly for very small screens
-    diceRoller.style.right = '20px';
-    diceRoller.style.left = 'auto';
-    
-    if (window.innerWidth < 400) {
-        diceRoller.style.bottom = '80px'; // Move up a bit on very small screens to avoid overlap with input
-    } else {
-        diceRoller.style.bottom = '20px';
-    }
     
     // Ensure chat is scrolled to bottom on resize
     scrollChatToBottom();
@@ -372,9 +359,7 @@ function showMessageContextMenu(e, messageEl) {
         item.addEventListener('click', function() {
             const action = this.getAttribute('data-action');
             
-            if (action === 'pin') {
-                pinMessageAsMemory(messageText, isPlayerMessage ? 'player' : 'dm');
-            } else if (action === 'copy') {
+            if (action === 'copy') {
                 navigator.clipboard.writeText(messageText).then(() => {
                     showToast('Text copied to clipboard', 'success');
                 }).catch(err => {
@@ -405,64 +390,6 @@ function showMessageContextMenu(e, messageEl) {
             contextMenu.remove();
             document.removeEventListener('click', closeMenu);
         }
-    });
-}
-
-/**
- * Pin a message as a memory
- * @param {string} content - Message content
- * @param {string} sender - Message sender (player/dm)
- */
-function pinMessageAsMemory(content, sender) {
-    if (!sessionId) {
-        alert('No active session found. Please start a conversation first.');
-        return;
-    }
-    
-    // Get CSRF token from meta tag
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    
-    // Create and store a new memory
-    fetch(`/api/memories/${sessionId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken
-        },
-        body: JSON.stringify({
-            content: content,
-            memory_type: 'long_term',
-            importance: 8, // Higher importance for manually pinned memories
-            metadata: {
-                sender: sender,
-                pinned: true,
-                pinned_at: new Date().toISOString()
-            }
-        })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`Server returned ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            // Show success message
-            showToast('Message pinned to memory', 'success');
-            
-            // Notify memory management system
-            if (typeof refreshMemories === 'function') {
-                refreshMemories();
-            }
-        } else {
-            console.error('Error pinning message:', data.error);
-            showToast(`Error pinning message: ${data.error || 'Unknown error'}`, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error pinning message:', error);
-        showToast(`Error pinning message: ${error.message}`, 'error');
     });
 }
 
@@ -506,6 +433,7 @@ function showToast(message, type = 'info') {
     toast.show();
 }
 
+
 /**
  * Add a message to the chat window
  * @param {string} message - The message text
@@ -525,9 +453,17 @@ function addMessageToChat(message, sender) {
     }
     
     const messagePara = document.createElement('p');
-    messagePara.textContent = message;
-    messageDiv.appendChild(messagePara);
     
+    // Use the marked library to parse markdown to HTML
+    if (typeof marked !== 'undefined') {
+        messagePara.innerHTML = marked.parse(message);
+    } else {
+        // Fallback if marked library isn't available
+        messagePara.textContent = message;
+        console.warn('Marked library not available, displaying raw markdown');
+    }
+    
+    messageDiv.appendChild(messagePara);
     chatWindow.appendChild(messageDiv);
     
     // Scroll to bottom
@@ -646,19 +582,6 @@ function sendToServer(message) {
             updateUIForGameState(gameState);
         }
         
-        // Handle newly detected entities
-        if (data.entities_found && data.entities_found.length > 0) {
-            handleNewEntities(data.entities_found);
-        }
-        
-        // Dispatch event for other components to know about the response
-        document.dispatchEvent(new CustomEvent('dm-response-received', { 
-            detail: { 
-                session_id: sessionId,
-                game_state: gameState,
-                entities: data.entities_found || []
-            }
-        }));
     })
     .catch(error => {
         console.error('Error communicating with server:', error);
@@ -908,7 +831,6 @@ window.gameInterface = {
     rollDice,
     saveAdventureLog,
     clearAdventureLog,
-    pinMessageAsMemory,
     showToast
 };
 

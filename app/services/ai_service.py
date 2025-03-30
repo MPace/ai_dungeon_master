@@ -208,7 +208,7 @@ class AIService:
             "Do not guess, assume, or simulate the player's roll—wait for their next message with the result before advancing the story or resolving outcomes."
 
             "Format your response:"
-            "Use **bold** for important people, places, and items"
+            "Use bold for important people, places, and items"
             "Break long text into paragraphs every 3–4 sentences"
             "Use Markdown style formatting"
             "Avoid repeating prior information"

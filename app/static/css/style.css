@@ -1233,3 +1233,58 @@ input[value="15"] {
         display: none !important;
     }
 }
+
+
+/* Markdown styling in messages */
+.message p {
+    margin-bottom: 0.5em;
+}
+
+.message p:last-child {
+    margin-bottom: 0;
+}
+
+.message strong {
+    font-weight: bold;
+}
+
+.message em {
+    font-style: italic;
+}
+
+.message code {
+    font-family: monospace;
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.message pre {
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    white-space: pre-wrap;
+    margin: 0.5em 0;
+}
+
+.message blockquote {
+    border-left: 3px solid #6c8bac;
+    padding-left: 10px;
+    margin-left: 5px;
+    color: #b0b0b0;
+}
+
+.message a {
+    color: #6c8bac;
+    text-decoration: underline;
+}
+
+.message ul, .message ol {
+    padding-left: 20px;
+    margin: 0.5em 0;
+}
+
+.message h1, .message h2, .message h3, .message h4, .message h5, .message h6 {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}

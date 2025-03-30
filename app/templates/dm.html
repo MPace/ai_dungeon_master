@@ -53,22 +53,27 @@
         .sidebar-column {
             width: 320px;
             height: 100%;
-            overflow-y: auto;
             padding: 15px;
+            display: flex;
+            flex-direction: column;
         }
         
-        .dice-roller-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-            width: 180px;
+        .character-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+            overflow: hidden;
         }
         
-        .character-card, .dice-card {
-            background-color: rgba(31, 31, 31, 0.9);
-            border: 1px solid #3a3a3a;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+        #characterSheet {
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .dice-card {
+            margin-top: auto;
+            flex-shrink: 0; /* Prevent dice card from shrinking */
         }
         
         /* Message styling enhancements */
@@ -93,32 +98,6 @@
             text-align: right;
         }
         
-        /* Memory management styles */
-        .memory-panel {
-            margin-bottom: 15px;
-        }
-        
-        .entity-item, .memory-item {
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .entity-item:hover, .memory-item:hover {
-            background-color: rgba(61, 61, 61, 0.8) !important;
-        }
-        
-        .context-item {
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .memory-badge {
-            position: relative;
-            top: -1px;
-            font-size: 0.75em;
-            font-weight: normal;
-            padding: 2px 5px;
-        }
         
         /* Toast styling */
         .toast-container {
@@ -133,13 +112,17 @@
             
             .sidebar-column {
                 width: 100%;
-                height: 200px;
+                height: auto;
                 order: 2;
             }
             
             .chat-column {
-                height: calc(100vh - 256px); /* Subtract navbar + sidebar */
+                height: calc(100vh - 300px); /* Allow space for sidebar */
                 order: 1;
+            }
+            
+            .character-card {
+                max-height: 200px;
             }
         }
     </style>
@@ -212,26 +195,22 @@
             </div>
         </div>
         
-        <!-- Character Sidebar -->
-        <div class="sidebar-column">
-            <!-- Memory Management Panel (will be inserted by JS) -->
-            <!-- Character Sheet -->
-            <div class="card character-card shadow mb-4 border-0">
-                <div class="card-header bg-dark text-light border-bottom border-secondary">
-                    <h5 class="mb-0"><i class="bi bi-person me-2"></i>Character Sheet</h5>
-                </div>
-                <div class="card-body" id="characterSheet">
-                    <!-- Character sheet will be populated here -->
-                </div>
+        <!-- Sidebar Column -->
+    <div class="sidebar-column">
+        <!-- Character Sheet -->
+        <div class="card character-card shadow mb-4 border-0">
+            <div class="card-header bg-dark text-light border-bottom border-secondary">
+                <h5 class="mb-0"><i class="bi bi-person me-2"></i>Character Sheet</h5>
+            </div>
+            <div class="card-body" id="characterSheet">
+                <!-- Character sheet will be populated here -->
             </div>
         </div>
-    </div>
-    
-    <!-- Fixed Dice Roller -->
-    <div class="dice-roller-container">
+        
+        <!-- Dice Roller -->
         <div class="card dice-card shadow border-0">
             <div class="card-header bg-dark text-light border-bottom border-secondary py-2">
-                <h6 class="mb-0"><i class="bi bi-dice-6 me-2"></i>Dice Roller</h6>
+                <h5 class="mb-0"><i class="bi bi-dice-6 me-2"></i>Dice Roller</h5>
             </div>
             <div class="card-body p-2">
                 <div class="d-grid gap-1">
@@ -247,6 +226,8 @@
             </div>
         </div>
     </div>
+    
+    
 
     <!-- Hidden session data for JS access -->
     <script type="application/json" id="sessionData">
@@ -265,10 +246,13 @@
         // Make character data available to JS
         const characterData = {{ character|tojson }};
     </script>
-    
+
+    <!-- Markdown renderer for DM chat window -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.0.18/marked.min.js"></script>
+    <script src="{{ url_for('static', filename='js/markdown-config.js') }}"></script>
+
     <!-- Custom JS for game interface -->
     <script src="{{ url_for('static', filename='js/spell-data.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/memory-management.js') }}"></script>
     <script src="{{ url_for('static', filename='js/debug.js') }}"></script>
     <script type="module" src="{{ url_for('static', filename='js/game-interface.js') }}"></script>
 </body>
