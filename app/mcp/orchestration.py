@@ -87,7 +87,7 @@ class ContextOrchestrationService(IContextOrchestrator):
         config = self.request_configs[request_type]
         
         # Step 1: Collect context from providers
-        contexts = []
+        contexts = {}  # Store by type instead of a flat list
         for provider_name in config['providers']:
             if provider_name not in self.providers:
                 logger.warning(f"Provider not found: {provider_name}")
@@ -97,31 +97,23 @@ class ContextOrchestrationService(IContextOrchestrator):
                 logger.debug(f"Getting context from provider: {provider_name}")
                 provider = self.providers[provider_name]
                 context = provider.get_context(request_data)
-                contexts.append(context)
+                # Store by context type
+                context_type = context.__class__.__name__
+                contexts[context_type] = context
             except Exception as e:
                 logger.error(f"Error getting context from provider {provider_name}: {e}")
                 # Continue with other providers
         
         if not contexts:
             logger.warning("No contexts were provided for the request")
-            # Create empty context based on request type
-            if request_type.startswith('ai_'):
-                return MCPContextFactory.create_context('ai_prompt')
-            else:
-                # Default to game context for other types
-                return MCPContextFactory.create_context('game')
+            # Create empty AIPromptContext
+            from app.mcp.context_objects import AIPromptContext
+            return AIPromptContext()
         
-        # Step 2: Merge contexts
-        merged_context = contexts[0]
-        for context in contexts[1:]:
-            try:
-                merged_context = self._merge_contexts(merged_context, context)
-            except Exception as e:
-                logger.error(f"Error merging contexts: {e}")
-                # Continue with current merged context
+        # Step 2: Apply transformers - without trying to merge different types
+        context_list = list(contexts.values())
         
-        # Step 3: Apply transformers
-        transformed_context = merged_context
+        # Find the most appropriate transformer and apply it
         for transformer_name in config['transformers']:
             if transformer_name not in self.transformers:
                 logger.warning(f"Transformer not found: {transformer_name}")
@@ -130,13 +122,32 @@ class ContextOrchestrationService(IContextOrchestrator):
             try:
                 logger.debug(f"Applying transformer: {transformer_name}")
                 transformer = self.transformers[transformer_name]
-                transformed_context = transformer.transform(transformed_context)
+                
+                # Apply transformer to each context individually
+                transformed_contexts = []
+                for context in context_list:
+                    transformed = transformer.transform(context)
+                    transformed_contexts.append(transformed)
+                
+                # Now all contexts should be of the same type (AIPromptContext)
+                # Merge them together
+                if transformed_contexts:
+                    merged_context = transformed_contexts[0]
+                    for context in transformed_contexts[1:]:
+                        try:
+                            merged_context = merged_context.merge(context)
+                        except Exception as e:
+                            logger.error(f"Error merging transformed contexts: {e}")
+                    
+                    logger.info(f"Context built successfully for request type: {request_type}")
+                    return merged_context
+                
             except Exception as e:
                 logger.error(f"Error applying transformer {transformer_name}: {e}")
-                # Continue with current transformed context
         
-        logger.info(f"Context built successfully for request type: {request_type}")
-        return transformed_context
+        # If no transformer could be applied, return the first context
+        logger.warning("No transformer could be applied, returning first context")
+        return next(iter(contexts.values()))
     
     def _merge_contexts(self, context1: BaseContext, context2: BaseContext) -> BaseContext:
         """

@@ -30,44 +30,41 @@ class AIPromptTransformer(IContextTransformer):
         Returns:
             AIPromptContext: The transformed context
         """
-        logger.info("Transforming context for AI prompting")
+        logger.info(f"Transforming context of type {type(context).__name__} for AI prompting")
         
-        # Initialize AI prompt context
-        ai_context = AIPromptContext()
-        
-        # Extract player message if available
-        player_message = ""
-        if hasattr(context, 'player_message'):
-            player_message = context.player_message
-        
-        # Process based on context type
+        # If it's already an AIPromptContext, just return it
         if isinstance(context, AIPromptContext):
-            # Already an AI prompt context, just return it
-            logger.debug("Context is already an AIPromptContext")
             return context
         
-        # Extract player context
+        # Initialize with empty values
+        player_message = ""
         character_context = ""
+        game_context_str = ""
+        memory_context_str = ""
+        game_state = "intro"
+        conversation_history = []
+        
+        # Extract player context
         if isinstance(context, PlayerContext):
             character_context = self._format_character_context(context)
         
         # Extract game context
-        game_context_str = ""
-        game_state = "intro"
-        if isinstance(context, GameContext):
+        elif isinstance(context, GameContext):
             game_context_str = self._format_game_context(context)
             game_state = context.game_state
         
         # Extract memory context
-        memory_context_str = ""
-        if isinstance(context, MemoryContext):
+        elif isinstance(context, MemoryContext):
             memory_context_str = self._format_memory_context(context)
         
         # Generate system prompt based on game state
         system_prompt = self._create_system_prompt(game_state)
         
-        # Create conversation history if available
-        conversation_history = []
+        # Get player message if available
+        if hasattr(context, 'player_message'):
+            player_message = context.player_message
+            
+        # Get conversation history if available
         if hasattr(context, 'history'):
             conversation_history = self._format_conversation_history(context.history)
         

@@ -23,8 +23,10 @@ class LangchainService:
         self.api_key = api_key
         self.model_name = model_name
         self.memory_service = EnhancedMemoryService()
+
         os.environ.pop('HTTP_PROXY', None) 
         os.environ.pop('HTTPS_PROXY', None)
+
         self.llm = self._create_llm()
         
     def _create_llm(self):
