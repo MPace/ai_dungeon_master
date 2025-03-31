@@ -247,10 +247,21 @@ class AIService:
                 "When perception, investigation, or other checks are needed, prompt for dice rolls and wait for player input."
             ),
             "intro": (
-                "This is the beginning of a new adventure. Introduce the world to the player with rich detail and atmosphere. "
-                "Set the initial scene and establish the tone of the campaign. "
-                "Provide hooks or motivations for the player to begin their journey, but let them decide how to proceed. "
-                "Help establish the character's place in the world, considering their background and abilities."
+                "This is the beginning of a new adventure. Begin the adventure 'in media res' - in the middle of action, crisis, or danger. "
+                "DO NOT start the player in a peaceful tavern or getting a simple quest from a town official unless the tavern is under attack or burning down. "
+                "Instead, thrust the player immediately into one of these exciting scenarios: "
+                "- Combat or chase already in progress "
+                "- Waking up in a dangerous or mysterious situation (captive, amnesia, etc.) "
+                "- Directly after a catastrophe or disaster "
+                "- In the middle of a heist or dangerous mission "
+                "- Stumbling upon a crime scene or supernatural event "
+                "- Being falsely accused or hunted "
+                "- Discovering something shocking or forbidden "
+                
+                "Create a vivid, tense opening scene that prompts immediate action from the player. "
+                "Establish clear stakes and immediate pressure while hinting at a larger mystery or conflict. "
+                "Consider the character's background and abilities when crafting this opening. "
+                "Give enough context for the player to make informed decisions, but maintain tension and urgency."
             )
         }
         

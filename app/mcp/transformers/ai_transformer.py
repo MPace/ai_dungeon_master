@@ -215,7 +215,7 @@ class AIPromptTransformer(IContextTransformer):
         state_prompts = {
             "combat": (
                 "The player is currently in combat. Narrate the scene with high stakes and visceral detail—blood, steel, and chaos. "
-                "Manage combat turns: describe the enemy's action, then prompt the player for their move. "
+                "Manage combat turns: describe the enemy's action giving each enemy a turn if there are more than one, then prompt the player for their move. "
                 "For dice rolls like initiative, attack rolls, or saves, always prompt the player to roll and stop there—do not assume or simulate the player's roll. "
                 "Wait for the player to provide the result in their next message before continuing the combat sequence. "
                 "Keep the pace fast and tense, but respect the player's agency over their rolls."
@@ -232,10 +232,21 @@ class AIPromptTransformer(IContextTransformer):
                 "When perception, investigation, or other checks are needed, prompt for dice rolls and wait for player input."
             ),
             "intro": (
-                "This is the beginning of a new adventure. Introduce the world to the player with rich detail and atmosphere. "
-                "Set the initial scene and establish the tone of the campaign. "
-                "Provide hooks or motivations for the player to begin their journey, but let them decide how to proceed. "
-                "Help establish the character's place in the world, considering their background and abilities."
+                "This is the beginning of a new adventure. Begin the adventure 'in media res' - in the middle of action, crisis, or danger. "
+                "DO NOT start the player in a peaceful tavern or getting a simple quest from a town official unless the tavern is under attack or burning down. "
+                "Instead, thrust the player immediately into one of these exciting scenarios: "
+                "- Combat or chase already in progress "
+                "- Waking up in a dangerous or mysterious situation (captive, amnesia, etc.) "
+                "- Directly after a catastrophe or disaster "
+                "- In the middle of a heist or dangerous mission "
+                "- Stumbling upon a crime scene or supernatural event "
+                "- Being falsely accused or hunted "
+                "- Discovering something shocking or forbidden "
+                
+                "Create a vivid, tense opening scene that prompts immediate action from the player. "
+                "Establish clear stakes and immediate pressure while hinting at a larger mystery or conflict. "
+                "Consider the character's background and abilities when crafting this opening. "
+                "Give enough context for the player to make informed decisions, but maintain tension and urgency."
             )
         }
         
