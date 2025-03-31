@@ -435,42 +435,6 @@ function showToast(message, type = 'info') {
 
 
 /**
- * Add a message to the chat window
- * @param {string} message - The message text
- * @param {string} sender - 'player' or 'dm'
- */
-function addMessageToChat(message, sender) {
-    const chatWindow = document.getElementById('chatWindow');
-    if (!chatWindow) return;
-    
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add('message');
-    
-    if (sender === 'player') {
-        messageDiv.classList.add('player-message');
-    } else {
-        messageDiv.classList.add('dm-message');
-    }
-    
-    const messagePara = document.createElement('p');
-    
-    // Use the marked library to parse markdown to HTML
-    if (typeof marked !== 'undefined') {
-        messagePara.innerHTML = marked.parse(message);
-    } else {
-        // Fallback if marked library isn't available
-        messagePara.textContent = message;
-        console.warn('Marked library not available, displaying raw markdown');
-    }
-    
-    messageDiv.appendChild(messagePara);
-    chatWindow.appendChild(messageDiv);
-    
-    // Scroll to bottom
-    scrollChatToBottom();
-}
-
-/**
  * Scroll the chat window to the bottom
  */
 function scrollChatToBottom() {
@@ -865,7 +829,7 @@ function checkForExistingSession() {
  */
 function sendInitialMessage() {
     // Create an introduction for the AI
-    const intro = `I am ${character.name}, a level ${character.level} ${character.race} ${character.class}. This is the start of our adventure. Please introduce the campaign setting and my first scene.`;
+    const intro = `I am ${character.name}, a level ${character.level} ${character.race} ${character.class} with a ${character.background} background. This is the start of our adventure. Please drop me directly into an exciting, dangerous, or mysterious situation - no peaceful tavern starts unless it's on fire! Begin the campaign with action and intrigue.`;
     
     // Add a log to help debug the message
     console.log("Sending initial message:", intro);
