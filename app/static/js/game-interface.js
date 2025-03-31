@@ -829,8 +829,8 @@ function checkForExistingSession() {
  */
 function sendInitialMessage() {
     // Create an introduction for the AI
-    const intro = `I am ${character.name}, a level ${character.level} ${character.race} ${character.class} with a ${character.background} background. This is the start of our adventure. Please drop me directly into an exciting, dangerous, or mysterious situation - no peaceful tavern starts unless it's on fire! Begin the campaign with action and intrigue.`;
-    
+    const intro = `I am ${character.name}, a level ${character.level} ${character.race} ${character.class} with a ${character.background} background. This is the start of our adventure. Please begin with an exciting, tense, or mysterious situation that fits my character background. I'm ready for adventure!`
+
     // Add a log to help debug the message
     console.log("Sending initial message:", intro);
     

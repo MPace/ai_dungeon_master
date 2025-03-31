@@ -232,21 +232,22 @@ class AIPromptTransformer(IContextTransformer):
                 "When perception, investigation, or other checks are needed, prompt for dice rolls and wait for player input."
             ),
             "intro": (
-                "This is the beginning of a new adventure. Begin the adventure 'in media res' - in the middle of action, crisis, or danger. "
-                "DO NOT start the player in a peaceful tavern or getting a simple quest from a town official unless the tavern is under attack or burning down. "
-                "Instead, thrust the player immediately into one of these exciting scenarios: "
-                "- Combat or chase already in progress "
-                "- Waking up in a dangerous or mysterious situation (captive, amnesia, etc.) "
-                "- Directly after a catastrophe or disaster "
-                "- In the middle of a heist or dangerous mission "
-                "- Stumbling upon a crime scene or supernatural event "
-                "- Being falsely accused or hunted "
-                "- Discovering something shocking or forbidden "
+                "This is the beginning of a new adventure. Begin with the character already in an exciting, tense, or mysterious situation. "
+                "Choose from a VARIETY of engaging scenarios such as: "
+                "- In the middle of combat or a chase scene "
+                "- Waking up in an unusual or dangerous place with no memory of how they got there "
+                "- Witnessing something impossible or forbidden "
+                "- Being mistaken for someone important or dangerous "
+                "- Discovering a body or crime scene "
+                "- Finding themselves in possession of a mysterious object "
+                "- Caught in a natural disaster or magical catastrophe "
+                "- Overhearing a secret conversation or plot "
+                "- Being hunted or pursued by unknown forces "
                 
-                "Create a vivid, tense opening scene that prompts immediate action from the player. "
-                "Establish clear stakes and immediate pressure while hinting at a larger mystery or conflict. "
-                "Consider the character's background and abilities when crafting this opening. "
-                "Give enough context for the player to make informed decisions, but maintain tension and urgency."
+                "CREATE A UNIQUE SCENARIO - DO NOT default to a burning tavern or any single formulaic opening. "
+                "Consider the character's background and abilities when crafting this opening scene. "
+                "Establish clear stakes and immediate tension while providing just enough context for the player to make decisions. "
+                "Begin with vivid sensory details that pull the player into the action."
             )
         }
         
