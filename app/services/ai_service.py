@@ -18,8 +18,7 @@ from app.mcp.transformers.ai_transformer import AIPromptTransformer
 
 logger = logging.getLogger(__name__)
 
-#os.environ.pop('HTTP_PROXY', None) 
-#os.environ.pop('HTTPS_PROXY', None)
+
 
 class AIService:
     """Service for handling AI interactions with integrated memory management"""
@@ -30,6 +29,8 @@ class AIService:
         self.model = self._get_model_name()
         self.api_url = "https://api.openai.com/v1/chat/completions"
         self.headers = self._create_headers()
+        os.environ.pop('HTTP_PROXY', None) 
+        os.environ.pop('HTTPS_PROXY', None)
         
         # Langchain integration
         self.use_langchain = use_langchain
