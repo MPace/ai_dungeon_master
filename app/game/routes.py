@@ -177,21 +177,31 @@ def send_message():
 @login_required
 def roll_dice():
     """Handle dice rolling requests"""
-    data = request.json
-    dice_type = data.get('dice', 'd20')
-    modifier = data.get('modifier', 0)
-    
-    # Roll the dice
-    result = GameService.roll_dice(dice_type, modifier)
-    
-    if result['success']:
+    try:
+        data = request.json
+        dice_type = data.get('dice', 'd20')
+        modifier = data.get('modifier', 0)
+        
+        # Get user and session info
+        user_id = session.get('user_id')
+        session_id = data.get('session_id')
+        
+        # Roll the dice
+        result = GameService.roll_dice(
+            dice_type=dice_type, 
+            modifier=modifier,
+            user_id=user_id,
+            session_id=session_id
+        )
+        
+        if result['success']:
+            return jsonify(result)
+        else:
+            return jsonify({
+                'error': result.get('error', 'Failed to roll dice')
+            }), 400
+    except Exception as e:
+        logger.error(f"Error in roll_dice route: {e}")
         return jsonify({
-            'dice': result['dice'],
-            'result': result['result'],
-            'modifier': result['modifier'],
-            'modified_result': result['modified_result']
-        })
-    else:
-        return jsonify({
-            'error': result.get('error', 'Failed to roll dice')
-        }), 400
+            'error': f"Server error: {str(e)}"
+        }), 500

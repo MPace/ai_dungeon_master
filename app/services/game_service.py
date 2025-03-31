@@ -916,3 +916,137 @@ class GameService:
         except Exception as e:
             logger.error(f"Error getting latest entities: {e}")
             return []
+    
+    @staticmethod
+    def roll_dice(dice_type, modifier=0, user_id=None, session_id=None):
+        """
+        Roll a die of the specified type with an optional modifier
+        
+        Args:
+            dice_type (str): The type of die to roll (e.g., 'd20', 'd6')
+            modifier (int): Modifier to add to the roll
+            user_id (str): The ID of the user rolling the die
+            session_id (str): The current game session ID
+            
+        Returns:
+            dict: Result with success status and roll information
+        """
+        try:
+            # Parse the dice type (e.g., "d20" -> 20)
+            if not dice_type.startswith('d'):
+                return {'success': False, 'error': 'Invalid dice type format'}
+                
+            try:
+                sides = int(dice_type[1:])
+            except ValueError:
+                return {'success': False, 'error': 'Invalid dice type'}
+            
+            if sides <= 0:
+                return {'success': False, 'error': 'Dice must have at least 1 side'}
+            
+            # Convert modifier to integer if it's not already
+            if not isinstance(modifier, int):
+                try:
+                    modifier = int(modifier)
+                except (ValueError, TypeError):
+                    modifier = 0
+            
+            # Roll the die (generate a random number)
+            import random
+            result = random.randint(1, sides)
+            
+            # Apply modifier
+            modified_result = result + modifier
+            
+            # Generate a roll ID for tracking
+            roll_id = str(uuid.uuid4())
+            
+            # Store the roll result in the database if session is active
+            if session_id is not None and user_id is not None:
+                db = get_db()
+                if db is not None:
+                    # Record the roll in a dedicated collection
+                    db.dice_rolls.insert_one({
+                        'roll_id': roll_id,
+                        'session_id': session_id,
+                        'user_id': user_id,
+                        'dice_type': dice_type,
+                        'raw_result': result,
+                        'modifier': modifier,
+                        'final_result': modified_result,
+                        'timestamp': datetime.utcnow()
+                    })
+                    
+                    # Add roll to the session history as a special message
+                    GameService._add_roll_to_session(
+                        session_id=session_id,
+                        roll_id=roll_id,
+                        dice_type=dice_type,
+                        result=result,
+                        modifier=modifier,
+                        modified_result=modified_result
+                    )
+            
+            # Return success with roll information
+            return {
+                'success': True,
+                'roll_id': roll_id,
+                'dice': dice_type,
+                'result': result,
+                'modifier': modifier,
+                'modified_result': modified_result
+            }
+        
+        except Exception as e:
+            logger.error(f"Error rolling dice: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            
+            return {'success': False, 'error': str(e)}
+
+    @staticmethod
+    def _add_roll_to_session(session_id, roll_id, dice_type, result, modifier, modified_result):
+        """Add a dice roll to the session history"""
+        try:
+            db = get_db()
+            if db is None:
+                return False
+                
+            # Get the session
+            session_data = db.sessions.find_one({'session_id': session_id})
+            if session_data is None:
+                return False
+                
+            # Format roll message
+            modifier_text = f" + {modifier}" if modifier > 0 else f" - {abs(modifier)}" if modifier < 0 else ""
+            roll_message = f"🎲 Rolled {dice_type}: {result}{modifier_text} = {modified_result}"
+            
+            # Create message entry with special roll type
+            message_entry = {
+                'sender': 'system',
+                'message': roll_message,
+                'timestamp': datetime.utcnow().isoformat(),
+                'type': 'dice_roll',
+                'roll_data': {
+                    'roll_id': roll_id,
+                    'dice_type': dice_type,
+                    'result': result,
+                    'modifier': modifier,
+                    'modified_result': modified_result
+                }
+            }
+            
+            # Add to history
+            history = session_data.get('history', [])
+            history.append(message_entry)
+            
+            # Update session
+            db.sessions.update_one(
+                {'session_id': session_id},
+                {'$set': {'history': history, 'updated_at': datetime.utcnow()}}
+            )
+            
+            return True
+        except Exception as e:
+            logger.error(f"Error adding roll to session: {e}")
+            return False

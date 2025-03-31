@@ -1288,3 +1288,13 @@ input[value="15"] {
     margin-top: 0.5em;
     margin-bottom: 0.5em;
 }
+
+.system-message {
+    background-color: rgba(50, 50, 70, 0.7);
+    border-left: 4px solid #ffc107; /* Yellow border */
+    align-self: center; /* Center in the chat */
+    max-width: 60%; /* Make it narrower than regular messages */
+    text-align: center;
+    font-family: monospace; /* Make dice rolls look more "technical" */
+    color: #ffc107; /* Yellow text */
+}

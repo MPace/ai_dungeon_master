@@ -636,8 +636,15 @@ function setupDiceEvents() {
  * @param {string} diceType - The type of die to roll (e.g., 'd20')
  */
 function rollDice(diceType) {
+    // Get current session ID
+    const chatWindow = document.getElementById('chatWindow');
+    const currentSessionId = chatWindow ? chatWindow.getAttribute('data-session-id') : null;
+    
     // Get CSRF token from meta tag
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    // Add "rolling..." message to chat
+    addMessageToChat(`Rolling ${diceType}...`, 'system');
     
     // Send API request
     fetch('/game/api/roll-dice', {
@@ -648,25 +655,86 @@ function rollDice(diceType) {
         },
         body: JSON.stringify({
             dice: diceType,
-            modifier: 0
+            modifier: 0,
+            session_id: currentSessionId
         })
     })
     .then(response => response.json())
     .then(data => {
-        // Add dice roll result to chat
-        const message = `🎲 Rolled ${diceType}: ${data.result}`;
-        addMessageToChat(message, 'dm');
+        if (data.error) {
+            // Handle error
+            addMessageToChat(`Error rolling dice: ${data.error}`, 'system');
+            return;
+        }
+        
+        // Add dice roll result to chat (this will replace the temp "rolling..." message)
+        const modifierText = data.modifier > 0 ? 
+            ` + ${data.modifier}` : 
+            data.modifier < 0 ? ` - ${Math.abs(data.modifier)}` : '';
+            
+        const resultText = `🎲 Rolled ${data.dice}: ${data.result}${modifierText} = ${data.modified_result}`;
+        
+        // Remove the temporary "rolling..." message
+        const messages = document.querySelectorAll('.message');
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage && lastMessage.textContent.includes('Rolling')) {
+            chatWindow.removeChild(lastMessage);
+        }
+        
+        // Add the actual roll result
+        addMessageToChat(resultText, 'system');
+        
+        // If in a conversation with the DM, automatically send the roll result as player's next message
+        const playerInput = document.getElementById('playerInput');
+        if (playerInput) {
+            playerInput.value = `I rolled ${data.dice} and got ${data.modified_result}.`;
+            // Optional: Automatically send this message
+            // handleSendMessage();
+        }
     })
     .catch(error => {
         console.error('Error rolling dice:', error);
         
-        // Fallback to client-side dice roll if API fails
-        const sides = parseInt(diceType.substring(1));
-        const result = Math.floor(Math.random() * sides) + 1;
-        
-        const message = `🎲 Rolled ${diceType}: ${result} (client-side roll)`;
-        addMessageToChat(message, 'dm');
+        // Indicate the error
+        addMessageToChat(`Error rolling dice: ${error.message}`, 'system');
     });
+}
+
+/**
+ * Add a message to the chat window
+ * @param {string} message - The message text
+ * @param {string} sender - 'player', 'dm', or 'system'
+ */
+function addMessageToChat(message, sender) {
+    const chatWindow = document.getElementById('chatWindow');
+    if (!chatWindow) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message');
+    
+    if (sender === 'player') {
+        messageDiv.classList.add('player-message');
+    } else if (sender === 'dm') {
+        messageDiv.classList.add('dm-message');
+    } else if (sender === 'system') {
+        messageDiv.classList.add('system-message');
+    }
+    
+    const messagePara = document.createElement('p');
+    
+    // Use the marked library to parse markdown to HTML
+    if (typeof marked !== 'undefined' && sender !== 'system') {
+        messagePara.innerHTML = marked.parse(message);
+    } else {
+        // System messages or when marked is unavailable
+        messagePara.textContent = message;
+    }
+    
+    messageDiv.appendChild(messagePara);
+    chatWindow.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    scrollChatToBottom();
 }
 
 /**
