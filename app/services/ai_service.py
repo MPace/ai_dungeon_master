@@ -1,5 +1,5 @@
 """
-AI Service with Langchain Integration
+AI Service with Langchain Integration and Model Context Protocol
 """
 from app.models.ai_response import AIResponse
 import requests
@@ -11,25 +11,35 @@ from datetime import datetime, timedelta
 import hashlib
 from concurrent.futures import ThreadPoolExecutor
 
+# New MCP imports
+from app.mcp import get_orchestration_service
+from app.mcp.context_objects import AIPromptContext
+from app.mcp.transformers.ai_transformer import AIPromptTransformer
+
 logger = logging.getLogger(__name__)
+
+#os.environ.pop('HTTP_PROXY', None) 
+#os.environ.pop('HTTPS_PROXY', None)
 
 class AIService:
     """Service for handling AI interactions with integrated memory management"""
     
     def __init__(self, use_langchain=True):
-        """Initialize the AI service with memory support"""
+    # Initialize the AI service with memory support and MCP
         self.api_key = self._get_api_key()
         self.model = self._get_model_name()
         self.api_url = "https://api.openai.com/v1/chat/completions"
         self.headers = self._create_headers()
-        os.environ.pop('HTTP_PROXY', None) 
-        os.environ.pop('HTTPS_PROXY', None)
         
         # Langchain integration
         self.use_langchain = use_langchain
         self.langchain_service = None
         self.chain_orchestrator = None
         self.memory_service = None
+        
+        # MCP integration
+        self.use_mcp = True  # Flag to enable/disable MCP
+        self.context_orchestrator = None
         
         # Response cache
         self.response_cache = {}
@@ -41,9 +51,29 @@ class AIService:
         self.history_token_budget = int(self.max_context_tokens * 0.6)  # 60% for history
         self.memory_token_budget = int(self.max_context_tokens * 0.25)  # 25% for memories
         
+        # Initialize components
+        self._init_components()
+
+    def _init_components(self):
+        """Initialize all service components"""
         # Initialize Langchain components if enabled
         if self.use_langchain:
             self._init_langchain_components()
+        
+        # Initialize MCP if enabled
+        if self.use_mcp:
+            self._init_mcp_components()
+
+    def _init_mcp_components(self):
+        """Initialize Model Context Protocol components"""
+        try:
+            # Get the orchestration service
+            self.context_orchestrator = get_orchestration_service()
+            logger.info("MCP components initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize MCP components: {e}")
+            self.use_mcp = False
+            logger.info("MCP has been disabled due to initialization failure")
     
     def _init_langchain_components(self):
         """Initialize Langchain components"""
@@ -120,72 +150,22 @@ class AIService:
             logger.info("Using cached response")
             return cached_response
         
-        # Use Langchain if enabled and properly initialized
-        if self.use_langchain and session_id:
-            try:
-                # Ensure Langchain components are initialized
-                if not self.chain_orchestrator:
-                    self._init_langchain_components()
-                
-                if not self.chain_orchestrator:
-                    raise Exception("Chain orchestrator initialization failed")
-                
-                logger.info(f"Using Langchain for response generation (state: {game_state})")
-                
-                # Process with Langchain
-                result = self.chain_orchestrator.process_message(
-                    player_message,
-                    character_dict,
-                    game_state,
-                    conversation_history
-                )
-                
-                # Parse result based on return type
-                if isinstance(result, dict) and 'response' in result:
-                    response_text = result['response']
-                elif isinstance(result, str):
-                    response_text = result
-                else:
-                    logger.warning(f"Unexpected result type from chain_orchestrator: {type(result)}")
-                    logger.warning("Falling back to standard API implementation")
-                    return self._generate_standard_response(
-                        player_message, conversation_history, character_dict, game_state
-                    )
-                
-                # Create AIResponse object
-                ai_response = AIResponse(
-                    response_text=response_text,
-                    session_id=session_id,
-                    character_id=character_id,
-                    user_id=user_id,
-                    prompt=player_message,
-                    model_used=self.model
-                )
-                
-                # Process and store the AI response in memory system
-                self._process_memory_lifecycle(
-                    player_message,
-                    response_text,
-                    session_id,
-                    character_id,
-                    user_id
-                )
-                
-                # Cache the response
-                self._cache_response(cache_key, ai_response)
-                
-                return ai_response
-                
-            except Exception as e:
-                logger.error(f"Error using Langchain for response: {e}")
-                import traceback
-                logger.error(traceback.format_exc())
-                logger.info("Falling back to standard API implementation")
-        
-        # Standard API implementation (fallback)
-        return self._generate_standard_response(
-            player_message, conversation_history, character_dict, game_state
-        )
+        # Determine which approach to use
+        if self.use_mcp and self.context_orchestrator:
+            logger.info("Using MCP for response generation")
+            return self._generate_mcp_response(
+                player_message, conversation_history, character_dict, 
+                session_id, character_id, user_id, game_state
+            )
+        elif self.use_langchain and self.chain_orchestrator:
+            logger.info("Using Langchain for response generation")
+            # [Existing Langchain code]
+            # ...
+        else:
+            logger.info("Using standard API for response generation")
+            return self._generate_standard_response(
+                player_message, conversation_history, character_dict, game_state
+            )
     
     def _create_system_prompt(self, game_state, character_data):
         """
@@ -656,6 +636,135 @@ class AIService:
             'response': response,
             'timestamp': datetime.utcnow()
         }
+
+    def _generate_mcp_response(self, player_message, conversation_history, character_data, 
+                          session_id, character_id, user_id, game_state):
+        """
+        Generate a response using the Model Context Protocol
+        
+        Args:
+            player_message (str): The message from the player
+            conversation_history (list): List of previous messages
+            character_data (dict): Character data as a dictionary
+            session_id (str): The session ID
+            character_id (str): The character ID
+            user_id (str): The user ID
+            game_state (str): Current game state
+            
+        Returns:
+            AIResponse: The AI-generated response
+        """
+        try:
+            # Prepare request data for context building
+            request_data = {
+                'session_id': session_id,
+                'user_id': user_id,
+                'character_id': character_id,
+                'message': player_message,
+                'game_state': game_state,
+                'history': conversation_history
+            }
+            
+            # Build context for AI message
+            context = self.context_orchestrator.build_context('ai_message', request_data)
+            
+            # Ensure we have AIPromptContext
+            if not isinstance(context, AIPromptContext):
+                logger.warning(f"Expected AIPromptContext but got {type(context).__name__}")
+                # Convert using transformer
+                transformer = AIPromptTransformer()
+                context = transformer.transform(context)
+            
+            # Prepare messages for API
+            messages = [
+                {"role": "system", "content": context.system_prompt}
+            ]
+            
+            # Add character context if available
+            if context.character_context:
+                messages.append({"role": "system", "content": context.character_context})
+            
+            # Add game context if available
+            if context.game_context:
+                messages.append({"role": "system", "content": context.game_context})
+            
+            # Add memory context if available
+            if context.memory_context:
+                messages.append({"role": "system", "content": context.memory_context})
+            
+            # Add conversation history
+            for entry in self._format_conversation_history(conversation_history):
+                messages.append(entry)
+            
+            # Add current message
+            messages.append({"role": "user", "content": player_message})
+            
+            logger.info(f"Sending request to AI API with model: {self.model} using MCP")
+            
+            # Send request to the API
+            payload = {
+                "model": self.model,
+                "messages": messages,
+                "temperature": 0.7,
+                "stream": False
+            }
+            
+            response = requests.post(
+                self.api_url,
+                headers=self.headers,
+                json=payload,
+                timeout=30
+            )
+            
+            # Check if the request was successful
+            response.raise_for_status()
+            
+            # Parse the response
+            result = response.json()
+            
+            # Extract the generated text
+            if "choices" in result and len(result["choices"]) > 0:
+                response_text = result["choices"][0]["message"]["content"]
+                
+                # Create AIResponse object
+                ai_response = AIResponse(
+                    response_text=response_text,
+                    session_id=session_id,
+                    character_id=character_id,
+                    user_id=user_id,
+                    prompt=player_message,
+                    model_used=self.model,
+                    tokens_used=result.get('usage', {}).get('total_tokens')
+                )
+                
+                # Process and store in memory system
+                self._process_memory_lifecycle(
+                    player_message,
+                    response_text,
+                    session_id,
+                    character_id,
+                    user_id
+                )
+                
+                # Cache the response for future use
+                cache_key = self._create_cache_key(player_message, character_id, game_state)
+                self._cache_response(cache_key, ai_response)
+                
+                return ai_response
+            else:
+                logger.error(f"Unexpected response format: {result}")
+                error_msg = "The Dungeon Master ponders your request. (Unexpected API response format)"
+                return AIResponse(response_text=error_msg)
+        
+        except Exception as e:
+            logger.error(f"Error generating response with MCP: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            
+            # Fall back to standard response generation
+            return self._generate_standard_response(
+                player_message, conversation_history, character_data, game_state
+            )
         
 
 

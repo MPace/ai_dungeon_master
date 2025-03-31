@@ -16,6 +16,15 @@ def create_app(config_name='default'):
     app = Flask(__name__)   
     configure_app(app, config_name)
 
+    with app.app_context():
+        try:
+            from app.mcp import init_mcp
+            init_mcp()
+            logger.info("MCP initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing MCP: {e}")
+
+
     # Initialize CSRF protection
     csrf = CSRFProtect(app)
 
