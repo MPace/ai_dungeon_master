@@ -226,3 +226,38 @@ class AuthService:
         except Exception as e:
             logger.error(f"Error getting current user: {str(e)}")
             return None
+        
+    @staticmethod
+    def user_exists(username, email):
+        """
+        Check if a username or email already exists in the database
+        
+        Args:
+            username (str): The username to check
+            email (str): The email to check
+            
+        Returns:
+            bool: True if the username or email exists, False otherwise
+        """
+        try:
+            db = get_db()
+            if db is None:
+                logger.error("Database connection failed when checking user existence")
+                return False
+            
+            # Check if username exists
+            username_exists = db.users.find_one({'username': username}) is not None
+            
+            # Check if email exists
+            email_exists = db.users.find_one({'email': email}) is not None
+            
+            return username_exists or email_exists
+            
+        except Exception as e:
+            logger.error(f"Error checking user existence: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            
+            # Return False on error to avoid blocking registration
+            # (though the error will likely cause other issues)
+            return False
