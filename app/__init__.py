@@ -122,7 +122,7 @@ def configure_app(app, config_name):
     Session(app)
     
     # Set up CSRF protection
-    app.config['WTF_CSRF_ENABLED'] = True
+    app.config['WTF_CSRF_ENABLED'] = False
     app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
     app.config['WTF_CSRF_SSL_STRICT'] = False  # Important for dev environments
     
