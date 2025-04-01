@@ -6,6 +6,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+logger.info("Tasks module loading...")
+
 @celery.task(bind=True, name='tasks.process_dm_message')
 def process_dm_message(self, message, session_id, character_data, user_id):
     """Process a message from the player asynchronously"""
@@ -164,3 +166,7 @@ def retrieve_memories_task(self, current_message, session_id, character_id, max_
         import traceback
         logger.error(traceback.format_exc())
         return {"success": False, "error": str(e), "memory_context": ""}
+    
+
+logger.info(f"Tasks registered: {[task.name for task in celery.tasks.values()]}")
+
