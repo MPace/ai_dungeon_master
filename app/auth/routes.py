@@ -5,8 +5,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.auth import auth_bp
 from app.services.auth_service import AuthService
 from app.extensions import db
-from flask_wtf.csrf import CSRFProtect, csrf
 import logging
+
 
 
 logger = logging.getLogger(__name__)
@@ -28,12 +28,6 @@ def login():
     
     logger.info(f"Login attempt for user: {username}")
     logger.debug(f"Request form data: {request.form}")
-
-    csrf_token = request.form.get('csrf_token')
-    if not csrf_token or not csrf.validate_csrf(csrf_token):
-        logger.error("CSRF validation failed")
-        flash('Invalid form submission. Please try again.', 'error')
-        return redirect(url_for('auth.index'))
 
     if username is None or password is None or username == "" or password == "":
         flash('Username and password are required', 'error')
