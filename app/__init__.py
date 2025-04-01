@@ -26,8 +26,8 @@ def create_app(config_name='default'):
 
 
     # Initialize CSRF protection
-    #csrf = CSRFProtect()
-    #csrf.init_app(app)
+    csrf = CSRFProtect()
+    csrf.init_app(app)
 
     # Load configuration
     app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
@@ -122,7 +122,7 @@ def configure_app(app, config_name):
     Session(app)
     
     # Set up CSRF protection
-    app.config['WTF_CSRF_ENABLED'] = False
+    app.config['WTF_CSRF_ENABLED'] = True
     app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
     app.config['WTF_CSRF_SSL_STRICT'] = False  # Important for dev environments
     
