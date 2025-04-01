@@ -10,7 +10,7 @@ def make_celery(app):
         app.import_name,
         backend=app.config['CELERY_RESULT_BACKEND'],
         broker=app.config['CELERY_BROKER_URL'],
-        include=['app.tasks']  # Add this line to include tasks
+        include=['app.tasks']  
     )
     celery.conf.update(app.config)
 

@@ -6,7 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-@celery.task(bind=True, name='app.tasks.process_dm_message')
+@celery.task(bind=True, name='tasks.process_dm_message')
 def process_dm_message(self, message, session_id, character_data, user_id):
     """Process a message from the player asynchronously"""
     try:
@@ -25,7 +25,7 @@ def process_dm_message(self, message, session_id, character_data, user_id):
         # Re-raise the exception to mark the task as failed
         raise
 
-@celery.task(bind=True, name='app.tasks.generate_memory_summary')
+@celery.task(bind=True, name='tasks.generate_memory_summary')
 def generate_memory_summary(self, session_id, user_id):
     """Generate a summary of memories for a session"""
     try:
@@ -47,7 +47,7 @@ def generate_memory_summary(self, session_id, user_id):
         # Re-raise the exception to mark the task as failed
         raise
 
-@celery.task(bind=True, name='app.tasks.find_similar_memories_task')
+@celery.task(bind=True, name='tasks.find_similar_memories_task')
 def find_similar_memories_task(self, text, session_id, limit, min_similarity):
     """Find similar memories asynchronously"""
     try:
@@ -72,7 +72,7 @@ def find_similar_memories_task(self, text, session_id, limit, min_similarity):
         logger.error(traceback.format_exc())
         raise
 
-@celery.task(bind=True, name='app.tasks.generate_embedding_task')
+@celery.task(bind=True, name='tasks.generate_embedding_task')
 def generate_embedding_task(self, text):
     """Generate embedding vectors asynchronously"""
     try:
@@ -92,7 +92,7 @@ def generate_embedding_task(self, text):
         logger.error(traceback.format_exc())
         raise
 
-@celery.task(bind=True, name='app.tasks.store_memory_task')
+@celery.task(bind=True, name='tasks.store_memory_task')
 def store_memory_task(self, session_id, content, embedding_task_id, memory_type, 
                      character_id, user_id, importance, metadata):
     """Store a memory with embedding asynchronously"""
@@ -130,7 +130,7 @@ def store_memory_task(self, session_id, content, embedding_task_id, memory_type,
         logger.error(traceback.format_exc())
         raise
 
-@celery.task(bind=True, name='app.tasks.retrieve_memories_task')
+@celery.task(bind=True, name='tasks.retrieve_memories_task')
 def retrieve_memories_task(self, current_message, session_id, character_id, max_tokens):
     """
     Retrieve relevant memories for the current context asynchronously
