@@ -1,7 +1,7 @@
 """
 Celery tasks for AI Dungeon Master
 """
-from app.celery_config import celery
+from app.celery_app import celery
 import logging
 
 logger = logging.getLogger(__name__)
