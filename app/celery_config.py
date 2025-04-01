@@ -24,3 +24,4 @@ def make_celery(app=None):
 
 # Create the base Celery instance (without Flask context)
 celery = make_celery()
+celery.autodiscover_tasks(['app.tasks'])
