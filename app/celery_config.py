@@ -20,6 +20,7 @@ def make_celery(app):
                 return self.run(*args, **kwargs)
 
     celery.Task = ContextTask
+    import app.tasks
     return celery
 
 # Create a Flask application instance
@@ -30,4 +31,3 @@ flask_app = create_app()
 celery = make_celery(flask_app)
 celery.autodiscover_tasks(['app'])
 
-import app.tasks 
