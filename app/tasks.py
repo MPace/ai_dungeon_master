@@ -168,9 +168,5 @@ def retrieve_memories_task(self, current_message, session_id, character_id, max_
         return {"success": False, "error": str(e), "memory_context": ""}
     
 
-@celery.task()
-def ping():
-    return "pong"
-
 logger.info(f"Tasks registered: {[task.name for task in celery.tasks.values()]}")
 
