@@ -29,6 +29,12 @@ class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
     LOG_LEVEL = 'DEBUG'
+    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+    CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_TIMEZONE = 'UTC'
 
 class TestingConfig(Config):
     """Testing configuration"""
@@ -51,3 +57,10 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SECURE = True
     SESSION_TYPE = 'redis'
     SESSION_USE_SIGNER = True
+
+    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+    CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_TIMEZONE = 'UTC'

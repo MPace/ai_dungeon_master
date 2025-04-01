@@ -294,16 +294,39 @@ class AIService:
             # Create system prompt based on game state and character data
             system_prompt = self._create_system_prompt(game_state, character_data)
             
-            # Retrieve and add memory context if available
-            memory_context = self._retrieve_memory_context(
+            # Retrieve and add memory context
+            memory_result = self._retrieve_memory_context(
                 player_message, session_id, character_id
             )
             
+            # Check if memory retrieval is async
+            memory_context = ""
+            if memory_result.get("success", False):
+                if memory_result.get("async", False):
+                    # Wait for memory retrieval task to complete (max 10 seconds)
+                    from celery.result import AsyncResult
+                    task_id = memory_result.get("task_id")
+                    task = AsyncResult(task_id)
+                    
+                    try:
+                        # Wait for a result with timeout
+                        task_result = task.get(timeout=10)
+                        if task_result and task_result.get("success", False):
+                            memory_context = task_result.get("memory_context", "")
+                            logger.info("Retrieved memory context from async task")
+                    except Exception as task_e:
+                        logger.warning(f"Timeout or error waiting for memory task: {task_e}")
+                        # Proceed without memory context
+                else:
+                    # Synchronous result
+                    memory_context = memory_result.get("memory_context", "")
+            
+            # Add memory context to prompt if available
             if memory_context:
                 system_prompt += f"\n\n{memory_context}"
                 logger.info("Added memory context to prompt")
             
-            # Prepare the request payload for xAI format
+            # Prepare the request payload
             payload = {
                 "model": self.model,
                 "messages": [
@@ -322,8 +345,10 @@ class AIService:
                 self.api_url,
                 headers=self.headers,
                 json=payload,
-                timeout=30  # Add timeout for better error handling
+                timeout=30
             )
+        
+        # [Rest of the method remains the same...]
             
             # Check if the request was successful
             response.raise_for_status()
@@ -445,11 +470,11 @@ class AIService:
             character_id (str): The character ID
             
         Returns:
-            str: Memory context as formatted text
+            dict: Contains either the memory context as text or a task ID to retrieve it later
         """
         if not session_id:
-            return ""
-            
+            return {"success": False, "error": "No session ID provided", "memory_context": ""}
+                
         # Lazy-load memory service if needed
         if not self.memory_service:
             try:
@@ -457,38 +482,39 @@ class AIService:
                 self.memory_service = EnhancedMemoryService()
             except Exception as e:
                 logger.error(f"Error initializing memory service: {e}")
-                return ""
+                return {"success": False, "error": str(e), "memory_context": ""}
         
         try:
-            # Build memory context
-            memory_context = self.memory_service.build_memory_context(
-                current_message=current_message,
-                session_id=session_id,
-                character_id=character_id,
-                max_tokens=self.memory_token_budget,
-                recency_boost=True
+            # Submit an asynchronous task to retrieve memories
+            from app.tasks import retrieve_memories_task
+            
+            # Start the task
+            task = retrieve_memories_task.delay(
+                current_message,
+                session_id,
+                character_id,
+                self.memory_token_budget
             )
             
-            return memory_context or ""
-            
+            # Return the task ID so the caller can check for results later
+            return {
+                "success": True,
+                "task_id": task.id,
+                "async": True,  # Flag to indicate this is an async operation
+                "memory_context": ""  # Empty until retrieved
+            }
+                
         except Exception as e:
             logger.error(f"Error retrieving memory context: {e}")
-            return ""
+            import traceback
+            logger.error(traceback.format_exc())
+            return {"success": False, "error": str(e), "memory_context": ""}
     
     def _process_memory_lifecycle(self, player_message, ai_response, session_id, character_id, user_id):
-        """
-        Process and store messages in the memory system
-        
-        Args:
-            player_message (str): The player's message
-            ai_response (str): The AI's response
-            session_id (str): The session ID
-            character_id (str): The character ID
-            user_id (str): The user ID
-        """
+        """Process and store messages in the memory system"""
         if not session_id:
             return
-            
+                
         # Lazy-load memory service if needed
         if not self.memory_service:
             try:
@@ -498,37 +524,29 @@ class AIService:
                 logger.error(f"Error initializing memory service: {e}")
                 return
         
-        # Process in background using ThreadPoolExecutor
-        with ThreadPoolExecutor() as executor:
-            # Store player message
-            executor.submit(
-                self._store_memory,
-                player_message,
-                "short_term",
-                session_id,
-                character_id,
-                user_id,
-                self._calculate_importance(player_message),
-                {"sender": "player"}
-            )
-            
-            # Store AI response
-            executor.submit(
-                self._store_memory,
-                ai_response,
-                "short_term",
-                session_id,
-                character_id,
-                user_id,
-                self._calculate_importance(ai_response),
-                {"sender": "dm"}
-            )
-            
-            # Check for summarization
-            executor.submit(
-                self._check_for_summarization,
-                session_id
-            )
+        # Store player message
+        self.memory_service.store_memory_with_text(
+            content=player_message,
+            memory_type='short_term',
+            session_id=session_id,
+            character_id=character_id,
+            user_id=user_id,
+            importance=self._calculate_importance(player_message),
+            metadata={"sender": "player"},
+            async_mode=True  # Use async mode
+        )
+        
+        # Store AI response
+        self.memory_service.store_memory_with_text(
+            content=ai_response,
+            memory_type='short_term',
+            session_id=session_id,
+            character_id=character_id,
+            user_id=user_id,
+            importance=self._calculate_importance(ai_response),
+            metadata={"sender": "dm"},
+            async_mode=True  # Use async mode
+        )
     
     def _store_memory(self, content, memory_type, session_id, character_id, user_id, importance, metadata):
         """Store a memory with the memory service"""
@@ -650,7 +668,7 @@ class AIService:
         }
 
     def _generate_mcp_response(self, player_message, conversation_history, character_data, 
-                          session_id, character_id, user_id, game_state):
+                      session_id, character_id, user_id, game_state):
         """
         Generate a response using the Model Context Protocol
         
@@ -667,6 +685,11 @@ class AIService:
             AIResponse: The AI-generated response
         """
         try:
+            # Retrieve memory context asynchronously
+            memory_result = self._retrieve_memory_context(
+                player_message, session_id, character_id
+            )
+            
             # Prepare request data for context building
             request_data = {
                 'session_id': session_id,
@@ -676,6 +699,24 @@ class AIService:
                 'game_state': game_state,
                 'history': conversation_history
             }
+            
+            # Check if memory retrieval is async
+            if memory_result.get("success", False) and memory_result.get("async", False):
+                # Wait for memory retrieval task to complete (max 10 seconds)
+                from celery.result import AsyncResult
+                task_id = memory_result.get("task_id")
+                task = AsyncResult(task_id)
+                
+                try:
+                    # Wait for a result with timeout
+                    task_result = task.get(timeout=10)
+                    if task_result and task_result.get("success", False):
+                        # Add memory context to request data
+                        request_data['memory_context'] = task_result.get("memory_context", "")
+                        logger.info("Retrieved memory context from async task for MCP")
+                except Exception as task_e:
+                    logger.warning(f"Timeout or error waiting for memory task in MCP: {task_e}")
+                    # Proceed without memory context
             
             # Build context for AI message
             context = self.context_orchestrator.build_context('ai_message', request_data)

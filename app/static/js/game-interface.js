@@ -460,6 +460,7 @@ function sendToServer(message) {
     
     const typingDiv = document.createElement('div');
     typingDiv.classList.add('message', 'dm-message', 'typing-indicator');
+    typingDiv.setAttribute('id', 'typing-indicator');
     typingDiv.innerHTML = '<p>The DM is crafting a response...</p>';
     chatWindow.appendChild(typingDiv);
     
@@ -515,46 +516,26 @@ function sendToServer(message) {
         return response.json();
     })
     .then(data => {
-        console.log('Received response data:', data);
+        console.log('Received initial response:', data);
         
-        // Remove typing indicator
-        try {
-            chatWindow.removeChild(typingDiv);
-        } catch (e) {
-            console.warn('Could not remove typing indicator:', e);
+        if (data.success && data.status === 'processing' && data.task_id) {
+            // Start polling for results
+            pollForTaskResults(data.task_id);
+        } else if (data.success && data.result) {
+            // Handle immediate response (unlikely with async setup)
+            handleDMResponse(data.result);
+        } else if (!data.success) {
+            // Handle error
+            handleServerError(data.error || 'Unknown error occurred');
         }
-        
-        // Add response to chat
-        addMessageToChat(data.response, 'dm');
-        
-        // Update session ID if provided
-        if (data.session_id) {
-            sessionId = data.session_id;
-            saveSessionId(sessionId);
-            console.log('Session ID updated:', sessionId);
-            
-            // Set session ID on chat window
-            chatWindow.setAttribute('data-session-id', sessionId);
-        }
-        
-        // Update game state if provided
-        if (data.game_state) {
-            gameState = data.game_state;
-            console.log('Game state updated:', gameState);
-            
-            // Update UI based on game state
-            updateUIForGameState(gameState);
-        }
-        
     })
     .catch(error => {
         console.error('Error communicating with server:', error);
         
         // Remove typing indicator
-        try {
-            chatWindow.removeChild(typingDiv);
-        } catch (e) {
-            console.warn('Could not remove typing indicator:', e);
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (typingIndicator) {
+            chatWindow.removeChild(typingIndicator);
         }
         
         // Add error message
@@ -563,6 +544,146 @@ function sendToServer(message) {
             'dm'
         );
     });
+}
+
+/**
+ * Poll for task results
+ * @param {string} taskId - The task ID to check
+ * @param {number} attempt - Current attempt number (for exponential backoff)
+ */
+function pollForTaskResults(taskId, attempt = 1) {
+    // Calculate poll interval with exponential backoff (starts at 1s, caps at 10s)
+    const maxInterval = 5000; // 5 seconds max interval
+    const baseInterval = 1000; // 1 second base interval
+    const interval = Math.min(baseInterval * Math.pow(1.5, attempt - 1), maxInterval);
+    
+    console.log(`Polling for task ${taskId}, attempt ${attempt}, interval ${interval}ms`);
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    // Check task status
+    fetch(`/game/api/check-task/${taskId}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'processing') {
+            // Still processing, poll again after delay
+            setTimeout(() => pollForTaskResults(taskId, attempt + 1), interval);
+            
+            // Optionally update typing indicator with elapsed time
+            updateTypingIndicator(attempt);
+        } else if (data.status === 'completed' && data.result) {
+            // Processing complete with result
+            handleDMResponse(data.result);
+        } else if (!data.success || data.status === 'error') {
+            // Task failed
+            handleServerError(data.error || 'The Dungeon Master encountered an error');
+        } else {
+            // Unexpected response
+            handleServerError('Received unexpected response from the server');
+        }
+    })
+    .catch(error => {
+        console.error('Error polling for task results:', error);
+        
+        // If this is a network error, retry a few times
+        if (attempt < 5) {
+            setTimeout(() => pollForTaskResults(taskId, attempt + 1), interval);
+        } else {
+            // Give up after 5 attempts
+            handleServerError(`Error checking task status: ${error.message}`);
+        }
+    });
+}
+
+/**
+ * Update the typing indicator to show elapsed time
+ * @param {number} attempt - Current attempt number
+ */
+function updateTypingIndicator(attempt) {
+    // Only update after several attempts to avoid flickering
+    if (attempt % 3 !== 0) return;
+    
+    const typingIndicator = document.getElementById('typing-indicator');
+    if (typingIndicator) {
+        const elapsedSeconds = Math.floor(attempt * 1.5); // Rough approximation
+        
+        // Add dots based on elapsed time
+        const dots = '.'.repeat((attempt % 4) + 1);
+        typingIndicator.innerHTML = `<p>The DM is crafting a detailed response${dots} (${elapsedSeconds}s)</p>`;
+    }
+}
+
+/**
+ * Handle a successful DM response
+ * @param {Object} result - The DM response result
+ */
+function handleDMResponse(result) {
+    // Remove typing indicator
+    const typingIndicator = document.getElementById('typing-indicator');
+    const chatWindow = document.getElementById('chatWindow');
+    
+    if (typingIndicator && chatWindow) {
+        chatWindow.removeChild(typingIndicator);
+    }
+    
+    // Add response to chat
+    addMessageToChat(result.response, 'dm');
+    
+    // Update session ID if provided
+    if (result.session_id) {
+        sessionId = result.session_id;
+        saveSessionId(sessionId);
+        console.log('Session ID updated:', sessionId);
+        
+        // Set session ID on chat window
+        if (chatWindow) {
+            chatWindow.setAttribute('data-session-id', sessionId);
+        }
+    }
+    
+    // Update game state if provided
+    if (result.game_state) {
+        gameState = result.game_state;
+        console.log('Game state updated:', gameState);
+        
+        // Update UI based on game state
+        updateUIForGameState(gameState);
+    }
+    
+    // Fire custom event for extensions to hook into
+    const dmResponseEvent = new CustomEvent('dm-response-received', { 
+        detail: result 
+    });
+    document.dispatchEvent(dmResponseEvent);
+}
+
+/**
+ * Handle a server error
+ * @param {string} errorMessage - The error message
+ */
+function handleServerError(errorMessage) {
+    // Remove typing indicator
+    const typingIndicator = document.getElementById('typing-indicator');
+    const chatWindow = document.getElementById('chatWindow');
+    
+    if (typingIndicator && chatWindow) {
+        chatWindow.removeChild(typingIndicator);
+    }
+    
+    // Add error message to chat
+    addMessageToChat(
+        `The Dungeon Master seems distracted. Please try again in a moment. (${errorMessage})`,
+        'dm'
+    );
+    
+    console.error('Server error:', errorMessage);
 }
 
 /**

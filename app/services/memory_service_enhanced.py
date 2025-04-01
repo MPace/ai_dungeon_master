@@ -17,11 +17,12 @@ class EnhancedMemoryService:
         self.semantic = SemanticMemoryInterface()
     
     def store_memory_with_text(self, content: str, memory_type: str = 'short_term', 
-                               session_id: Optional[str] = None, 
-                               character_id: Optional[str] = None, 
-                               user_id: Optional[str] = None,
-                               importance: int = 5, 
-                               metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                           session_id: Optional[str] = None, 
+                           character_id: Optional[str] = None, 
+                           user_id: Optional[str] = None,
+                           importance: int = 5, 
+                           metadata: Optional[Dict[str, Any]] = None,
+                           async_mode: bool = True) -> Dict[str, Any]:
         """Store a memory with automatic embedding generation"""
         # Get embedding service
         embedding_service = get_embedding_service()
@@ -29,51 +30,66 @@ class EnhancedMemoryService:
             logger.error("Embedding service not available")
             return {'success': False, 'error': 'Embedding service not available'}
         
-        # Generate embedding
-        embedding = embedding_service.generate_embedding(content)
-        
-        # Store memory based on type
-        if memory_type == 'short_term':
-            if not session_id:
-                return {'success': False, 'error': 'Session ID required for short-term memories'}
-            return self.short_term.store(
-                content=content,
-                embedding=embedding,
-                session_id=session_id,
-                character_id=character_id,
-                user_id=user_id,
-                importance=importance,
-                metadata=metadata
-            )
-        elif memory_type == 'long_term':
-            if not session_id:
-                return {'success': False, 'error': 'Session ID required for long-term memories'}
-            return self.long_term.store(
-                content=content,
-                embedding=embedding,
-                session_id=session_id,
-                character_id=character_id,
-                user_id=user_id,
-                importance=importance,
-                metadata=metadata
-            )
-        elif memory_type == 'semantic':
-            concept_type = metadata.get('concept_type', 'general') if metadata else 'general'
-            relationships = metadata.get('relationships', []) if metadata else []
+        if async_mode:
+            # Generate embedding asynchronously
+            task_id = embedding_service.generate_embedding_async(content)
             
-            return self.semantic.store(
-                content=content,
-                embedding=embedding,
-                character_id=character_id,
-                user_id=user_id,
-                concept_type=concept_type,
-                relationships=relationships,
-                importance=importance,
-                metadata=metadata
+            # Submit storage task
+            from app.tasks import store_memory_task
+            storage_task = store_memory_task.delay(
+                session_id, content, None, memory_type, 
+                character_id, user_id, importance, metadata,
+                task_id  # Pass embedding task ID
             )
+            
+            return {'success': True, 'task_id': storage_task.id}
         else:
-            logger.error(f"Unknown memory type: {memory_type}")
-            return {'success': False, 'error': f'Unknown memory type: {memory_type}'}
+
+            # Generate embedding
+            embedding = embedding_service.generate_embedding(content)
+            
+            # Store memory based on type
+            if memory_type == 'short_term':
+                if not session_id:
+                    return {'success': False, 'error': 'Session ID required for short-term memories'}
+                return self.short_term.store(
+                    content=content,
+                    embedding=embedding,
+                    session_id=session_id,
+                    character_id=character_id,
+                    user_id=user_id,
+                    importance=importance,
+                    metadata=metadata
+                )
+            elif memory_type == 'long_term':
+                if not session_id:
+                    return {'success': False, 'error': 'Session ID required for long-term memories'}
+                return self.long_term.store(
+                    content=content,
+                    embedding=embedding,
+                    session_id=session_id,
+                    character_id=character_id,
+                    user_id=user_id,
+                    importance=importance,
+                    metadata=metadata
+                )
+            elif memory_type == 'semantic':
+                concept_type = metadata.get('concept_type', 'general') if metadata else 'general'
+                relationships = metadata.get('relationships', []) if metadata else []
+                
+                return self.semantic.store(
+                    content=content,
+                    embedding=embedding,
+                    character_id=character_id,
+                    user_id=user_id,
+                    concept_type=concept_type,
+                    relationships=relationships,
+                    importance=importance,
+                    metadata=metadata
+                )
+            else:
+                logger.error(f"Unknown memory type: {memory_type}")
+                return {'success': False, 'error': f'Unknown memory type: {memory_type}'}
     
     def retrieve_memories(self, query: str, session_id: Optional[str] = None, 
                           character_id: Optional[str] = None,
@@ -297,3 +313,50 @@ class EnhancedMemoryService:
         except Exception as e:
             logger.error(f"Error checking summarization triggers: {e}")
             return False
+        
+
+    def store_memory_with_text_async(self, content: str, memory_type: str = 'short_term', 
+                               session_id: Optional[str] = None, 
+                               character_id: Optional[str] = None, 
+                               user_id: Optional[str] = None,
+                               importance: int = 5, 
+                               metadata: Optional[Dict[str, Any]] = None) -> str:
+            """
+            Store a memory asynchronously and return task ID
+            
+            Args:
+                Same as store_memory_with_text
+                
+            Returns:
+                str: Task ID for retrieving the result later
+            """
+            from app.tasks import store_memory_task
+            
+            # Submit task
+            task = store_memory_task.delay(
+                session_id, content, memory_type, 
+                character_id, user_id, importance, metadata
+            )
+            
+            return task.id
+
+    def retrieve_memories_async(self, query: str, session_id: Optional[str] = None, 
+                            memory_types: List[str] = ['short_term', 'long_term', 'semantic'],
+                            limit_per_type: int = 3, min_similarity: float = 0.7) -> str:
+            """
+            Retrieve memories asynchronously and return task ID
+            
+            Args:
+                Same as retrieve_memories
+                
+            Returns:
+                str: Task ID for retrieving the result later
+            """
+            from app.tasks import find_similar_memories_task
+            
+            # Submit task
+            task = find_similar_memories_task.delay(
+                query, session_id, limit_per_type, min_similarity
+            )
+            
+            return task.id

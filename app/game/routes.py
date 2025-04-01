@@ -125,7 +125,7 @@ def play_game(character_id):
 @game_bp.route('/api/send-message', methods=['POST'])
 @login_required
 def send_message():
-    """Process a message from the player and return a DM response"""
+    """Process a message from the player and return a DM response asynchronously"""
     try:
         data = request.json
         message = data.get('message', '')
@@ -134,42 +134,37 @@ def send_message():
         
         user_id = session.get('user_id')
         
-        # Log received data for debugging
-        logger.info(f"Received message request: message={message[:20]}..., session_id={session_id}, user_id={user_id}")
-        
         # Validate required inputs
         if not message:
             return jsonify({
+                'success': False,
                 'error': 'No message provided'
             }), 400
             
         if not user_id:
             return jsonify({
+                'success': False,
                 'error': 'User not authenticated'
             }), 401
 
-        # Send message and get response
-        result = GameService.send_message(session_id, message, user_id)
+        # Submit task to Celery
+        from app.tasks import process_dm_message
+        task = process_dm_message.delay(message, session_id, character_data, user_id)
         
-        if result is None:
-            return jsonify({'error': 'Internal server error: No response from game service'}), 500
-
-        if result.get('success', False):
-            return jsonify({
-                'response': result['response'],
-                'session_id': result['session_id'],
-                'game_state': result['game_state']
-            })
-        else:
-            return jsonify({
-                'error': result.get('error', 'Failed to process message')
-            }), 500
+        # Return task ID immediately
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'status': 'processing',
+            'message': 'Your message is being processed by the DM. Please wait for the response.'
+        })
         
     except Exception as e:
         logger.error(f"Unhandled exception in send_message: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
         return jsonify({
+            'success': False,
             'error': f"Server error: {str(e)}"
         }), 500
 
@@ -204,4 +199,58 @@ def roll_dice():
         logger.error(f"Error in roll_dice route: {e}")
         return jsonify({
             'error': f"Server error: {str(e)}"
+        }), 500
+    
+
+@game_bp.route('/api/check-task/<task_id>', methods=['GET'])
+@login_required
+def check_task(task_id):
+    """Check the status of a Celery task"""
+    try:
+        from celery.result import AsyncResult
+        from app.celery_config import celery
+        
+        # Get the task result
+        task = AsyncResult(task_id, app=celery)
+        
+        # Check task state
+        if task.state == 'PENDING':
+            # Task is still pending
+            response = {
+                'success': True,
+                'status': 'processing',
+                'message': 'The Dungeon Master is still crafting a response...'
+            }
+        elif task.state == 'FAILURE':
+            # Task failed
+            response = {
+                'success': False,
+                'status': 'error',
+                'error': str(task.info)
+            }
+        elif task.state == 'SUCCESS':
+            # Task completed successfully
+            response = {
+                'success': True,
+                'status': 'completed',
+                'result': task.result
+            }
+        else:
+            # Other states (STARTED, RETRY, etc.)
+            response = {
+                'success': True,
+                'status': 'processing',
+                'message': f'Task is in state: {task.state}'
+            }
+            
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"Error checking task status: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        
+        return jsonify({
+            'success': False,
+            'error': f"Error checking task status: {str(e)}"
         }), 500

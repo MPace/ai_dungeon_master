@@ -226,3 +226,20 @@ class EmbeddingService:
             "cache_misses": self.cache_misses,
             "hit_rate": self.cache_hits / (self.cache_hits + self.cache_misses) if (self.cache_hits + self.cache_misses) > 0 else 0
         }
+    
+    def generate_embedding_async(self, text: str) -> str:
+        """
+        Generate embedding asynchronously and return task ID
+        
+        Args:
+            text (str): Text to embed
+            
+        Returns:
+            str: Task ID for retrieving the result later
+        """
+        from app.tasks import generate_embedding_task
+        
+        # Submit task
+        task = generate_embedding_task.delay(text)
+        
+        return task.id
