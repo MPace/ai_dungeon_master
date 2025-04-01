@@ -4,6 +4,12 @@ Celery configuration for AI Dungeon Master
 import os
 from celery import Celery
 import logging
+
+logging.basicConfig(
+    filename='/var/www/staging_ai_dungeon_master/app.log',
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s: %(message)s'
+)
 logger = logging.getLogger(__name__)
 logger.info("celery_config.py is executing")
 
