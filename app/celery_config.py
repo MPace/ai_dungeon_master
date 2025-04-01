@@ -29,3 +29,5 @@ flask_app = create_app()
 # Create Celery instance
 celery = make_celery(flask_app)
 celery.autodiscover_tasks(['app'])
+
+import app.tasks 
