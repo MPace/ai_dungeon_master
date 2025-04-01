@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 logger.info("Tasks module loading...")
 
-@celery.task(name='tasks.process_dm_messages', bind=True)
+@celery.task(name='tasks.process_dm_message', bind=True)
 def process_dm_message(self, message, session_id, character_data, user_id):
     """Process a message from the player asynchronously"""
     try:
