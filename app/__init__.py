@@ -4,6 +4,9 @@ import logging
 from datetime import timedelta
 from flask_session import Session
 from flask_wtf.csrf import CSRFProtect
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logging.basicConfig(
     filename='app.log',
@@ -69,11 +72,6 @@ def configure_app(app, config_name):
     # Default to development if not specified
     if not config_name or config_name == 'default':
         config_name = 'development'
-    
-    # Load .env file if exists
-    if os.path.exists('.env'):
-        from dotenv import load_dotenv
-        load_dotenv()
 
     # Load config from config.py
     app.config.from_object(f'app.config.{config_name.capitalize()}Config')
