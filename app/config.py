@@ -21,10 +21,6 @@ class Config:
     DEBUG = False
     TESTING = False
 
-    # CSRF Protection
-    WTF_CSRF_Enabled = False
-    WTF_CSRF_TIME_LIMIT = 1800
-
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
