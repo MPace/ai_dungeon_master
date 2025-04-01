@@ -26,7 +26,8 @@ def create_app(config_name='default'):
 
 
     # Initialize CSRF protection
-    csrf = CSRFProtect(app)
+    csrf = CSRFProtect()
+    csrf.init_app(app)
 
     # Load configuration
     app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))

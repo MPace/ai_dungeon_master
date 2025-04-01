@@ -1,30 +1,26 @@
-"""
-Celery configuration for AI Dungeon Master
-"""
-from app import create_app
-
-# Create a Flask application instance
-flask_app = create_app()
-
-# Create Celery application
 from celery import Celery
 
-def make_celery(app):
-    """Create and configure Celery app with Flask context"""
+def make_celery(app=None):
+    """Create a Celery instance"""
     celery = Celery(
-        app.import_name,
-        backend=app.config['CELERY_RESULT_BACKEND'],
-        broker=app.config['CELERY_BROKER_URL']
+        'app',
+        broker='redis://localhost:6379/0',
+        backend='redis://localhost:6379/0',
+        include=['app.tasks']
     )
-    celery.conf.update(app.config)
-
-    class ContextTask(celery.Task):
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return self.run(*args, **kwargs)
-
-    celery.Task = ContextTask
+    
+    # Update with app config if provided
+    if app:
+        celery.conf.update(app.config)
+        
+        class ContextTask(celery.Task):
+            def __call__(self, *args, **kwargs):
+                with app.app_context():
+                    return self.run(*args, **kwargs)
+        
+        celery.Task = ContextTask
+    
     return celery
 
-# Create Celery instance
-celery = make_celery(flask_app)
+# Create the base Celery instance (without Flask context)
+celery = make_celery()
