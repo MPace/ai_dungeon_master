@@ -1,14 +1,14 @@
 """
 Celery tasks for AI Dungeon Master
 """
-from app.celery_app import celery
+from celery import shared_task
 import logging
 
 logger = logging.getLogger(__name__)
 
 logger.info("Tasks module loading...")
 
-@celery.task(name='tasks.process_dm_message', bind=True)
+@shared_task(name='tasks.process_dm_message', bind=True)
 def process_dm_message(self, message, session_id, character_data, user_id):
     """Process a message from the player asynchronously"""
     try:
@@ -27,7 +27,7 @@ def process_dm_message(self, message, session_id, character_data, user_id):
         # Re-raise the exception to mark the task as failed
         raise
 
-@celery.task(name='tasks.generate_memory_summary', bind=True)
+@shared_task(name='tasks.generate_memory_summary', bind=True)
 def generate_memory_summary(self, session_id, user_id):
     """Generate a summary of memories for a session"""
     try:
@@ -49,7 +49,7 @@ def generate_memory_summary(self, session_id, user_id):
         # Re-raise the exception to mark the task as failed
         raise
 
-@celery.task(name='tasks.find_similar_memories_task', bind=True)
+@shared_task(name='tasks.find_similar_memories_task', bind=True)
 def find_similar_memories_task(self, text, session_id, limit, min_similarity):
     """Find similar memories asynchronously"""
     try:
@@ -74,7 +74,7 @@ def find_similar_memories_task(self, text, session_id, limit, min_similarity):
         logger.error(traceback.format_exc())
         raise
 
-@celery.task(name='tasks.generate_embedding_task', bind=True)
+@shared_task(name='tasks.generate_embedding_task', bind=True)
 def generate_embedding_task(self, text):
     """Generate embedding vectors asynchronously"""
     try:
@@ -94,7 +94,7 @@ def generate_embedding_task(self, text):
         logger.error(traceback.format_exc())
         raise
 
-@celery.task(name='tasks.store_memory_task', bind=True)
+@shared_task(name='tasks.store_memory_task', bind=True)
 def store_memory_task(self, session_id, content, embedding_task_id, memory_type, 
                      character_id, user_id, importance, metadata):
     """Store a memory with embedding asynchronously"""
@@ -132,7 +132,7 @@ def store_memory_task(self, session_id, content, embedding_task_id, memory_type,
         logger.error(traceback.format_exc())
         raise
 
-@celery.task(name='tasks.retrieve_memories_task', bind=True)
+@shared_task(name='tasks.retrieve_memories_task', bind=True)
 def retrieve_memories_task(self, current_message, session_id, character_id, max_tokens):
     """
     Retrieve relevant memories for the current context asynchronously
