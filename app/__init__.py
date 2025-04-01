@@ -81,7 +81,7 @@ def configure_app(app, config_name):
     app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
     
     # Configure session
-    app.config['SESSION_TYPE'] = 'filesystem'  # Default to filesystem sessions
+    app.config['SESSION_TYPE'] = 'filesystem'
     
     # Configure session cookies
     app.config['SESSION_COOKIE_NAME'] = 'aidm_session'
