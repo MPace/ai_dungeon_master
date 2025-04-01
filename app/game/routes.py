@@ -149,7 +149,7 @@ def send_message():
 
         # Submit task to Celery
         from app.tasks import process_dm_message
-        task = process_dm_message.apply_async(message, session_id, character_data, user_id)
+        task = process_dm_message.delay(message, session_id, character_data, user_id)
         
         # Return task ID immediately
         return jsonify({
