@@ -176,7 +176,7 @@ class EnhancedMemoryService:
             if db is not None:
                 session_data = db.sessions.find_one({'session_id': session_id})
                 if session_data and 'session_summary' in session_data:
-                    summary - session_data['session_summary']
+                    summary = session_data['session_summary']
 
             # Get any pinned memories
             pinned_memories = []
