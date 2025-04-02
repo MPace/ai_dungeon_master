@@ -13,33 +13,28 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.info("celery_config.py is executing")
 
-def make_celery(app):
-    """Create and configure Celery app with Flask context"""
-    celery = Celery(
-        app.import_name,
-        backend=app.config['CELERY_RESULT_BACKEND'],
-        broker=app.config['CELERY_BROKER_URL'],
-        include=['app.tasks']  
-    )
-    celery.conf.update(app.config)
+# Create Celery instance first
+celery = Celery(
+    'app',
+    broker=os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0'),
+    backend=os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0'),
+    include=['app.tasks']
+)
 
-    class ContextTask(celery.Task):
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return self.run(*args, **kwargs)
+# Load additional configuration from object
+class CeleryConfig:
+    task_serializer = 'json'
+    accept_content = ['json']
+    result_serializer = 'json'
+    timezone = 'UTC'
+    task_track_started = True
+    task_time_limit = 300
 
-    celery.Task = ContextTask
-    import app.tasks
-    logger.info("app.tasks module imported in celery_config")
-    return celery
+celery.config_from_object(CeleryConfig)
 
-# Create a Flask application instance
-from app import create_app
-flask_app = create_app()
-logger.info("Flask app created")
+@celery.task(bind=True)
+def debug_task(self):
+    logger.info(f"Task ID: {self.request.id}")
+    return "OK"
 
-# Create Celery instance
-celery = make_celery(flask_app)
 logger.info("Celery instance created")
-celery.autodiscover_tasks(['app'])
-
