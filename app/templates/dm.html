@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Dungeon Master - Game</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Google Font for Fantasy Theme -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <!-- Additional game interface styles -->
+    <style>
+        body, html {
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            display: flex;
+            height: calc(100vh - 56px); /* Subtract navbar height */
+            overflow: hidden;
+        }
+        
+        .chat-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 15px;
+        }
+        
+        .chat-window {
+            flex: 1;
+            overflow-y: auto;
+            border-radius: 8px 8px 0 0;
+            padding: 15px;
+            margin-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .chat-input-container {
+            background-color: rgba(31, 31, 31, 0.9);
+            border-radius: 0 0 8px 8px;
+            padding: 15px;
+            border-top: 1px solid #3a3a3a;
+        }
+        
+        .sidebar-column {
+            width: 320px;
+            height: 100%;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .character-card {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        
+        #characterSheet {
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .dice-card {
+            margin-top: auto;
+            flex-shrink: 0; /* Prevent dice card from shrinking */
+        }
+        
+        /* Message styling enhancements */
+        .message {
+            max-width: 85%;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            padding: 12px 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .dm-message {
+            background-color: #2a3640;
+            border-left: 4px solid #6c8bac;
+            align-self: flex-start;
+        }
+        
+        .player-message {
+            background-color: #3b313d;
+            border-right: 4px solid #9b6dac;
+            align-self: flex-end;
+            text-align: right;
+        }
+        
+        
+        /* Toast styling */
+        .toast-container {
+            z-index: 1070;
+        }
+        
+        /* For mobile responsiveness */
+        @media (max-width: 992px) {
+            .game-container {
+                flex-direction: column;
+            }
+            
+            .sidebar-column {
+                width: 100%;
+                height: auto;
+                order: 2;
+            }
+            
+            .chat-column {
+                height: calc(100vh - 300px); /* Allow space for sidebar */
+                order: 1;
+            }
+            
+            .character-card {
+                max-height: 200px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-dark">
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">AI Dungeon Master</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('characters.dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Playing: {{ character.name }}</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-1"></i>{{ session.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Game Interface -->
+    <div class="game-container">
+        <!-- Main Chat Area -->
+        <div class="chat-column">
+            <div class="card shadow h-100 d-flex flex-column border-0">
+                <div class="card-header bg-dark text-light border-bottom border-secondary">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-book me-2"></i>Adventure Log</h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-light" id="saveLogButton">
+                                <i class="bi bi-save"></i> Save Log
+                            </button>
+                            <button class="btn btn-sm btn-outline-light ms-2" id="clearLogButton">
+                                <i class="bi bi-eraser"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body chat-window" id="chatWindow">
+                    <!-- Messages will appear here -->
+                    <div class="message dm-message">
+                        <p>Welcome, {{ character.name }}! I am your AI Dungeon Master. Your adventure is about to begin...</p>
+                    </div>
+                </div>
+                <div class="card-footer chat-input-container bg-dark border-top border-secondary p-3">
+                    <div class="input-group">
+                        <input type="text" id="playerInput" class="form-control bg-dark text-light border-secondary" placeholder="What would you like to do?">
+                        <button class="btn btn-outline-light" id="sendButton">
+                            <i class="bi bi-send"></i> Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar Column -->
+    <div class="sidebar-column">
+        <!-- Character Sheet -->
+        <div class="card character-card shadow mb-4 border-0">
+            <div class="card-header bg-dark text-light border-bottom border-secondary">
+                <h5 class="mb-0"><i class="bi bi-person me-2"></i>Character Sheet</h5>
+            </div>
+            <div class="card-body" id="characterSheet">
+                <!-- Character sheet will be populated here -->
+            </div>
+        </div>
+        
+        <!-- Dice Roller -->
+        <div class="card dice-card shadow border-0">
+            <div class="card-header bg-dark text-light border-bottom border-secondary py-2">
+                <h5 class="mb-0"><i class="bi bi-dice-6 me-2"></i>Dice Roller</h5>
+            </div>
+            <div class="card-body p-2">
+                <div class="d-grid gap-1">
+                    <button class="btn btn-sm btn-outline-primary" data-dice="d20">Roll d20</button>
+                    <div class="btn-group btn-group-sm mt-1">
+                        <button class="btn btn-outline-secondary" data-dice="d4">d4</button>
+                        <button class="btn btn-outline-secondary" data-dice="d6">d6</button>
+                        <button class="btn btn-outline-secondary" data-dice="d8">d8</button>
+                        <button class="btn btn-outline-secondary" data-dice="d10">d10</button>
+                        <button class="btn btn-outline-secondary" data-dice="d12">d12</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+
+    <!-- Hidden session data for JS access -->
+    <script type="application/json" id="sessionData">
+        {% if game_session %}
+        {{ game_session|tojson }}
+        {% else %}
+        {}
+        {% endif %}
+    </script>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Character data -->
+    <script>
+        // Make character data available to JS
+        const characterData = {{ character|tojson }};
+    </script>
+
+    <!-- Markdown renderer for DM chat window -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.0.18/marked.min.js"></script>
+    <script src="{{ url_for('static', filename='js/markdown-config.js') }}"></script>
+
+    <!-- Custom JS for game interface -->
+    <script src="{{ url_for('static', filename='js/spell-data.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/debug.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/game-interface.js') }}"></script>
+</body>
+</html>

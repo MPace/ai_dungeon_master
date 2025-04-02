@@ -1,9 +1,9 @@
-name: Deploy to DigitalOcean
+name: Deploy to Staging
 
 on:
   push:
     branches:
-      - main
+      - staging
 
 jobs:
   deploy:
@@ -16,8 +16,9 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /var/www/ai_dungeon_master
-            git pull origin main
-            source venv/bin/activate
+            cd /var/www/staging_ai_dungeon_master
+            git stash push -m "Auto-stashed by GitHub Actions"
+            git pull origin staging
+            source /mnt/volume_sfo3_01/venv/bin/activate
             pip install -r requirements.txt
-            sudo systemctl restart flaskapp
+            systemctl restart staging-gunicorn

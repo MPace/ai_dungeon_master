@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Dungeon Master - Welcome</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Google Font for Fantasy Theme -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body class="bg-dark">
+    <div class="container-fluid">
+        <!-- Main Content -->
+        <div class="row min-vh-100">
+            <div class="col-lg-6 d-flex flex-column justify-content-center align-items-center p-5">
+                <!-- Left side with login form -->
+                <div class="text-center mb-5">
+                    <h1 class="display-3 text-light main-title">AI Dungeon Master</h1>
+                    <p class="lead text-light subtitle">Your Adventure Awaits</p>
+                </div>
+                
+                <!-- Flash Messages -->
+                {% if get_flashed_messages() %}
+                <div class="w-100 mb-4">
+                    {% for category, message in get_flashed_messages(with_categories=true) %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="card main-menu-card w-100" style="max-width: 450px;">
+                    <div class="card-body p-4">
+                        <ul class="nav nav-tabs mb-4" id="authTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login-tab-pane" type="button" role="tab" aria-controls="login-tab-pane" aria-selected="true">Login</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register-tab-pane" type="button" role="tab" aria-controls="register-tab-pane" aria-selected="false">Register</button>
+                            </li>
+                        </ul>
+                        
+                        <!-- Tab Content -->
+                        <div class="tab-content" id="authTabsContent">
+                            <!-- Login Tab -->
+                            <div class="tab-pane fade show active" id="login-tab-pane" role="tabpanel" aria-labelledby="login-tab" tabindex="0">
+                                <form action="{{ url_for('auth.login') }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <div class="mb-3">
+                                        <label for="login-username" class="form-label text-light">Username</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-dark text-light border-secondary">
+                                                <i class="bi bi-person"></i>
+                                            </span>
+                                            
+                                            <input type="text" class="form-control bg-dark text-light border-secondary" id="login-username" name="username" placeholder="Enter your username" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="login-password" class="form-label text-light">Password</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-dark text-light border-secondary">
+                                                <i class="bi bi-lock"></i>
+                                            </span>
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="password" class="form-control bg-dark text-light border-secondary" id="login-password" name="password" placeholder="Enter your password" required>
+                                        </div>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-lg btn-primary py-3">
+                                            <i class="bi bi-door-open me-2"></i>Login
+                                        </button>
+                                    </div>    
+                                </form>
+                            </div>
+                            
+                            <!-- Register Tab -->
+                            <div class="tab-pane fade" id="register-tab-pane" role="tabpanel" aria-labelledby="register-tab" tabindex="0">
+
+                                 <!-- remove when registrations open again-->
+                                 <div class="alert alert-warning text-center mb-4">
+                                    <i class="bi bi-exclamation-circle me-2"></i>
+                                    <strong>Registrations are temporarily closed.</strong>
+                                    <p class="mt-2 mb-0">Please reach out to the admins for a test account.</p>
+                                </div>
+
+                                <form action="{{ url_for('auth.register') }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <!-- remove when registrations open again -->
+                                    <div style="display: none;">
+                                        <div class="mb-3">
+                                            <label for="register-username" class="form-label text-light">Username</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-dark text-light border-secondary">
+                                                    <i class="bi bi-person-plus"></i>
+                                                </span>
+                                                <input type="text" class="form-control bg-dark text-light border-secondary" id="register-username" name="username" placeholder="Choose a username" required>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="register-email" class="form-label text-light">Email</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-dark text-light border-secondary">
+                                                    <i class="bi bi-envelope"></i>
+                                                </span>
+                                                <input type="email" class="form-control bg-dark text-light border-secondary" id="register-email" name="email" placeholder="Enter your email" required>
+                                            </div>
+                                        </div>
+                                        <div class="mb-4">
+                                            <label for="register-password" class="form-label text-light">Password</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-dark text-light border-secondary">
+                                                    <i class="bi bi-lock"></i>
+                                                </span>
+                                                <input type="password" class="form-control bg-dark text-light border-secondary" id="register-password" name="password" placeholder="Create a password" required>
+                                            </div>
+                                        </div>
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-lg btn-secondary py-3" style="background-color: #863a20; border-color: #863a20;">
+                                                <i class="bi bi-person-plus me-2"></i>Create Account
+                                            </button>
+                                        </div>
+                                    </div> 
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6 d-flex flex-column justify-content-center p-5 right-side">
+                <!-- Right side with image or additional content -->
+                <div class="text-center mb-4">
+                    <h2 class="display-5 text-light">Begin Your Epic Journey</h2>
+                    <p class="lead text-light">Dive into immersive adventures powered by AI</p>
+                </div>
+                
+                <!-- Feature highlights -->
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card feature-card h-100">
+                            <div class="card-body p-4 text-center">
+                                <i class="bi bi-dice-6 feature-icon"></i>
+                                <h3 class="mt-3">D&D 5e Rules</h3>
+                                <p class="text-light">Play with authentic Dungeons & Dragons 5th Edition rules, managed by an intelligent AI Dungeon Master.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card feature-card h-100">
+                            <div class="card-body p-4 text-center">
+                                <i class="bi bi-robot feature-icon"></i>
+                                <h3 class="mt-3">AI Dungeon Master</h3>
+                                <p class="text-light">Experience dynamic storytelling with an AI that adapts to your choices and creates unique adventures.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card feature-card h-100">
+                            <div class="card-body p-4 text-center">
+                                <i class="bi bi-person-badge feature-icon"></i>
+                                <h3 class="mt-3">Custom Characters</h3>
+                                <p class="text-light">Create and customize your character with full support for races, classes, and backgrounds from D&D 5e.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="text-center text-light py-3">
+            <p>&copy; 2025 AI Dungeon Master - Fantasy RPG Adventure</p>
+        </footer>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check login form submission
+            const loginForm = document.querySelector('form[action="/auth/login"]');
+            
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(event) {
+                    // Prevent the default form submission temporarily
+                    event.preventDefault();
+                    
+                    const username = document.getElementById('login-username').value;
+                    const password = document.getElementById('login-password').value;
+                    
+                    console.log('Login form submitted for user:', username);
+                    
+                    // Now actually submit the form
+                    this.submit();
+                });
+            }
+        });
+        </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Check login form submission
+                const loginForm = document.querySelector('form[action="/auth/login"]');
+                
+                if (loginForm) {
+                    loginForm.addEventListener('submit', function(event) {
+                        // Prevent the default form submission temporarily
+                        event.preventDefault();
+                        
+                        const username = document.getElementById('login-username').value;
+                        const password = document.getElementById('login-password').value;
+                        
+                        console.log('Login form submitted for user:', username);
+                        
+                        // Add a timestamp to help correlate with server logs
+                        console.log('Form submission time:', new Date().toISOString());
+                        
+                        // Show a loading indicator (optional)
+                        const submitBtn = this.querySelector('button[type="submit"]');
+                        if (submitBtn) {
+                            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
+                            submitBtn.disabled = true;
+                        }
+                        
+                        // Now actually submit the form
+                        console.log('Submitting form...');
+                        this.submit();
+                        
+                        // Log after submission to see if we get here
+                        console.log('Form submitted, waiting for response...');
+                    });
+                }
+                
+                // Add event listener for page unload to see if navigation starts
+                window.addEventListener('beforeunload', function() {
+                    console.log('Page is being unloaded at:', new Date().toISOString());
+                });
+            });
+            </script>
+</body>
+</html>
