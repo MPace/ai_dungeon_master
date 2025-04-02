@@ -10,6 +10,7 @@ from flask import current_app
 from datetime import datetime, timedelta
 import hashlib
 from concurrent.futures import ThreadPoolExecutor
+from app.extensions import get_db
 
 # New MCP imports
 from app.mcp import get_orchestration_service
@@ -485,23 +486,18 @@ class AIService:
                 return {"success": False, "error": str(e), "memory_context": ""}
         
         try:
-            # Submit an asynchronous task to retrieve memories
-            from app.tasks import retrieve_memories_task
-            
-            # Start the task
-            task = retrieve_memories_task.delay(
-                current_message,
-                session_id,
-                character_id,
-                self.memory_token_budget
+            memory_context = self.memory_service.build_memory_context(
+                current_message=current_message,
+                session_id=session_id,
+                character_id=character_id,
+                max_tokens=self.memory_token_budget
             )
             
             # Return the task ID so the caller can check for results later
             return {
                 "success": True,
-                "task_id": task.id,
-                "async": True,  # Flag to indicate this is an async operation
-                "memory_context": ""  # Empty until retrieved
+                "async": False,
+                "memory_context": memory_context
             }
                 
         except Exception as e:
@@ -524,29 +520,60 @@ class AIService:
                 logger.error(f"Error initializing memory service: {e}")
                 return
         
+        # Calculate message importance
+        player_importance = self._calculate_importance(player_message)
+        ai_importance = self._calculate_importance(ai_response)
+        
         # Store player message
-        self.memory_service.store_memory_with_text(
+        player_result = self.memory_service.store_memory_with_text(
             content=player_message,
             memory_type='short_term',
             session_id=session_id,
             character_id=character_id,
             user_id=user_id,
-            importance=self._calculate_importance(player_message),
+            importance=player_importance,
             metadata={"sender": "player"},
-            async_mode=True  # Use async mode
+            async_mode=False  # Use synchronous mode for reliability
         )
         
         # Store AI response
-        self.memory_service.store_memory_with_text(
+        ai_result = self.memory_service.store_memory_with_text(
             content=ai_response,
             memory_type='short_term',
             session_id=session_id,
             character_id=character_id,
             user_id=user_id,
-            importance=self._calculate_importance(ai_response),
+            importance=ai_importance,
             metadata={"sender": "dm"},
-            async_mode=True  # Use async mode
+            async_mode=False  # Use synchronous mode for reliability
         )
+        
+        # Check if high-importance memory should be promoted to long-term
+        if player_importance >= 8 or ai_importance >= 8:
+            if player_importance >= 8 and player_result.get('success') and player_result.get('memory'):
+                # Promote player message to long-term memory
+                self.memory_service.promote_to_long_term(player_result['memory'].memory_id)
+                
+            if ai_importance >= 8 and ai_result.get('success') and ai_result.get('memory'):
+                # Promote AI response to long-term memory
+                self.memory_service.promote_to_long_term(ai_result['memory'].memory_id)
+        
+        # Check if summarization is needed (e.g., every 10 messages)
+        try:
+            db = get_db()
+            if db is not None:
+                session_data = db.sessions.find_one({'session_id': session_id})
+                if session_data and 'history' in session_data:
+                    # Check if message count is a multiple of 10
+                    if len(session_data['history']) % 10 == 0 and len(session_data['history']) > 0:
+                        # Trigger summarization
+                        from app.services.game_service import GameService
+                        from app.models.game_session import GameSession
+                        session_obj = GameSession.from_dict(session_data)
+                        GameService._update_session_summary_if_needed(session_obj)
+        except Exception as e:
+            logger.error(f"Error checking for summarization: {e}")
+        
     
     def _store_memory(self, content, memory_type, session_id, character_id, user_id, importance, metadata):
         """Store a memory with the memory service"""
@@ -685,10 +712,22 @@ class AIService:
             AIResponse: The AI-generated response
         """
         try:
-            # Retrieve memory context asynchronously
-            memory_result = self._retrieve_memory_context(
-                player_message, session_id, character_id
-            )
+            # Build memory context directly 
+            memory_context = ""
+            if self.memory_service is None:
+                try:
+                    from app.services.memory_service_enhanced import EnhancedMemoryService
+                    self.memory_service = EnhancedMemoryService()
+                except Exception as e:
+                    logger.error(f"Error initializing memory service: {e}")
+            
+            if self.memory_service:
+                memory_context = self.memory_service.build_memory_context(
+                    current_message=player_message,
+                    session_id=session_id,
+                    character_id=character_id,
+                    max_tokens=self.memory_token_budget
+                )
             
             # Prepare request data for context building
             request_data = {
@@ -697,26 +736,10 @@ class AIService:
                 'character_id': character_id,
                 'message': player_message,
                 'game_state': game_state,
-                'history': conversation_history
+                'history': conversation_history,
+                'memory_context': memory_context
             }
-            
-            # Check if memory retrieval is async
-            if memory_result.get("success", False) and memory_result.get("async", False):
-                # Wait for memory retrieval task to complete (max 10 seconds)
-                from celery.result import AsyncResult
-                task_id = memory_result.get("task_id")
-                task = AsyncResult(task_id)
-                
-                try:
-                    # Wait for a result with timeout
-                    task_result = task.get(timeout=10)
-                    if task_result and task_result.get("success", False):
-                        # Add memory context to request data
-                        request_data['memory_context'] = task_result.get("memory_context", "")
-                        logger.info("Retrieved memory context from async task for MCP")
-                except Exception as task_e:
-                    logger.warning(f"Timeout or error waiting for memory task in MCP: {task_e}")
-                    # Proceed without memory context
+        
             
             # Build context for AI message
             context = self.context_orchestrator.build_context('ai_message', request_data)

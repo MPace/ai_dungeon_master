@@ -158,82 +158,155 @@ class EnhancedMemoryService:
             logger.error("Embedding service not available for context building")
             return ""
         
-        # Generate embedding for current message
-        query_embedding = embedding_service.generate_embedding(current_message)
+        try:
+            # Generate embedding for current message
+            query_embedding = embedding_service.generate_embedding(current_message)
+
+            # Get session summary if available
+            summary = ""
+            db = get_db()
+            if db is not None:
+                session_data = db.sessions.find_one({'session_id': session_id})
+                if session_data and 'session_summary' in session_data:
+                    summary - session_data['session_summary']
+
+            # Get any pinned memories
+            pinned_memories = []
+            if db is not None:
+                session_data = db.sessions.find_one({'session_id': session_id})
+                if session_data and 'pinned_memories' in session_data:
+                    pinned_memory_refs = session_data['pinned_memories']
+                    for ref in pinned_memory_refs:
+                        if 'memory_id' in ref:
+                            memory = db.memory_vectors.find_one({'memory_id': ref['memory_id']})
+                            if memory:
+                                pinned_memories.append(memory)
+
+            # Retrieve relevant memories
+            memories = self.retrieve_memories(
+                query=current_message,
+                session_id=session_id,
+                character_id=character_id,
+                memory_types=['short_term', 'long_term', 'semantic'],
+                limit_per_type=5
+            )
         
-        # Retrieve relevant memories
-        memories = self.retrieve_memories(
-            query=current_message,
-            session_id=session_id,
-            character_id=character_id,
-            memory_types=['short_term', 'long_term', 'semantic'],
-            limit_per_type=5
-        )
-        
-        if not memories['success']:
-            return ""
-        
-        combined_memories = memories['combined_results']
-        
-        # Sort memories by relevance
-        if recency_boost:
-            # Calculate scores with recency boost
-            for memory in combined_memories:
-                if 'created_at' in memory:
-                    created_at = memory['created_at']
-                    if isinstance(created_at, str):
-                        try:
-                            created_at = datetime.fromisoformat(created_at)
-                        except ValueError:
-                            created_at = datetime.utcnow() - timedelta(days=7)  # Default to a week ago
-                    
-                    recency_score = ShortTermMemoryInterface.calculate_recency_score(created_at)
-                    similarity_score = memory.get('similarity', 0.5)
-                    importance_score = min(1.0, memory.get('importance', 5) / 10.0)
-                    
-                    memory['combined_score'] = ShortTermMemoryInterface.combine_relevance_scores(
-                        similarity_score, recency_score, importance_score
-                    )
-                else:
-                    memory['combined_score'] = memory.get('similarity', 0.5)
+            if not memories['success']:
+                return ""
             
-            # Sort by combined score
-            combined_memories.sort(key=lambda x: x.get('combined_score', 0), reverse=True)
-        
-        # Build context
-        context_parts = []
-        token_count = 0
-        
-        # Function to estimate tokens (naive implementation)
-        def estimate_tokens(text):
-            return len(text.split())
-        
-        for memory in combined_memories:
-            memory_text = memory.get('content', '')
-            memory_type = memory.get('memory_type', 'unknown')
+            combined_memories = memories['combined_results']
             
-            if memory_type == 'short_term':
-                prefix = "Recent memory: "
-            elif memory_type == 'long_term':
-                prefix = "Important memory: "
-            elif memory_type == 'semantic':
-                prefix = "Known fact: "
-            else:
-                prefix = "Memory: "
+            # Add pinned memories to combined memories, avoid duplicates by checking memory_id
+
+            existing_ids = {memory.get('memory_id') for memory in combined_memories if 'memory_id' in memory} 
+            for memory in pinned_memories:
+                if memory.get('memory_id') not in existing_ids:
+                    combined_memories.append(memory)
+                    existing_ids(memory.get('memory_id'))
+
+            # Sort memories by relevance
+            if recency_boost:
+                # Calculate scores with recency boost
+                for memory in combined_memories:
+                    if 'created_at' in memory:
+                        created_at = memory['created_at']
+                        if isinstance(created_at, str):
+                            try:
+                                created_at = datetime.fromisoformat(created_at)
+                            except ValueError:
+                                created_at = datetime.utcnow() - timedelta(days=7)  # Default to a week ago
+                        
+                        recency_score = ShortTermMemoryInterface.calculate_recency_score(created_at)
+                        similarity_score = memory.get('similarity', 0.5)
+                        importance_score = min(1.0, memory.get('importance', 5) / 10.0)
+                        
+                        memory['combined_score'] = ShortTermMemoryInterface.combine_relevance_scores(
+                            similarity_score, recency_score, importance_score
+                        )
+                    else:
+                        memory['combined_score'] = memory.get('similarity', 0.5)
                 
-            memory_entry = f"{prefix}{memory_text}"
-            memory_tokens = estimate_tokens(memory_entry)
+                # Sort by combined score
+                combined_memories.sort(key=lambda x: x.get('combined_score', 0), reverse=True)
             
-            if token_count + memory_tokens <= max_tokens:
-                context_parts.append(memory_entry)
-                token_count += memory_tokens
-            else:
-                break
+            # Build context
+            context_parts = []
+            token_count = 0
+
+            # Add summary first if available
+            summary_tokens = self._estimate_tokens(summary)
+            summary_max = max_tokens // 4
+
+            if summary and summary_tokens <= summary_max:
+                context_parts.append("## CAMPAIGN SUMMARY:\n" + summary)
+                token_count += summary_tokens
         
-        if context_parts:
-            return "## RELEVANT MEMORIES:\n" + "\n\n".join(context_parts)
-        else:
+            # Function to estimate tokens (naive implementation)
+            def estimate_tokens(text):
+                return len(text.split())
+        
+            # Add pinned memories with higher priority
+            for memory in combined_memories:
+                if token_count >= max_tokens:
+                    break
+
+                memory_text = memory.get('content', '')
+                prefix = "PINNED MEMORY: "
+                memory_entry = f"{prefix}{memory_text}"
+                memory_tokens = estimate_tokens(memory_entry)
+
+                if token_count + memory_tokens <= max_tokens:
+                    context_parts.append(memory_entry)
+                    token_count += memory_tokens
+
+            # Add other memories based on relevance
+            memory_header_added = False
+            for memory in combined_memories:
+                if memory.get('memory_id') in [p.get('memory_id') for p in pinned_memories]:
+                    continue
+
+                memory_text = memory.get('content', '')
+                memory_type = memory.get('memory_type', 'unknown')
+
+                if memory_type == 'short_term':
+                    prefix = "Recent memory: "
+                elif memory_type == 'long_term':
+                    prefix = "Important memory: "
+                elif memory_type == 'semantic':
+                    prefix = "Known fact: "
+                else:
+                    prefix = "Memory: "
+
+                memory_entry = f"{prefix}{memory_text}"
+                memory_tokens = estimate_tokens(memory_entry)
+            
+                if token_count + memory_tokens <= max_tokens:
+                    if not memory_header_added:
+                        context_parts.append("## RELEVANT MEMORIES:")
+                        memory_header_added = True
+                        token_count += 3
+                    
+                    context_parts.append(memory_entry)
+                    token_count += memory_tokens
+                else:
+                    break
+        
+            if context_parts:
+                return "## RELEVANT MEMORIES:\n" + "\n\n".join(context_parts)
+            else:
+                return ""
+            
+        except Exception as e:
+            logger.error(f"Error building memory context: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return ""
+        
+    def _estimate_tokens(self, text):
+        if not text:
+            return 0
+        
+        return len(text) // 4
     
     def promote_to_long_term(self, memory_id: str) -> bool:
         """Promote a short-term memory to long-term"""

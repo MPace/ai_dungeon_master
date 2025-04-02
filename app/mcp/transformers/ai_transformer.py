@@ -23,12 +23,6 @@ class AIPromptTransformer(IContextTransformer):
     def transform(self, context: BaseContext) -> BaseContext:
         """
         Transform the provided context into AI prompt context
-        
-        Args:
-            context: The context to transform
-            
-        Returns:
-            AIPromptContext: The transformed context
         """
         logger.info(f"Transforming context of type {type(context).__name__} for AI prompting")
         
@@ -57,16 +51,25 @@ class AIPromptTransformer(IContextTransformer):
         elif isinstance(context, MemoryContext):
             memory_context_str = self._format_memory_context(context)
         
+        # Check for memory_context in request_data if provided
+        if hasattr(context, 'request_data') and context.request_data:
+            if 'memory_context' in context.request_data:
+                memory_context_str = context.request_data['memory_context']
+        
         # Generate system prompt based on game state
         system_prompt = self._create_system_prompt(game_state)
         
         # Get player message if available
         if hasattr(context, 'player_message'):
             player_message = context.player_message
+        elif hasattr(context, 'request_data') and context.request_data and 'message' in context.request_data:
+            player_message = context.request_data['message']
             
         # Get conversation history if available
         if hasattr(context, 'history'):
             conversation_history = self._format_conversation_history(context.history)
+        elif hasattr(context, 'request_data') and context.request_data and 'history' in context.request_data:
+            conversation_history = self._format_conversation_history(context.request_data['history'])
         
         # Create AI prompt context
         ai_context = AIPromptContext(

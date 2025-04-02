@@ -789,7 +789,7 @@ class GameService:
     @staticmethod
     def _generate_session_summary(session):
         """
-        Generate a summary of the gaming session using the BART summarization model.
+        Generate a summary of the gaming session using the summarization service.
         
         Args:
             session (GameSession): Game session object
@@ -812,30 +812,58 @@ class GameService:
             message_texts = []
             for msg in recent_messages:
                 if isinstance(msg, dict):
-                    message_texts.append(f"{msg.get('sender', 'Unknown')}: {msg.get('content', '')}")
+                    sender = msg.get('sender', 'Unknown')
+                    content = msg.get('message', '')
+                    if sender and content:
+                        message_texts.append(f"{sender}: {content}")
                 else:
                     message_texts.append(str(msg))
             
             # Join messages into a single text
             full_text = " ".join(message_texts)
             
-            # Call the BART summarization service
+            # Call the summarization service
             summary = summarization_service.summarize_text(
                 text=full_text,
                 max_length=150,
-                min_length=30    # Adjust based on your requirements
+                min_length=30  # Adjust based on your requirements
             )
             
             # Update the session summary
             session.session_summary = summary
+            
+            # Store summary as a memory for retrieval
+            try:
+                from app.services.memory_service_enhanced import EnhancedMemoryService
+                memory_service = EnhancedMemoryService()
+                
+                # Store as a special summary memory
+                memory_service.store_memory_with_text(
+                    content=summary,
+                    memory_type='summary',
+                    session_id=session.session_id,
+                    character_id=session.character_id,
+                    user_id=session.user_id,
+                    importance=10,  # Maximum importance
+                    metadata={
+                        'type': 'session_summary',
+                        'history_range': f"0-{len(session.history)}"
+                    }
+                )
+            except Exception as memory_e:
+                logger.error(f"Error storing summary memory: {memory_e}")
+            
             return summary
             
         except Exception as e:
             # Log the error but provide a fallback summary
-            logging.error(f"Failed to generate summary for session {session.session_id}: {str(e)}")
+            logger.error(f"Failed to generate summary for session {session.session_id}: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            
             session.session_summary = f"Gaming session with {len(session.history)} interactions"
             return session.session_summary
-        
+            
     @staticmethod
     def _calculate_message_importance(message):
         """
