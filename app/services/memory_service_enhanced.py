@@ -37,9 +37,8 @@ class EnhancedMemoryService:
             # Submit storage task
             from app.tasks import store_memory_task
             storage_task = store_memory_task.delay(
-                session_id, content, None, memory_type, 
+                session_id, content, None, task_id, memory_type, 
                 character_id, user_id, importance, metadata,
-                task_id  # Pass embedding task ID
             )
             
             return {'success': True, 'task_id': storage_task.id}
