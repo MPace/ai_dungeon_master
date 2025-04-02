@@ -228,7 +228,8 @@ class ChainOrchestrator:
                 character_id=character_data.get('character_id'),
                 user_id=user_id,
                 memory_key="history",
-                input_key="input"
+                input_key="input",
+                context_key="memory_context"
             )
             
             # Prepare inputs for the chain
@@ -238,8 +239,6 @@ class ChainOrchestrator:
                 "character_class": character_data.get('class', 'Unknown'),
                 "character_background": character_data.get('background', 'Unknown'),
                 "input": message,
-                "history": "",  # Initial history is empty, will be populated from memory
-                "memory_context": ""  # Initial memory context is empty, will be populated from memory
             }
             
             # Select the appropriate chain based on game state

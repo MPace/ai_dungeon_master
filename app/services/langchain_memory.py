@@ -13,17 +13,18 @@ class VectorDBMemory(BaseChatMemory):
     """Memory class that uses Vector DB for memory storage and retrieval"""
     
     def __init__(self, memory_service=None, session_id=None, character_id=None, 
-                 user_id=None, memory_key="history", input_key="input"):
+                 user_id=None, memory_key="history", input_key="input", context_key="memory_context"):
         """Initialize memory with vector DB integration"""
         super().__init__(memory_key=memory_key, input_key=input_key)
         self.memory_service = memory_service or EnhancedMemoryService()
         self.session_id = session_id
         self.character_id = character_id
         self.user_id = user_id
+        self.context_key = context_key  # Add new parameter for memory context
     
     def load_memory_variables(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Load memory variables including relevant memories"""
-        # Get standard variables from parent
+        # Get standard variables from parent (chat history)
         variables = super().load_memory_variables(inputs)
         
         # Retrieve relevant memories based on input
@@ -36,11 +37,11 @@ class VectorDBMemory(BaseChatMemory):
                 character_id=self.character_id
             )
             
-            # Add memory_context to variables
-            variables["memory_context"] = memory_context or ""
-            logger.info(f"Added memory context: {memory_context[:100]}...")
+            # Add memory_context as a separate variable
+            variables[self.context_key] = memory_context or ""
+            logger.info(f"Added memory context ({len(memory_context)} chars)")
         else:
-            variables["memory_context"] = ""
+            variables[self.context_key] = ""
         
         return variables
     

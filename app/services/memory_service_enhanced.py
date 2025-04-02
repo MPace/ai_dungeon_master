@@ -167,6 +167,8 @@ class EnhancedMemoryService:
         try:
             # Generate embedding for current message
             query_embedding = embedding_service.generate_embedding(current_message)
+            logger.info(f"Generated query embedding with {len(query_embedding)} dimensions")
+
 
             # Get session summary if available
             summary = ""
@@ -297,11 +299,10 @@ class EnhancedMemoryService:
                 else:
                     break
         
-            if context_parts:
-                return "## RELEVANT MEMORIES:\n" + "\n\n".join(context_parts)
-            else:
-                return ""
-            
+            context_text = "\n\n".join(context_parts)
+            logger.info(f"Returning memory context with {len(context_parts)} sections, ~{token_count} tokens")
+            return context_text
+
         except Exception as e:
             logger.error(f"Error building memory context: {e}")
             import traceback
