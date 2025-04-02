@@ -242,26 +242,32 @@ class EnhancedMemoryService:
             token_count = 0
 
             # Add summary first if available
-            summary_tokens = self._estimate_tokens(summary)
-            summary_max = max_tokens // 4
+            if summary:
+                summary_tokens = self._estimate_tokens(summary)
+                summary_max = max_tokens // 4
 
-            if summary and summary_tokens <= summary_max:
-                context_parts.append("## CAMPAIGN SUMMARY:\n" + summary)
-                token_count += summary_tokens
-        
-            # Function to estimate tokens (naive implementation)
-            def estimate_tokens(text):
-                return len(text.split())
-        
+                if summary_tokens <= summary_max:
+                    context_parts.append("## CAMPAIGN SUMMARY:\n" + summary)
+                    token_count += summary_tokens
+
             # Add pinned memories with higher priority
+            pinned_memory_ids = {memory.get('memory_id') for memory in pinned_memories}
+            pinned_header_added = False 
+        
             for memory in combined_memories:
                 if token_count >= max_tokens:
                     break
 
-                memory_text = memory.get('content', '')
-                prefix = "PINNED MEMORY: "
-                memory_entry = f"{prefix}{memory_text}"
-                memory_tokens = estimate_tokens(memory_entry)
+                if memory.get('memory_id') in pinned_memory_ids:
+                    memory_text = memory.get('content', '')
+                
+                    if not pinned_header_added:
+                        context_parts.append("## PINNED MEMORIES:")
+                        pinned_header_added = True
+                        token_count += 3
+
+                memory_entry = f"PINNED: {memory_text}"
+                memory_tokens = self._estimate_tokens(memory_entry)
 
                 if token_count + memory_tokens <= max_tokens:
                     context_parts.append(memory_entry)
@@ -270,7 +276,11 @@ class EnhancedMemoryService:
             # Add other memories based on relevance
             memory_header_added = False
             for memory in combined_memories:
-                if memory.get('memory_id') in [p.get('memory_id') for p in pinned_memories]:
+                if token_count >= max_tokens:
+                    break
+                    
+                # Skip pinned memories as they're already added
+                if memory.get('memory_id') in pinned_memory_ids:
                     continue
 
                 memory_text = memory.get('content', '')
@@ -286,7 +296,7 @@ class EnhancedMemoryService:
                     prefix = "Memory: "
 
                 memory_entry = f"{prefix}{memory_text}"
-                memory_tokens = estimate_tokens(memory_entry)
+                memory_tokens = self._estimate_tokens(memory_entry)
             
                 if token_count + memory_tokens <= max_tokens:
                     if not memory_header_added:

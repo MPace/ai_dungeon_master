@@ -88,9 +88,6 @@ class ChainOrchestrator:
             template=template
         )
         
-        # Use the VectorDBMemory instead of ConversationBufferMemory
-        from app.services.langchain_memory import VectorDBMemory
-        
         self.intro_chain = LLMChain(
             llm=self.llm,
             prompt=prompt,
@@ -123,9 +120,6 @@ class ChainOrchestrator:
                             "character_background", "memory_context", "history", "input"],
             template=template
         )
-        
-        # Use the VectorDBMemory
-        from app.services.langchain_memory import VectorDBMemory
         
         self.combat_chain = LLMChain(
             llm=self.llm,
@@ -160,9 +154,6 @@ class ChainOrchestrator:
             template=template
         )
         
-        # Use the VectorDBMemory
-        from app.services.langchain_memory import VectorDBMemory
-        
         self.social_chain = LLMChain(
             llm=self.llm,
             prompt=prompt,
@@ -196,9 +187,6 @@ class ChainOrchestrator:
             template=template
         )
         
-        # Use the VectorDBMemory
-        from app.services.langchain_memory import VectorDBMemory
-        
         self.exploration_chain = LLMChain(
             llm=self.llm,
             prompt=prompt,
@@ -224,6 +212,7 @@ class ChainOrchestrator:
             from app.services.langchain_memory import VectorDBMemory
             
             memory = VectorDBMemory(
+                memory_service=self.memory_service,
                 session_id=session_id,
                 character_id=character_data.get('character_id'),
                 user_id=user_id,
@@ -253,6 +242,10 @@ class ChainOrchestrator:
             
             # Set the memory for the chain
             chain.memory = memory
+            logger.info(f"Using chain for game state: {game_state} with VectorDBMemory")
+
+            if hasattr(memory, 'memory_service'):
+                logger.info(f"Memory service used: {memory.memory_service.__class__.__name__}")
             
             # Run the chain
             response = chain.run(**inputs)

@@ -142,6 +142,7 @@ class GameService:
         # Import here to avoid circular import
         from app.services.ai_service import AIService
         from app.services.memory_service_enhanced import EnhancedMemoryService
+        from app.services.chain_orchestrator import ChainOrchestrator
 
         memory_service = EnhancedMemoryService()
         ai_service = AIService()
@@ -197,7 +198,10 @@ class GameService:
                 session = session_result['session']
                 logger.info(f"Created new session: {session.session_id}")
             
-            # Step 2: Get character data
+            # Step 2: Initialize Chain Orchestrator
+            #orchestrator = ChainOrchestrator()
+
+            # Step 3: Get character data
             character_result = CharacterService.get_character(session.character_id, user_id)
             if not character_result or not character_result.get('success', False):
                 error_msg = "Failed to retrieve character data"
@@ -206,10 +210,10 @@ class GameService:
                 
             character = character_result.get('character')
             
-            # Step 3: Add player message to session history
+            # Step 4: Add player message to session history
             session.add_message('player', message)
             
-            # Step 4: Store player message in memory system
+            # Step 5: Store player message in memory system
             memory_service.store_memory_with_text(
                 content=message,
                 memory_type='short_term',
@@ -220,10 +224,10 @@ class GameService:
                 metadata={'sender': 'player'}
             )
             
-            # Step 5: Process message for entities
+            # Step 6: Process message for entities
             GameService._process_message_for_entities(session, message)
             
-            # Step 6: Generate AI response
+            # Step 7: Generate AI response
             ai_response = ai_service.generate_response(
                 message, 
                 session.history, 
@@ -231,13 +235,13 @@ class GameService:
                 session.game_state
             )
             
-            # Step 7: Add AI response to session history
+            # Step 8: Add AI response to session history
             session.add_message('dm', ai_response.response_text)
             
-            # Step 8: Process AI response for entities
+            # Step 9: Process AI response for entities
             GameService._process_message_for_entities(session, ai_response.response_text, is_dm=True)
             
-            # Step 9: Store AI response in memory system
+            # Step 10: Store AI response in memory system
             memory_service.store_memory_with_text(
                 content=ai_response.response_text,
                 memory_type='short_term',
@@ -248,14 +252,14 @@ class GameService:
                 metadata={'sender': 'dm'}
             )
             
-            # Step 10: Update game state based on content
+            # Step 11: Update game state based on content
             GameService._update_game_state(session, message, ai_response.response_text)
             
-            # Step 11: Update session summary if needed
+            # Step 12: Update session summary if needed
             if not is_new_session:
                 GameService._update_session_summary_if_needed(session)
             
-            # Step 12: Save session to database
+            # Step 13: Save session to database
             db = get_db()
             if db is None:
                 return {'success': False, 'error': 'Database connection error'}
@@ -269,13 +273,13 @@ class GameService:
                 logger.error(f"Failed to update session: {session.session_id}")
                 return {'success': False, 'error': 'Failed to update session'}
             
-            # Step 13: Update character's last_played timestamp
+            # Step 14: Update character's last_played timestamp
             db.characters.update_one(
                 {'character_id': session.character_id},
                 {'$set': {'last_played': datetime.utcnow()}}
             )
             
-            # Step 14: Return successful response
+            # Step 15: Return successful response
             return {
                 'success': True, 
                 'response': ai_response.response_text,

@@ -31,10 +31,12 @@ class VectorDBMemory(BaseChatMemory):
         query = inputs.get(self.input_key, "")
         
         if query and self.session_id:
+            logger.info(f"Building memory context for query: {query[:50]}...")
             memory_context = self.memory_service.build_memory_context(
                 current_message=query,
                 session_id=self.session_id,
-                character_id=self.character_id
+                character_id=self.character_id,
+                max_tokens=1000
             )
             
             # Add memory_context as a separate variable
