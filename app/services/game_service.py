@@ -827,14 +827,19 @@ class GameService:
             full_text = " ".join(message_texts)
             
             # Call the summarization service
+            logger.debug(f"About to call summarize_text with text: {full_text[:100]}...")
             summary = summarization_service.summarize_text(
                 text=full_text,
                 max_length=150,
                 min_length=30  # Adjust based on your requirements
             )
+            logger.debug(f"Received summary: {summary}")
+
             
             # Update the session summary
             session.session_summary = summary
+            logger.debug(f"Updated session summary: {summary}")
+
             
             # Store summary as a memory for retrieval
             try:

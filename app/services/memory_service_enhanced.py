@@ -285,9 +285,12 @@ class EnhancedMemoryService:
 
                 memory_text = memory.get('content', '')
                 memory_type = memory.get('memory_type', 'unknown')
+                metadata = memory.get('metadata', {})
 
-                if memory_type == 'short_term':
-                    prefix = "Recent memory: "
+                if memory_type == 'long_term' and metadata.get('is_summary') == True:
+                    prefix = "Session Summary: "
+                elif memory_type == 'short_term':
+                    prefix = "Recent Memory: "
                 elif memory_type == 'long_term':
                     prefix = "Important memory: "
                 elif memory_type == 'semantic':

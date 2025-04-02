@@ -215,13 +215,18 @@ class MemoryService:
             session_id=session_id,
             content=summary_content,
             embedding=summary_embedding,
-            memory_type='summary',
+            memory_type='long_term',
             character_id=character_id,
             user_id=user_id,
             importance=8,  # Higher importance for summaries
-            metadata={'summarized_count': len(memory_ids)},
+            metadata={
+                'summarized_count': len(memory_ids),
+                'is_summary': True,
+                'summary_type': 'session'
+            },
             summary_of=memory_ids
         )
+    
     @staticmethod
     def store_memory_with_text(session_id, content, memory_type='short_term',
                             character_id=None, user_id=None, importance=5, metadata=None):
