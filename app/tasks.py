@@ -111,8 +111,8 @@ def generate_embedding_task(self, text):
         raise
 
 @celery.task(name='tasks.store_memory_task', bind=True)
-def store_memory_task(self, session_id, content, embedding_task_id=None, memory_type='short_term', 
-                     character_id=None, user_id=None, importance=5, metadata=None):
+def store_memory_task(self, session_id, content, embedding, task_id, memory_type, 
+                     character_id, user_id, importance, metadata):
     """Store a memory with embedding asynchronously"""
     try:
         app = get_flask_app()
@@ -121,10 +121,10 @@ def store_memory_task(self, session_id, content, embedding_task_id=None, memory_
             from celery.result import AsyncResult
             
             # Wait for embedding result if a task ID was provided
-            if embedding_task_id:
-                embedding_result = AsyncResult(embedding_task_id)
+            if embedding is None and task_id is not None:
+                embedding_result = AsyncResult(task_id)
                 embedding = embedding_result.get(timeout=60)  # Wait up to 60s
-            elif not embedding:
+            elif embedding is None:
                 # Generate embedding here if no task ID
                 from app.services.embedding_service import EmbeddingService
                 embedding_service = EmbeddingService()

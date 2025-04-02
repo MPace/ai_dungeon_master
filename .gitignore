@@ -2,7 +2,7 @@
 .env
 app.log
 secret_key.txt
-run_celery.sh
+scritpts/run_celery.sh
 
 # Python virtual environment
 venv/
