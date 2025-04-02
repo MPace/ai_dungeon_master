@@ -2,6 +2,9 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Union
+import logging
+
+logger = logging.getLogger(__name__)
 
 class BaseMemoryInterface(ABC):
     """Base interface for all memory types with common functionality"""
@@ -80,6 +83,8 @@ class ShortTermMemoryInterface(BaseMemoryInterface):
             min_similarity=min_similarity
         )
         
+        logger.info(f"Performing vector similarity search with embedding dimension {len(query_embedding)}")
+
         if result['success']:
             return result['memories']
         return []

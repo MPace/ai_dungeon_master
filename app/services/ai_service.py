@@ -464,14 +464,6 @@ class AIService:
     def _retrieve_memory_context(self, current_message, session_id, character_id):
         """
         Retrieve relevant memories for the current context
-        
-        Args:
-            current_message (str): The current player message
-            session_id (str): The session ID
-            character_id (str): The character ID
-            
-        Returns:
-            dict: Contains either the memory context as text or a task ID to retrieve it later
         """
         if not session_id:
             return {"success": False, "error": "No session ID provided", "memory_context": ""}
@@ -486,6 +478,26 @@ class AIService:
                 return {"success": False, "error": str(e), "memory_context": ""}
         
         try:
+            # Get embedding service
+            from app.extensions import get_embedding_service
+            embedding_service = get_embedding_service()
+            if embedding_service is None:
+                logger.error("Embedding service not available")
+                return {"success": False, "error": "Embedding service not available", "memory_context": ""}
+            
+            # Generate embedding for query
+            query_embedding = embedding_service.generate_embedding(current_message)
+            
+            # Direct vector retrieval - use embedding services directly
+            from app.extensions import get_db
+            db = get_db()
+            if db is None:
+                return {"success": False, "error": "Database connection failed", "memory_context": ""}
+                
+            # Log vector retrieval attempt
+            logger.info(f"Retrieving memories via vector similarity for session {session_id}")
+            
+            # Explicitly use vector search
             memory_context = self.memory_service.build_memory_context(
                 current_message=current_message,
                 session_id=session_id,
@@ -493,7 +505,8 @@ class AIService:
                 max_tokens=self.memory_token_budget
             )
             
-            # Return the task ID so the caller can check for results later
+            logger.info(f"Retrieved memory context: {memory_context[:100]}...")
+            
             return {
                 "success": True,
                 "async": False,

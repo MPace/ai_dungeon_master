@@ -26,7 +26,10 @@ class ChainOrchestrator:
         self.api_key = api_key
         self.model_name = model_name
         self.llm = None
-        self.memory = ConversationBufferMemory(return_messages=True)
+        
+        # Initialize memory service
+        from app.services.memory_service_enhanced import EnhancedMemoryService
+        self.memory_service = EnhancedMemoryService()
         
         # Initialize different chains for different game states
         self.intro_chain = None
@@ -36,7 +39,7 @@ class ChainOrchestrator:
         
         # Initialize the chains
         self._initialize_chains()
-    
+
     def _initialize_chains(self):
         """Initialize all the chains with appropriate templates"""
         try:
@@ -57,7 +60,7 @@ class ChainOrchestrator:
         except Exception as e:
             logger.error(f"Error initializing chains: {e}")
             raise
-    
+
     def _init_intro_chain(self):
         """Initialize the intro chain"""
         template = """
@@ -69,8 +72,10 @@ class ChainOrchestrator:
         Class: {character_class}
         Background: {character_background}
         
+        {memory_context}
+        
         Previous conversation:
-        {chat_history}
+        {history}
         
         User message: {input}
         
@@ -79,16 +84,19 @@ class ChainOrchestrator:
         
         prompt = PromptTemplate(
             input_variables=["character_name", "character_race", "character_class", 
-                             "character_background", "chat_history", "input"],
+                            "character_background", "memory_context", "history", "input"],
             template=template
         )
+        
+        # Use the VectorDBMemory instead of ConversationBufferMemory
+        from app.services.langchain_memory import VectorDBMemory
         
         self.intro_chain = LLMChain(
             llm=self.llm,
             prompt=prompt,
-            memory=self.memory
+            verbose=True
         )
-    
+
     def _init_combat_chain(self):
         """Initialize the combat chain"""
         template = """
@@ -100,8 +108,10 @@ class ChainOrchestrator:
         Class: {character_class}
         Background: {character_background}
         
+        {memory_context}
+        
         Previous conversation:
-        {chat_history}
+        {history}
         
         User message: {input}
         
@@ -110,16 +120,19 @@ class ChainOrchestrator:
         
         prompt = PromptTemplate(
             input_variables=["character_name", "character_race", "character_class", 
-                             "character_background", "chat_history", "input"],
+                            "character_background", "memory_context", "history", "input"],
             template=template
         )
+        
+        # Use the VectorDBMemory
+        from app.services.langchain_memory import VectorDBMemory
         
         self.combat_chain = LLMChain(
             llm=self.llm,
             prompt=prompt,
-            memory=self.memory
+            verbose=True
         )
-    
+
     def _init_social_chain(self):
         """Initialize the social chain"""
         template = """
@@ -131,8 +144,10 @@ class ChainOrchestrator:
         Class: {character_class}
         Background: {character_background}
         
+        {memory_context}
+        
         Previous conversation:
-        {chat_history}
+        {history}
         
         User message: {input}
         
@@ -141,16 +156,19 @@ class ChainOrchestrator:
         
         prompt = PromptTemplate(
             input_variables=["character_name", "character_race", "character_class", 
-                             "character_background", "chat_history", "input"],
+                            "character_background", "memory_context", "history", "input"],
             template=template
         )
+        
+        # Use the VectorDBMemory
+        from app.services.langchain_memory import VectorDBMemory
         
         self.social_chain = LLMChain(
             llm=self.llm,
             prompt=prompt,
-            memory=self.memory
+            verbose=True
         )
-    
+
     def _init_exploration_chain(self):
         """Initialize the exploration chain"""
         template = """
@@ -162,8 +180,10 @@ class ChainOrchestrator:
         Class: {character_class}
         Background: {character_background}
         
+        {memory_context}
+        
         Previous conversation:
-        {chat_history}
+        {history}
         
         User message: {input}
         
@@ -172,17 +192,20 @@ class ChainOrchestrator:
         
         prompt = PromptTemplate(
             input_variables=["character_name", "character_race", "character_class", 
-                             "character_background", "chat_history", "input"],
+                            "character_background", "memory_context", "history", "input"],
             template=template
         )
+        
+        # Use the VectorDBMemory
+        from app.services.langchain_memory import VectorDBMemory
         
         self.exploration_chain = LLMChain(
             llm=self.llm,
             prompt=prompt,
-            memory=self.memory
+            verbose=True
         )
     
-    def process_message(self, message, character_data, game_state="intro", session_history=None):
+    def process_message(self, message, character_data, game_state="intro", session_id=None, user_id=None):
         """
         Process a message using the appropriate chain based on the game state
         
@@ -190,23 +213,23 @@ class ChainOrchestrator:
             message (str): The user's message
             character_data (dict): Character data
             game_state (str): Current game state
-            session_history (list, optional): Session history
+            session_id (str): The session ID
+            user_id (str): The user ID
             
         Returns:
             str: The response from the AI
         """
         try:
-            # Update memory if session history is provided
-            if session_history:
-                # Clear existing memory to avoid duplication
-                self.memory.clear()
-                
-                # Add session history to memory
-                for entry in session_history:
-                    if entry['sender'] == 'player':
-                        self.memory.chat_memory.add_user_message(entry['message'])
-                    else:
-                        self.memory.chat_memory.add_ai_message(entry['message'])
+            # Create memory for this session
+            from app.services.langchain_memory import VectorDBMemory
+            
+            memory = VectorDBMemory(
+                session_id=session_id,
+                character_id=character_data.get('character_id'),
+                user_id=user_id,
+                memory_key="history",
+                input_key="input"
+            )
             
             # Prepare inputs for the chain
             inputs = {
@@ -214,7 +237,9 @@ class ChainOrchestrator:
                 "character_race": character_data.get('race', 'Unknown'),
                 "character_class": character_data.get('class', 'Unknown'),
                 "character_background": character_data.get('background', 'Unknown'),
-                "input": message
+                "input": message,
+                "history": "",  # Initial history is empty, will be populated from memory
+                "memory_context": ""  # Initial memory context is empty, will be populated from memory
             }
             
             # Select the appropriate chain based on game state
@@ -227,6 +252,9 @@ class ChainOrchestrator:
             else:  # Default to intro chain
                 chain = self.intro_chain
             
+            # Set the memory for the chain
+            chain.memory = memory
+            
             # Run the chain
             response = chain.run(**inputs)
             
@@ -234,9 +262,7 @@ class ChainOrchestrator:
             
         except Exception as e:
             logger.error(f"Error processing message with chain: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             # Provide a fallback response
             return "The Dungeon Master seems momentarily distracted. Please try again."
-    
-    def reset_memory(self):
-        """Reset the memory to clear conversation history"""
-        self.memory.clear()

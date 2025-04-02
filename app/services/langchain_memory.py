@@ -4,12 +4,12 @@ Custom Langchain Memory Classes
 """
 import logging
 from typing import Dict, Any, List, Optional
-from langchain.memory import ConversationBufferMemory
+from langchain.memory import BaseChatMemory
 from app.services.memory_service_enhanced import EnhancedMemoryService
 
 logger = logging.getLogger(__name__)
 
-class VectorDBMemory(ConversationBufferMemory):
+class VectorDBMemory(BaseChatMemory):
     """Memory class that uses Vector DB for memory storage and retrieval"""
     
     def __init__(self, memory_service=None, session_id=None, character_id=None, 
@@ -38,6 +38,7 @@ class VectorDBMemory(ConversationBufferMemory):
             
             # Add memory_context to variables
             variables["memory_context"] = memory_context or ""
+            logger.info(f"Added memory context: {memory_context[:100]}...")
         else:
             variables["memory_context"] = ""
         

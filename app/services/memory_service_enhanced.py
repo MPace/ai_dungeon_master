@@ -95,6 +95,8 @@ class EnhancedMemoryService:
                           memory_types: List[str] = ['short_term', 'long_term', 'semantic'],
                           limit_per_type: int = 3, min_similarity: float = 0.7) -> Dict[str, Any]:
         """Retrieve memories across different memory types"""
+        logger.info(f"Retrieving memories for query: '{query[:30]}...' in session {session_id}")
+    
         # Get embedding service
         embedding_service = get_embedding_service()
         if embedding_service is None:
@@ -103,12 +105,14 @@ class EnhancedMemoryService:
         
         # Generate embedding for query
         query_embedding = embedding_service.generate_embedding(query)
-        
+        logger.info(f"Vector query initiated with embedding of dimension {len(query_embedding)}")
+
         results = {}
         all_memories = []
         
         # Retrieve memories from each requested type
         if 'short_term' in memory_types and session_id:
+            logger.info("Retrieving short-term memories")
             short_term_memories = self.short_term.retrieve(
                 query_embedding=query_embedding,
                 session_id=session_id,
@@ -117,7 +121,9 @@ class EnhancedMemoryService:
             )
             results['short_term'] = short_term_memories
             all_memories.extend([(memory, 'short_term') for memory in short_term_memories])
-        
+            logger.info(f"Retrieved {len(short_term_memories)} short-term memories")
+
+
         if 'long_term' in memory_types:
             long_term_memories = self.long_term.retrieve(
                 query_embedding=query_embedding,
@@ -140,7 +146,7 @@ class EnhancedMemoryService:
         
         # Sort all memories by similarity
         all_memories.sort(key=lambda x: x[0].get('similarity', 0), reverse=True)
-        
+
         return {
             'success': True,
             'results_by_type': results,
