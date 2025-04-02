@@ -321,7 +321,7 @@ class CharacterService:
     @staticmethod
     def delete_character(character_id, user_id):
         """
-        Delete a character
+        Delete a character and all associated memories
         
         Args:
             character_id (str): Character ID
@@ -355,14 +355,37 @@ class CharacterService:
             if result.deleted_count > 0:
                 logger.info(f"Character deleted: {character_id}")
                 
-                # Also delete any drafts with this character_id
+                # Delete character drafts
                 db.character_drafts.delete_many({
                     'character_id': character_id,
                     'user_id': user_id
                 })
                 
+                # Delete all associated memories
+                memory_deletion = db.memory_vectors.delete_many({
+                    'character_id': character_id
+                })
+                
+                # Delete associated game sessions
+                session_query = {'character_id': character_id}
+                sessions = list(db.sessions.find(session_query, {'session_id': 1}))
+                session_ids = [s['session_id'] for s in sessions]
+                
+                # Delete sessions
+                if session_ids:
+                    db.sessions.delete_many({'session_id': {'$in': session_ids}})
+                    
+                    # Delete session memories
+                    db.memory_vectors.delete_many({'session_id': {'$in': session_ids}})
+                    
+                    logger.info(f"Deleted {len(session_ids)} sessions and their associated memories")
+                
                 character_name = character_data.get('name', 'Unknown')
-                return {'success': True, 'message': f"Character '{character_name}' deleted successfully"}
+                return {
+                    'success': True, 
+                    'message': f"Character '{character_name}' and all associated data deleted successfully",
+                    'memories_deleted': memory_deletion.deleted_count
+                }
             else:
                 logger.error(f"Failed to delete character: {character_id}")
                 return {'success': False, 'error': 'Failed to delete character'}
@@ -529,3 +552,44 @@ class CharacterService:
                 import logging
                 logging.error(f"Error logging submission: {e}")
         return False
+    
+    @staticmethod
+    def cleanup_orphaned_memories():
+        """Periodically clean up orphaned memories with no corresponding character or session"""
+        try:
+            db = get_db_for_service()
+            if db is None:
+                logger.error("Database connection failed during memory cleanup")
+                return {'success': False, 'error': 'Database connection error'}
+            
+            # Get all valid character IDs
+            character_ids = set(doc['character_id'] for doc in db.characters.find({}, {'character_id': 1}))
+            
+            # Get all valid session IDs
+            session_ids = set(doc['session_id'] for doc in db.sessions.find({}, {'session_id': 1}))
+            
+            # Find orphaned memories (excluding semantic memories which aren't tied to specific characters)
+            orphaned_query = {
+                '$and': [
+                    {'memory_type': {'$ne': 'semantic'}},
+                    {'$or': [
+                        {'character_id': {'$nin': list(character_ids)}},
+                        {'session_id': {'$nin': list(session_ids)}}
+                    ]}
+                ]
+            }
+            
+            # Delete orphaned memories
+            result = db.memory_vectors.delete_many(orphaned_query)
+            
+            logger.info(f"Cleaned up {result.deleted_count} orphaned memories")
+            
+            return {
+                'success': True,
+                'orphaned_memories_deleted': result.deleted_count
+            }
+        except Exception as e:
+            logger.error(f"Error cleaning up orphaned memories: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return {'success': False, 'error': str(e)}
