@@ -16,7 +16,7 @@ import yaml
 logger = logging.getLogger(__name__)
 
 
-DATA_DIR = os.path.join(current_app.root_path, '..', 'data')
+DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'data'))
 WORLDS_DIR = os.path.join(DATA_DIR, 'worlds')
 CAMPAIGNS_DIR = os.path.join(DATA_DIR, 'campaigns')
 CLASSES_DIR = os.path.join(DATA_DIR, 'classes')
