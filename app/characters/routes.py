@@ -370,7 +370,7 @@ def get_worlds():
         return jsonify({"success": False, "error": "Failed to retrieve worlds."}), 500
         
 
-@characters_bp.route('/api/campaigns/<world_id>', method=['GET'])
+@characters_bp.route('/api/campaigns/<world_id>', methods=['GET'])
 @login_required
 def get_campaign():
     """API endpoint to get pre-made campaigns for a specific world."""
@@ -412,7 +412,7 @@ def load_data_from_file(file_path):
         current_app.logger.error(f"Error loading data file {file_path}: {e}")
         return None
 
-@characters_bp.route('/api/creation-data/<world_id>', method=['GET'])
+@characters_bp.route('/api/creation-data/<world_id>', methods=['GET'])
 @login_required
 def get_world_data():
     """API endpoint to get filtered creation data (classes, races, etc.) for a world."""
@@ -494,7 +494,7 @@ def get_world_data():
         current_app.logger.error(traceback.format_exc())
         return jsonify({"success": False, "error": "Failed to retrieve creation data."}), 500
 
-@characters_bp.route('/api/campaigns/generate', method=['POST'])
+@characters_bp.route('/api/campaigns/generate', methods=['POST'])
 @login_required
 def generate_campaign():
     pass
