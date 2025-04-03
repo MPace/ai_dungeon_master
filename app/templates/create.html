@@ -68,10 +68,8 @@
         </div>
         {% endif %}
         
-        <!-- Character Creation Container -->
-        <div id="character-creation" class="row justify-content-center">
-            <!-- This will be populated dynamically by JavaScript -->
-        </div>
+        <!-- React Container for Character Creation -->
+        <div id="root"></div>
     </div>
 
     <!-- Bootstrap JS Bundle with Popper -->
@@ -90,6 +88,6 @@
     <script src="{{ url_for('static', filename='js/spell-data.js') }}"></script>
     
     <!-- Character creation modules -->
-    <script type="module" src="{{ url_for('static', filename='js/character-creation.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='build/index.js') }}"></script>
 </body>
 </html>

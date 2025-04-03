@@ -306,3 +306,23 @@ def delete_draft_route(draft_id):
             'success': False,
             'error': str(e)
         }), 500
+    
+@characters_bp.route('/api/worlds', methods=['GET'])
+@login_required
+def get_world():
+    pass
+
+@characters_bp.route('/api/campaigns/<world_id>', method=['GET'])
+@login_required
+def get_campaign():
+    pass
+
+@characters_bp.route('/api/creation-data/<world_id>', method=['GET'])
+@login_required
+def get_world_data():
+    pass
+
+@characters_bp.route('/api/campaigns/generate', method=['POST'])
+@login_required
+def generate_campaign():
+    pass

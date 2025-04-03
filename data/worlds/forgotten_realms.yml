@@ -1,0 +1,66 @@
+# File: data/worlds/forgotten_realms.yaml
+
+id: forgotten_realms
+name: "Forgotten Realms"
+description: "A classic high-fantasy world of magic, monsters, and adventure, featuring iconic locations along the Sword Coast and beyond. Gods meddle in mortal affairs, ancient ruins hide powerful artifacts, and heroes rise to face looming threats."
+# Optional: Add a path or URL to an image for the UI selection
+# image: "/static/images/worlds/forgotten_realms.jpg" 
+
+# --- Allowed Options for Character Creation ---
+# These IDs should correspond to the 'id' field in your class/race/background YAML files.
+# Using a 'common_' prefix assumes these are standard 5e options shared across worlds,
+# stored in data/<type>/common/ directories.
+
+allowed_classes:
+  - common_barbarian
+  - common_bard
+  - common_cleric
+  - common_druid
+  - common_fighter
+  - common_monk
+  - common_paladin
+  - common_ranger
+  - common_rogue
+  - common_sorcerer
+  - common_warlock
+  - common_wizard
+
+allowed_races:
+  - common_human
+  - common_elf # Assumes subraces (high, wood, drow) are defined within common_elf.yaml
+  - common_dwarf # Assumes subraces (hill, mountain) are defined within common_dwarf.yaml
+  - common_halfling # Assumes subraces (lightfoot, stout) are defined within common_halfling.yaml
+  - common_dragonborn
+  - common_gnome # Assumes subraces (forest, rock) are defined within common_gnome.yaml
+  - common_half_elf
+  - common_half_orc
+  - common_tiefling
+
+allowed_backgrounds:
+  - common_acolyte
+  - common_charlatan
+  - common_criminal
+  - common_entertainer
+  - common_folk_hero
+  - common_guild_artisan
+  - common_hermit
+  - common_noble
+  - common_outlander
+  - common_sage
+  - common_sailor
+  - common_soldier
+  - common_urchin
+
+# --- Optional World-Specific Rules/Lore ---
+# Add any specific flavor or rule adjustments for this world if needed
+# Example:
+# world_rules:
+#   - "Magic is common but often regulated in large cities."
+#   - "Certain deities have strong regional influence (e.g., Tempus in the North)."
+
+# --- Allowed Campaigns ---
+# You might list IDs of campaigns compatible with this world here,
+# or have the /api/campaigns/<world_id> endpoint filter them.
+# allowed_campaigns:
+#   - lost_mine_intro # Example ID for a pre-made campaign summary YAML
+#   - dragon_heist_prelude # Example ID
