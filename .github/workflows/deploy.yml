@@ -19,6 +19,8 @@ jobs:
             cd /var/www/staging_ai_dungeon_master
             git stash push -m "Auto-stashed by GitHub Actions"
             git pull origin staging
+            cd /var/www/staging_ai_dungeon_master/frontend && npm install && npm run build
             source /mnt/volume_sfo3_01/venv/bin/activate
             pip install -r requirements.txt
             systemctl restart staging-gunicorn
+            systemctl restart celery.service

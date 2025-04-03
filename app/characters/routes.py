@@ -1,7 +1,7 @@
 """
 Characters routes
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, current_app
 from app.characters import characters_bp
 from app.services.character_service import CharacterService
 from app.services.auth_service import AuthService
@@ -10,8 +10,18 @@ from datetime import datetime
 from app.extensions import login_required
 import logging
 import uuid
+import os
+import yaml
 
 logger = logging.getLogger(__name__)
+
+
+DATA_DIR = os.path.join(current_app.root_path, '..', 'data')
+WORLDS_DIR = os.path.join(DATA_DIR, 'worlds')
+CAMPAIGNS_DIR = os.path.join(DATA_DIR, 'campaigns')
+CLASSES_DIR = os.path.join(DATA_DIR, 'classes')
+RACES_DIR = os.path.join(DATA_DIR, 'races')
+BACKGROUNDS_DIR = os.path.join(DATA_DIR, 'backgrounds')
 
 # Login required decorator
 def login_required(f):
@@ -309,18 +319,180 @@ def delete_draft_route(draft_id):
     
 @characters_bp.route('/api/worlds', methods=['GET'])
 @login_required
-def get_world():
-    pass
+def get_worlds():
+    """API endpoint to get a list of available worlds"""
+    worlds = []
+    try:
+        if not os.path.exists(WORLDS_DIR):
+            current_app.logger.error(f"Worlds directory not found: {WORLDS_DIR}")
+            return jsonify({"success": False, "error": "Worlds data not found"}), 500
+    
+        for filename in os.listdir(WORLDS_DIR):
+            if filename.endswith(".yaml") or filename.endswith(".yml"):
+                file_path = os.path.join(WORLDS_DIR, filename)
+                current_app.logger.debug(f"Processiong world file: {filename}")
+                try:
+                    with open(file_path, 'r') as f:
+                        world_data = yaml.safe_load(f)
+                        if not world_data:
+                            current_app.logger.warning(f"World file {filename} is empty or invalid")
+                            continue
+                        
+                        # Extract required and optional info
+                        world_id = world_data.get('id', filename.split('.')[0]) # Use file name as ID if not specified
+                        world_name = world_data.get("name")
+
+                        # Skip if essential data is missing
+                        if not world_name:
+                            current_app.logger.warning(f"World file {filename} is missing 'name'. Skipping")
+                            continue
+
+                        # Extract only necessary info for the list
+                        worlds.append({
+                            "id": world_id,
+                            "name": world_name,
+                            "description": world_data.get("description", "No description available"),
+                            "image": world_data.get("image", None)
+                        })
+                        current_app.logger.debug(f"Successfully loaded world: {world_name} (ID: {world_id})")
+                except yaml.YAMLError as e:
+                    current_app.logger.error(f"Error parsing YAML file {filename}: {e}")        
+                except Exception as e:
+                    current_app.logger.error(f"Error loading world file {filename}: {e}")
+        
+        current_app.logger.info(f"Found {len(worlds)} worlds.")
+        return jsonify({"success": True, "worlds": worlds})
+    
+    except Exception as e:
+        current_app.logger.error(f"Error reading worlds directory {WORLDS_DIR}: {e}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        return jsonify({"success": False, "error": "Failed to retrieve worlds."}), 500
+        
 
 @characters_bp.route('/api/campaigns/<world_id>', method=['GET'])
 @login_required
 def get_campaign():
-    pass
+    """API endpoint to get pre-made campaigns for a specific world."""
+    campaigns = []
+    try:
+        if not os.path.exists(CAMPAIGNS_DIR):
+            current_app.logger.error(f"Campaigns directory not found: {CAMPAIGNS_DIR}")
+            return jsonify({"success": False, "error": "Campaigns data not found."}), 500
+            
+        for filename in os.listdir(CAMPAIGNS_DIR):
+            if filename.endswith(".yaml") or filename.endswith(".yml"):
+                file_path = os.path.join(CAMPAIGNS_DIR, filename)
+                try:
+                    with open(file_path, 'r') as f:
+                        campaign_data = yaml.safe_load(f)
+                        # Check if the campaign belongs to the requested world
+                        if campaign_data.get("world_id") == world_id:
+                            campaigns.append({
+                                "id": campaign_data.get("id", filename.split('.')[0]),
+                                "name": campaign_data.get("name", "Unknown Campaign"),
+                                "description": campaign_data.get("description", ""),
+                                "estimated_length": campaign_data.get("estimated_length", "Medium")
+                            })
+                except Exception as e:
+                    current_app.logger.error(f"Error loading campaign file {filename}: {e}")
+
+        return jsonify({"success": True, "campaigns": campaigns})
+
+    except Exception as e:
+        current_app.logger.error(f"Error reading campaigns directory: {e}")
+        return jsonify({"success": False, "error": f"Failed to retrieve campaigns for world {world_id}."}), 500
+
+def load_data_from_file(file_path):
+    """Helper to load YAML data from a file."""
+    try:
+        with open(file_path, 'r') as f:
+            return yaml.safe_load(f)
+    except Exception as e:
+        current_app.logger.error(f"Error loading data file {file_path}: {e}")
+        return None
 
 @characters_bp.route('/api/creation-data/<world_id>', method=['GET'])
 @login_required
 def get_world_data():
-    pass
+    """API endpoint to get filtered creation data (classes, races, etc.) for a world."""
+    try:
+        # 1. Load the main world definition file to see what's allowed
+        world_file = os.path.join(WORLDS_DIR, f"{world_id}.yaml") # Assuming file name matches world_id
+        if not os.path.exists(world_file):
+             world_file = os.path.join(WORLDS_DIR, f"{world_id}.yml") # Try .yml extension
+             if not os.path.exists(world_file):
+                return jsonify({"success": False, "error": f"World definition '{world_id}' not found."}), 404
+                
+        world_definition = load_data_from_file(world_file)
+        if not world_definition:
+             return jsonify({"success": False, "error": f"Could not load world definition '{world_id}'."}), 500
+
+        allowed_classes_ids = world_definition.get("allowed_classes", [])
+        allowed_races_ids = world_definition.get("allowed_races", [])
+        allowed_backgrounds_ids = world_definition.get("allowed_backgrounds", [])
+        # Add allowed spells, equipment packs etc.
+
+        # 2. Load the actual data for allowed items
+        world_specific_data = {
+            "classes": [],
+            "races": [],
+            "backgrounds": []
+            # Add spells, equipment etc.
+        }
+
+        # Load Classes
+        for class_id in allowed_classes_ids:
+            # Check for world-specific class file first, then common
+            class_file = os.path.join(CLASSES_DIR, world_id, f"{class_id}.yaml")
+            if not os.path.exists(class_file):
+                 class_file = os.path.join(CLASSES_DIR, world_id, f"{class_id}.yml")
+            if not os.path.exists(class_file):
+                class_file = os.path.join(CLASSES_DIR, 'common', f"{class_id}.yaml")
+            if not os.path.exists(class_file):
+                 class_file = os.path.join(CLASSES_DIR, 'common', f"{class_id}.yml")
+                 
+            class_data = load_data_from_file(class_file)
+            if class_data:
+                 world_specific_data["classes"].append(class_data)
+
+        # Load Races (similar logic for world-specific vs common)
+        for race_id in allowed_races_ids:
+            race_file = os.path.join(RACES_DIR, world_id, f"{race_id}.yaml") # Check world specific first
+            if not os.path.exists(race_file):
+                race_file = os.path.join(RACES_DIR, world_id, f"{race_id}.yml")
+            if not os.path.exists(race_file):
+                 race_file = os.path.join(RACES_DIR, 'common', f"{race_id}.yaml") # Fallback to common
+            if not os.path.exists(race_file):
+                race_file = os.path.join(RACES_DIR, 'common', f"{race_id}.yml")
+
+            race_data = load_data_from_file(race_file)
+            if race_data:
+                world_specific_data["races"].append(race_data)
+
+        # Load Backgrounds (similar logic)
+        for bg_id in allowed_backgrounds_ids:
+            bg_file = os.path.join(BACKGROUNDS_DIR, world_id, f"{bg_id}.yaml") # Check world specific first
+            if not os.path.exists(bg_file):
+                 bg_file = os.path.join(BACKGROUNDS_DIR, world_id, f"{bg_id}.yml")
+            if not os.path.exists(bg_file):
+                bg_file = os.path.join(BACKGROUNDS_DIR, 'common', f"{bg_id}.yaml") # Fallback to common
+            if not os.path.exists(bg_file):
+                bg_file = os.path.join(BACKGROUNDS_DIR, 'common', f"{bg_id}.yml")
+
+            bg_data = load_data_from_file(bg_file)
+            if bg_data:
+                world_specific_data["backgrounds"].append(bg_data)
+
+        # --- TODO: Add similar loading logic for spells, equipment packs etc. ---
+
+        return jsonify({"success": True, "data": world_specific_data})
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting creation data for world {world_id}: {e}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        return jsonify({"success": False, "error": "Failed to retrieve creation data."}), 500
 
 @characters_bp.route('/api/campaigns/generate', method=['POST'])
 @login_required
