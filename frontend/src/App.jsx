@@ -3,7 +3,6 @@
 import React from 'react';
 import CharacterCreator from './components/CharacterCreator'; // Import the component we created
 
-import '/app/static/css/styles.css'; 
 
 function App() {
   // The main App component now simply renders our CharacterCreator
