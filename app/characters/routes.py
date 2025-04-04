@@ -115,56 +115,59 @@ def create():
             flash(f"Could not load draft '{draft_id}'. Starting fresh.", 'warning')
 
     manifest = load_vite_manifest()
-    react_js_url = None # Use URL suffix now
-    react_css_url = None
+    react_js_file = None
+    react_css_file = None
 
-    if manifest is None:
-        abort(500, description="Vite Manifest file is missing or invalid. Cannot load application assets.") 
+    if manifest:
+        entry_point_key = 'src/index.jsx' # <<< Make sure this is correct!
+        manifest_entry = None
+        possible_keys = [entry_point_key, f'/{entry_point_key}', entry_point_key.split('/')[-1]]
+        for key in possible_keys:
+            if key in manifest:
+                manifest_entry = manifest[key]
+                current_app.logger.info(f"Found manifest entry using key: {key}")
+                break
 
-    entry_point_key = 'src/index.jsx' # <<< Make sure this is correct!
-    manifest_entry = None
-    possible_keys = [entry_point_key, f'/{entry_point_key}', entry_point_key.split('/')[-1]]
-    for key in possible_keys:
-        if key in manifest:
-            manifest_entry = manifest[key]
-            current_app.logger.info(f"Found manifest entry using key: {key}")
-            break
+        if manifest_entry:
+            js_path_from_manifest = manifest_entry.get('file')
+            css_files_from_manifest = manifest_entry.get('css', []) 
+            
+            if js_path_from_manifest:
+                 # Prepend 'build/' for url_for filename argument
+                 react_js_file = f'build/{js_path_from_manifest}'
+            else:
+                 current_app.logger.error(f"JS file path not found for entry point in manifest.")
 
-    if not manifest_entry:
-         current_app.logger.error(f"Entry point key variations ('{entry_point_key}', etc.) not found in manifest.")
-         abort(500, description=f"Entry point '{entry_point_key}' not found in manifest.")
-
-    js_path_from_manifest = manifest_entry.get('file') # e.g., "assets/index-HASH.js"
-    css_files_from_manifest = manifest_entry.get('css', []) # e.g., ["assets/index-HASH.css"]
-    
-    # --- Construct Absolute URLs ---
-    base_url = "https://staging.arcanedm.com:8443/static/build" # Base URL provided by user
-
-    if js_path_from_manifest:
-        react_js_url = f"{base_url}/{js_path_from_manifest}"
+            if css_files_from_manifest:
+                 # Prepend 'build/' for url_for filename argument
+                 react_css_file = f'build/{css_files_from_manifest[0]}'
+            else:
+                 current_app.logger.warning(f"CSS file path not found for entry point in manifest.")
+        else:
+            current_app.logger.error(f"Entry point key variations ('{entry_point_key}', etc.) not found in manifest.")
     else:
-        current_app.logger.error(f"JS file path ('file' field) not found for entry point in manifest.")
-        # Abort if JS is essential
-        abort(500, description=f"JS file path missing in manifest for entry point.")
+         # Manifest couldn't be loaded - react_js_file and react_css_file remain None
+         current_app.logger.error("Manifest is None, cannot determine asset paths.")
 
-    if css_files_from_manifest:
-        react_css_url = f"{base_url}/{css_files_from_manifest[0]}"
-    else:
-        current_app.logger.warning(f"CSS file path not found for entry point in manifest.")
-        # CSS might be optional, don't necessarily abort
 
-    current_app.logger.info(f"Rendering create.html with react_js_url: {react_js_url}")
-    current_app.logger.info(f"Rendering create.html with react_css_url: {react_css_url}")
+    # --- Log the variables being passed to the template ---
+    current_app.logger.info(f"Rendering create.html with react_js_file: {react_js_file}")
+    current_app.logger.info(f"Rendering create.html with react_css_file: {react_css_file}")
+    # ---
 
-    # --- Render Template ---
+    # Render Template
+    # Abort if JS is absolutely essential and not found
+    if not react_js_file and manifest is not None: # Only abort if manifest loaded but JS still missing
+         abort(500, description="Essential application JavaScript asset missing from manifest.")
+         
     return render_template(
         'create.html', 
         draft_character_data=json.dumps(draft_data) if draft_data else None, 
-        react_js_url=react_js_url,  # Pass the full URL
-        react_css_url=react_css_url, # Pass the full URL
+        react_js_file=f"https://staging.arcanedm.com:8443/static/build/{js_file}" if js_file else None,
+        react_css_file=f"https://staging.arcanedm.com:8443/static/build/{css_file}" if css_file else None,
         username=session.get('username', 'User') 
     )
-
+    
 @characters_bp.route('/api/save-character', methods=['POST'])
 @login_required
 def save_character_route():
