@@ -2,8 +2,8 @@
 
 import React from 'react';
 import CharacterCreator from './components/CharacterCreator'; // Import the component we created
-// You might want to import your main CSS file here if you haven't elsewhere
-// import './styles/main.css'; // Example path
+
+import './styles/main.css'; 
 
 function App() {
   // The main App component now simply renders our CharacterCreator
