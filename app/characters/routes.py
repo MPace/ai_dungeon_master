@@ -1,7 +1,7 @@
 """
 Characters routes
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, current_app, abort
 from app.characters import characters_bp
 from app.services.character_service import CharacterService
 from app.services.auth_service import AuthService
@@ -12,6 +12,7 @@ import logging
 import uuid
 import os
 import yaml
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -72,18 +73,54 @@ def dashboard():
 @characters_bp.route('/create')
 @login_required
 def create():
-    """Character creation page"""
+    """Character creation page - loads React app and handles drafts"""
     # Check if we're loading a draft
+    current_app.logger.info("Accessing character creation route")
+
+    # Load Draft Data
     draft_id = request.args.get('draft_id')
     draft = None
     
     if draft_id:
-        draft_result = CharacterService.get_character(draft_id, session['user_id'])
-        if draft_result['success']:
-            draft = draft_result['character']
-    
-    return render_template('create.html', draft=draft)
+        current_app.logger.info(f"Attempting to load draft with ID: {draft_id}")
+        draft_result = CharacterService.get_character_draft(draft_id, session['user_id'])
+        if draft_result and draft_result.get('success'):
+            draft_obj = draft_result.get('character')
+            if draft_obj:
+                draft_data = draft_obj.to_dict() if hasattr(draft_obj, 'to_dict') else draft_obj
+                current_app.logger.info(f"Draft loaded: {draft_data.get('name', 'Unnamed')}")
+            else:
+                current_app.logger.warning(f"Draft service returned success but no character object for ID: {draft_id}")
+                flash(f"Could not load draft '{draft_id}'. Starting fresh.", 'warning')
+        else:
+            current_app.logger.warning(f"Failed to load draft ID: {draft_id}. Error: {draft_result.get('error')}")
+            flash(f"Could not load draft '{draft_id}'. Starting fresh.", 'warning')
 
+    manifest = load_vite_manifest()
+    if manifest is None:
+        abort(500, description="Vite Manifest file is missing or invalid. Cannot load application assets.") 
+
+    entry_point_key = 'src/main.jsx'
+    if entry_point_key not in manifest:
+        current_app.logger.error(f"Entry point '{entry_point_key}' not found in Vite manifest.")
+        abort(500, description=f"Entry point '{entry_point_key}' not found in Vite manifest.")
+
+    manifest_entry = manifest[entry_point_key]
+    js_file = manifest_entry.get('file')
+    css_files = manifest_entry.get('css', [])
+    css_file = css_files[0] if css_files else None
+
+    if not js_file:
+         current_app.logger.error(f"JS file path not found for entry point '{entry_point_key}' in manifest.")
+         abort(500, description=f"JS file path missing in manifest for entry point '{entry_point_key}'.")
+
+    return render_template(
+        'create.html',
+        draft_character_data=json.dumps(draft_data) if draft_data else None,
+        react_js_file=f"/build/{js_file}" if js_file else None,
+        react_css_file=f"/build/{css_file}" if css_file else None,
+        username=session.get('username', 'User')
+    )
 @characters_bp.route('/api/save-character', methods=['POST'])
 @login_required
 def save_character_route():
@@ -498,3 +535,19 @@ def get_world_data():
 @login_required
 def generate_campaign():
     pass
+
+# Helper function to load manifest 
+def load_vite_manifest():
+    manifest_path = os.path.join(current_app.static_folder, 'build', 'manifest.json')
+    try:
+        with open(manifest_path, 'r') as f:
+            manifest = json.load(f)
+            return manifest
+    except FileNotFoundError:
+        current_app.logger.error(f"Vite manifest not found at {manifest_path}")
+        current_app.logger.error("Did you forget to run 'npm run build' in the frontend directory?")
+    except json.JSONDecodeError:
+        current_app.logger.error(f"Error decoding Vite manifest file: {manifest_path}")
+    except Exception as e:
+         current_app.logger.error(f"An unexpected error occurred loading manifest: {e}")
+    return None # Return None if manifest cannot be loaded/parsed

@@ -4,14 +4,61 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Dungeon Master - Character Creation</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='build/assets/index.css') }}"> 
+    
+    {% if react_css_file %}
+    <link rel="stylesheet" href="{{ url_for('static', filename=react_css_file) }}">
+    {% else %}
+    <style>body::before { content: "Error: Application CSS could not be loaded."; color: red; padding: 10px; display: block; }</style>
+    {% endif %}
+    
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> </head>
-<body class="bg-dark">
-    <div id="root"></div> 
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"> 
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:wght@400;500&display=swap" rel="stylesheet">
 
-    <script type="module" src="{{ url_for('static', filename='build/assets/index.js') }}"></script> 
+</head>
+<body class="bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">AI Dungeon Master</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('game.dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('characters.create') }}">Create Character</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                   <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle me-1"></i>{{ username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div id="root">
+        <div style="text-align: center; padding: 50px; color: #ccc;">Loading Character Creator...</div>
+    </div> 
+
+    {% if react_js_file %}
+    <script type="module" src="{{ url_for('static', filename=react_js_file) }}"></script> 
+    {% else %}
+     <script>document.getElementById('root').innerHTML = '<div style="color:red; padding: 10px;">Error: Application JavaScript could not be loaded. Check server logs.</div>';</script>
+    {% endif %}
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
