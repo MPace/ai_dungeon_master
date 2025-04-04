@@ -1,12 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import fs from 'fs'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   // Add the base configuration
-  base: '/static/build/', // Ensures assets are loaded relative to this path
+  base: 'https://staging.arcanedm.com:8443/static/build/', // Ensures assets are loaded relative to this path
   build: {
     // Output directory relative to the frontend directory
     outDir: path.resolve(__dirname, '../app/static/build'), 
