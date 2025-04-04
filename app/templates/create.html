@@ -6,7 +6,7 @@
     <title>AI Dungeon Master - Character Creation</title>
     
     {% if react_css_file %}
-    <link rel="stylesheet" href="{{ url_for('static', filename=react_css_file) }}">
+    <link rel="stylesheet" href="{{ react_css_file }}">
     {% else %}
     <style>body::before { content: "Error: Application CSS could not be loaded."; color: red; padding: 10px; display: block; }</style>
     {% endif %}
@@ -54,7 +54,7 @@
     </div> 
 
     {% if react_js_file %}
-    <script type="module" src="{{ url_for('static', filename=react_js_file) }}"></script> 
+    <script type="module" src="{{ react_js_file }}"></script>
     {% else %}
      <script>document.getElementById('root').innerHTML = '<div style="color:red; padding: 10px;">Error: Application JavaScript could not be loaded. Check server logs.</div>';</script>
     {% endif %}
