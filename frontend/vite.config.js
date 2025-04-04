@@ -16,7 +16,7 @@ export default defineConfig({
     manifest: true, 
     rollupOptions: {
          // Ensure entry point is correct (usually src/index.js or src/main.jsx)
-         input: path.resolve(__dirname, 'src/main.jsx'), // Adjust if your entry point is different
+         input: path.resolve(__dirname, 'src/index.jsx'), 
     }
   }
 })
