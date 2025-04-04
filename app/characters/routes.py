@@ -135,8 +135,8 @@ def create():
     return render_template(
         'create.html',
         draft_character_data=json.dumps(draft_data) if draft_data else None,
-        react_js_file=f"/build/{js_file}" if js_file else None,
-        react_css_file=f"/build/{css_file}" if css_file else None,
+        react_js_file=f"https://staging.arcanedm.com:8443/static/build/{js_file}" if js_file else None,
+        react_css_file=f"https://staging.arcanedm.com:8443/static/build/{css_file}" if css_file else None,
         username=session.get('username', 'User')
     )
 @characters_bp.route('/api/save-character', methods=['POST'])
