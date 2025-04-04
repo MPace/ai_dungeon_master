@@ -1,0 +1,169 @@
+/* File: frontend/src/components/steps/Step1_WorldSelector.css */
+
+.world-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 columns */
+    gap: 15px; /* Spacing between items */
+    max-width: 800px; /* Limit grid width */
+    margin: 20px auto;
+  }
+  
+  .world-item {
+    aspect-ratio: 1 / 1; /* Make items square */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* Align name to bottom */
+    align-items: center;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    overflow: hidden; /* Hide overflow from potential images */
+    position: relative;
+    background-color: rgba(40, 40, 50, 0.7); /* Base card color */
+    /* Inherit cursor:pointer and transition from .selection-card if using that class */
+    cursor: pointer; 
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  
+  /* Reuse existing card hover/selected styles if possible */
+  .world-item:hover:not(.coming-soon) {
+     transform: scale(1.05);
+     box-shadow: 0 0 15px rgba(255, 100, 0, 0.5); /* Orange glow on hover */
+  }
+  
+  .world-item-thumbnail {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Cover the square area */
+    z-index: 1;
+    opacity: 0.6; /* Make image slightly transparent */
+    transition: opacity 0.3s ease;
+  }
+  
+  .world-item:hover .world-item-thumbnail {
+      opacity: 0.8;
+  }
+  
+  .world-item-name {
+    position: relative; /* Ensure name is above image */
+    z-index: 2;
+    font-weight: bold;
+    color: #fff;
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background for readability */
+    padding: 5px 10px;
+    border-radius: 3px;
+    width: calc(100% - 20px); /* Fit inside padding */
+    margin-bottom: 5px; /* Space from bottom edge */
+    font-family: 'Cinzel', serif;
+  }
+  
+  .world-item.coming-soon {
+    background-color: rgba(30, 30, 30, 0.5);
+    cursor: not-allowed;
+    opacity: 0.6;
+    border: 2px dashed #555;
+  }
+  .world-item.coming-soon:hover {
+      transform: none;
+      box-shadow: none;
+  }
+  .world-item.coming-soon .world-item-name {
+      color: #888;
+      background-color: rgba(0, 0, 0, 0.3);
+  }
+  
+  
+  /* --- Enlarged Detail View Styles --- */
+  
+  .world-detail-overlay {
+    position: fixed; /* Cover the whole screen */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8); /* Dark overlay */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050; /* Ensure it's above other content */
+    opacity: 0; /* Start hidden */
+    animation: fadeInOverlay 0.3s forwards;
+  }
+  
+  @keyframes fadeInOverlay {
+      to { opacity: 1; }
+  }
+  
+  .world-detail-content {
+    background-color: rgba(31, 31, 31, 0.95); /* Use card background */
+    padding: 25px;
+    border-radius: 10px;
+    max-width: 600px;
+    width: 90%;
+    position: relative;
+    border: 1px solid #555;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+    transform: scale(0.9); /* Start slightly small */
+    animation: zoomInDetail 0.3s 0.1s forwards; /* Zoom in after overlay fades */
+  }
+  
+  @keyframes zoomInDetail {
+      to { transform: scale(1); }
+  }
+  
+  
+  .world-detail-image {
+    width: 100%;
+    max-height: 250px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+  
+  .world-detail-body {
+    text-align: center;
+  }
+  
+  .world-detail-body h3 {
+      color: #ff6400; /* Match existing title style */
+      font-family: 'Cinzel', serif;
+      margin-bottom: 15px;
+  }
+  
+  .world-detail-body p {
+      color: #ccc;
+      margin-bottom: 25px;
+      text-align: left;
+  }
+  
+  .confirm-button {
+     /* Reuse existing primary button styles if available */
+     /* Example: */
+     background-color: #863a20 !important;
+     border-color: #863a20 !important;
+     padding: 10px 30px;
+  }
+  .confirm-button:hover {
+      background-color: #a24a2c !important;
+      border-color: #a24a2c !important;
+  }
+  
+  .close-button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    /* Uses btn-close styles from Bootstrap */
+  }
+  
+  /* Responsive Grid */
+  @media (max-width: 768px) {
+    .world-grid {
+      grid-template-columns: repeat(2, 1fr); /* 2 columns on smaller screens */
+    }
+    .world-detail-content {
+       max-width: 95%;
+    }
+  }

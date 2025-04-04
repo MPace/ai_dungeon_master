@@ -1,109 +1,170 @@
 // File: frontend/src/components/steps/Step1_WorldSelector.jsx
 
 import React, { useState, useEffect } from 'react';
+import './Step1_WorldSelector.css'; // We'll create this CSS file next
 
-// Props will be passed from CharacterCreator:
-// - characterData (read-only access to current state)
-// - updateCharacterData (function to update parent state)
-// - nextStep (function to go to the next step)
+// Props passed from CharacterCreator: characterData, updateCharacterData, nextStep
 function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
     const [worlds, setWorlds] = useState([]);
-    const [selectedWorldId, setSelectedWorldId] = useState(characterData.worldId || null);
+    // State to track which world's detail view is open ('null' means none)
+    const [enlargedWorldId, setEnlargedWorldId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Fetch worlds from the backend API when the component mounts
+    // Fetch worlds data on component mount
     useEffect(() => {
         setIsLoading(true);
         setError(null);
-        console.log("Fetching worlds from /api/worlds...");
-        fetch('/api/worlds') // Relative URL assumes React dev server proxies or same origin
+        console.log("Step1: Fetching worlds from /api/worlds...");
+        fetch('/api/worlds')
             .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 return response.json();
             })
             .then(data => {
-                console.log("Worlds fetched:", data);
+                console.log("Step1: Worlds fetched:", data);
                 if (data.success && Array.isArray(data.worlds)) {
                     setWorlds(data.worlds);
                 } else {
-                    throw new Error(data.error || 'Invalid data format received for worlds.');
+                    throw new Error(data.error || 'Invalid data format for worlds.');
                 }
                 setIsLoading(false);
             })
             .catch(err => {
-                console.error("Failed to fetch worlds:", err);
-                setError(`Failed to load worlds: ${err.message}. Make sure the Flask server is running and the API endpoint is correct.`);
+                console.error("Step1: Failed to fetch worlds:", err);
+                setError(`Failed to load worlds: ${err.message}. Check API endpoint.`);
                 setIsLoading(false);
             });
-    }, []); // Empty dependency array means this runs once on mount
+    }, []);
 
-    // Handle world selection
-    const handleSelectWorld = (world) => {
-        console.log("World selected:", world);
-        setSelectedWorldId(world.id);
-        // Update the parent component's state
-        updateCharacterData({
-            worldId: world.id,
-            worldName: world.name
-            // Reset subsequent dependent choices if needed when world changes
-            // campaignId: null, classId: null, raceId: null, etc.
-        });
+    // Handle clicking on a world grid item
+    const handleWorldClick = (worldId) => {
+        if (worldId === 'coming_soon') return; // Do nothing for coming soon cards
+        console.log(`World clicked: ${worldId}`);
+        setEnlargedWorldId(worldId); // Set state to show enlarged view
     };
 
+    // Handle closing the enlarged view
+    const handleCloseEnlarged = (e) => {
+        // Prevent click from propagating to the background if needed
+        if (e) e.stopPropagation(); 
+        console.log('Closing enlarged view');
+        setEnlargedWorldId(null);
+    };
+
+    // Handle confirming the world selection
+    const handleConfirmWorld = () => {
+        if (!enlargedWorldId) return;
+        const selectedWorld = worlds.find(w => w.id === enlargedWorldId);
+        if (!selectedWorld) return;
+
+        console.log(`World confirmed: ${selectedWorld.name}`);
+        updateCharacterData({
+            worldId: selectedWorld.id,
+            worldName: selectedWorld.name,
+            // Reset potentially dependent data
+            campaignId: null, campaignName: null, classId: null, etc: null 
+        });
+        nextStep(); // Proceed to Step 2
+    };
+
+    // Find the world data for the currently enlarged world
+    const enlargedWorldData = enlargedWorldId ? worlds.find(w => w.id === enlargedWorldId) : null;
+
+    // --- Render Logic ---
+
+    if (isLoading) {
+        return <div className="text-center p-5 text-light">Loading Worlds... <div className="spinner-border spinner-border-sm" role="status"></div></div>;
+    }
+
+    if (error) {
+        return <div className="alert alert-danger">{error}</div>;
+    }
+
+    // Prepare grid items (max 16 for 4x4)
+    const gridItems = [];
+    const totalGridSlots = 16;
+    const availableWorlds = worlds.slice(0, 1); // Only show first world for now
+    
+    // Add available worlds
+    availableWorlds.forEach(world => {
+        gridItems.push({ type: 'world', data: world });
+    });
+
+    // Add "Coming Soon" placeholders
+    const comingSoonCount = totalGridSlots - gridItems.length;
+    for (let i = 0; i < comingSoonCount; i++) {
+        gridItems.push({ type: 'coming_soon', id: `cs-${i}` });
+    }
+
+
     return (
-        <div className="step-world-selector">
+        <div className={`step-world-selector ${enlargedWorldId ? 'detail-view-active' : ''}`}>
             <h3 className="mb-4 text-light text-center">Choose Your World</h3>
 
-            {isLoading && <p className="text-center text-light">Loading worlds...</p>}
-            {error && <div className="alert alert-danger" role="alert">{error}</div>}
-
-            {!isLoading && !error && (
-                <div className="row g-3">
-                    {worlds.length === 0 && !isLoading && (
-                        <p className="text-center text-light">No worlds found. Please check the backend data.</p>
-                    )}
-                    {worlds.map((world) => (
-                        <div className="col-md-6 col-lg-4" key={world.id}>
-                            {/* Use the existing CSS classes */}
+            {/* The Grid */}
+            <div className="world-grid">
+                {gridItems.map((item, index) => {
+                    if (item.type === 'world') {
+                        const world = item.data;
+                        return (
                             <div
-                                className={`card selection-card h-100 ${selectedWorldId === world.id ? 'selected' : ''}`}
-                                onClick={() => handleSelectWorld(world)}
-                                style={{ cursor: 'pointer' }} // Ensure pointer cursor
+                                key={world.id}
+                                className={`world-item card selection-card`} // Reuse selection-card style
+                                onClick={() => handleWorldClick(world.id)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && handleWorldClick(world.id)}
                             >
-                                <div className="card-body d-flex flex-column">
-                                    {/* Optional: Add image if available */}
-                                    {world.image && (
-                                         <img src={world.image} alt={world.name} className="card-img-top mb-2" style={{maxHeight: '150px', objectFit: 'cover'}}/>
-                                    )}
-                                    <h5 className="card-title">{world.name}</h5>
-                                    <p className="card-text small flex-grow-1">{world.description}</p>
-                                </div>
-                                <div className="card-footer">
-                                    <div className="selected-indicator">
-                                        <i className="bi bi-check-circle-fill"></i> Selected
-                                    </div>
-                                </div>
+                                {world.image && <img src={world.image.startsWith('http') ? world.image : `/static/${world.image.startsWith('/') ? world.image.substring(1) : world.image}`} alt={world.name} className="world-item-thumbnail"/>}
+                                <div className="world-item-name">{world.name}</div>
                             </div>
+                        );
+                    } else { // Coming Soon placeholder
+                        return (
+                            <div key={item.id} className="world-item coming-soon card">
+                                {/* <img src="/static/images/placeholder.png" alt="Coming Soon" className="world-item-thumbnail placeholder"/> */}
+                                <div className="world-item-name">Coming Soon</div>
+                            </div>
+                        );
+                    }
+                })}
+            </div>
+
+            {/* Enlarged Detail View (Conditionally Rendered) */}
+            {enlargedWorldData && (
+                // Use a modal-like overlay approach
+                <div className="world-detail-overlay" onClick={handleCloseEnlarged}>
+                    <div className="world-detail-content card" onClick={(e) => e.stopPropagation()}> {/* Stop clicks inside from closing it */}
+                         <button className="btn-close btn-close-white close-button" onClick={handleCloseEnlarged} aria-label="Close"></button>
+                        {enlargedWorldData.image && (
+                            <img 
+                                src={enlargedWorldData.image.startsWith('http') ? enlargedWorldData.image : `/static/${enlargedWorldData.image.startsWith('/') ? enlargedWorldData.image.substring(1) : enlargedWorldData.image}`} 
+                                alt={enlargedWorldData.name} 
+                                className="world-detail-image"
+                            />
+                        )}
+                        <div className="world-detail-body">
+                            <h3>{enlargedWorldData.name}</h3>
+                            <p>{enlargedWorldData.description}</p>
+                            <button 
+                                className="btn btn-primary btn-lg confirm-button"
+                                onClick={handleConfirmWorld}
+                            >
+                                Confirm World
+                            </button>
                         </div>
-                    ))}
+                    </div>
                 </div>
             )}
 
-            {/* Navigation */}
-            <div className="d-flex justify-content-end mt-4">
-                 {/* No "Back" button on the first step */}
-                <button
-                    type="button"
-                    className="btn btn-primary btn-lg"
-                    onClick={nextStep}
-                    disabled={!selectedWorldId || isLoading} // Disable until a world is selected
-                >
-                    Next: Choose Campaign &raquo;
-                </button>
-            </div>
+             {/* Navigation Buttons - Only show if detail view is NOT active */}
+             {!enlargedWorldId && (
+                 <div className="d-flex justify-content-end mt-4" style={{ visibility: 'hidden' }}> 
+                    {/* Keep for spacing maybe, but disabled */}
+                    <button className="btn btn-primary btn-lg">Next</button>
+                 </div>
+             )}
         </div>
     );
 }

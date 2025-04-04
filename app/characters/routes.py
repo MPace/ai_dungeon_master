@@ -139,6 +139,7 @@ def create():
         react_css_file=f"https://staging.arcanedm.com:8443/static/build/{css_file}" if css_file else None,
         username=session.get('username', 'User')
     )
+
 @characters_bp.route('/api/save-character', methods=['POST'])
 @login_required
 def save_character_route():
