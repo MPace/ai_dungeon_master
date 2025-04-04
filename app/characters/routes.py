@@ -97,7 +97,7 @@ def create():
 
     # Load Draft Data
     draft_id = request.args.get('draft_id')
-    draft = None
+    draft_data = None
     
     if draft_id:
         current_app.logger.info(f"Attempting to load draft with ID: {draft_id}")
