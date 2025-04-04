@@ -118,7 +118,7 @@ def create():
     if manifest is None:
         abort(500, description="Vite Manifest file is missing or invalid. Cannot load application assets.") 
 
-    entry_point_key = 'src/main.jsx'
+    entry_point_key = 'src/index.jsx'
     if entry_point_key not in manifest:
         current_app.logger.error(f"Entry point '{entry_point_key}' not found in Vite manifest.")
         abort(500, description=f"Entry point '{entry_point_key}' not found in Vite manifest.")
