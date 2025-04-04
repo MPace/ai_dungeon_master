@@ -15,10 +15,13 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
     useEffect(() => {
         setIsLoading(true);
         setError(null);
-        console.log("Step1: Fetching worlds from /api/worlds...");
-        fetch('/api/worlds')
+        console.log("Step1: Fetching worlds from /characters/api/worlds...");
+        fetch('/characters/api/worlds')
             .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                if (!response.ok) {
+                    console.error('Failed fetch for: /characters/api/worlds - Status: ${response.status}');
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 return response.json();
             })
             .then(data => {

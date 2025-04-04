@@ -184,7 +184,7 @@ function CharacterCreator() {
 
             <div className="row justify-content-center">
                 <div className="col-md-10 col-lg-8">
-                    {renderStepIndicator()}
+                    
                     <div className="card character-card">
                         <div className="card-body">
                            {/* Render the component for the current step */}
