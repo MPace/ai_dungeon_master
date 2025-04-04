@@ -24,6 +24,24 @@ CLASSES_DIR = os.path.join(DATA_DIR, 'classes')
 RACES_DIR = os.path.join(DATA_DIR, 'races')
 BACKGROUNDS_DIR = os.path.join(DATA_DIR, 'backgrounds')
 
+# Helper function to load manifest 
+def load_vite_manifest():
+    manifest_path = os.path.join(current_app.static_folder, 'build', '.vite', 'manifest.json')
+    try:
+        with open(manifest_path, 'r', encoding='utf-8') as f:
+            manifest = json.load(f)
+            current_app.logger.debug("Vite manifest loaded successfully")
+            return manifest
+    except FileNotFoundError:
+        current_app.logger.error(f"Vite manifest not found at {manifest_path}")
+        current_app.logger.error("Did you forget to run 'npm run build' in the frontend directory?")
+    except json.JSONDecodeError:
+        current_app.logger.error(f"Error decoding Vite manifest file: {manifest_path}")
+    except Exception as e:
+         current_app.logger.error(f"An unexpected error occurred loading manifest: {e}")
+    return None # Return None if manifest cannot be loaded/parsed
+
+
 # Login required decorator
 def login_required(f):
     @wraps(f)
@@ -536,18 +554,3 @@ def get_world_data():
 def generate_campaign():
     pass
 
-# Helper function to load manifest 
-def load_vite_manifest():
-    manifest_path = os.path.join(current_app.static_folder, 'build', 'manifest.json')
-    try:
-        with open(manifest_path, 'r') as f:
-            manifest = json.load(f)
-            return manifest
-    except FileNotFoundError:
-        current_app.logger.error(f"Vite manifest not found at {manifest_path}")
-        current_app.logger.error("Did you forget to run 'npm run build' in the frontend directory?")
-    except json.JSONDecodeError:
-        current_app.logger.error(f"Error decoding Vite manifest file: {manifest_path}")
-    except Exception as e:
-         current_app.logger.error(f"An unexpected error occurred loading manifest: {e}")
-    return None # Return None if manifest cannot be loaded/parsed
