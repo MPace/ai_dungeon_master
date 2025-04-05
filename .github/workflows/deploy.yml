@@ -16,12 +16,53 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /var/www/staging_ai_dungeon_master
+            # Navigate to project directory
+            cd /var/www/staging_ai_dungeon_master || exit 1
+            echo "Current directory: $(pwd)"
+
+            # Stash any local changes on the server
+            echo "Stashing local changes..."
             git stash push -m "Auto-stashed by GitHub Actions"
-            git pull origin staging
-            cd frontend && npm install && npm run build
-            cd ..
+
+            # Pull the latest code
+            echo "Pulling latest code from staging branch..."
+            git pull origin staging || exit 1
+
+            # Navigate to frontend directory
+            echo "Changing to frontend directory..."
+            cd frontend || exit 1
+            echo "Current directory: $(pwd)"
+
+            # Install dependencies
+            echo "Installing frontend dependencies..."
+            npm install || exit 1
+
+            # --- Added Robust Build Steps ---
+            echo "Forcefully cleaning previous build output directory..."
+            # Use the path relative to 'frontend/' directory as defined in vite.config.js
+            rm -rf ../app/static/build/*
+            echo "Running frontend build..."
+            # Add error checking: exit if build fails
+            npm run build || { echo "Frontend build failed!"; exit 1; }
+            echo "Frontend build completed successfully."
+            # --- End of Added Robust Build Steps ---
+
+            # Navigate back to project root
+            echo "Changing back to project root..."
+            cd .. || exit 1
+
+            # Activate Python environment
+            echo "Activating Python environment..."
             source /mnt/volume_sfo3_01/venv/bin/activate
-            pip install -r requirements.txt
+
+            # Install Python dependencies
+            echo "Installing Python dependencies..."
+            pip install -r requirements.txt || exit 1
+
+            # Restart services
+            echo "Restarting Gunicorn..."
             systemctl restart staging-gunicorn
+            echo "Restarting Celery..."
             systemctl restart celery.service
+
+            echo "Deployment script finished."
