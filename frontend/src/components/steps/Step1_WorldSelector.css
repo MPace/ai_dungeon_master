@@ -1,151 +1,212 @@
 /* File: frontend/src/components/steps/Step1_WorldSelector.css */
-/* Recreating and enhancing the original card style */
 
-/* Make the main step container transparent */
 .step-world-selector {
-  background-color: transparent !important;
-  padding: 0;
+  padding: 20px 0;
+  position: relative;
 }
 
-.world-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr); /* 2 columns */
-  gap: 40px; /* More gap */
-  max-width: 900px; /* Wider grid */
-  margin: 30px auto;
-  perspective: 1200px; /* For 3D hover */
+/* Horizontal scrollable container */
+.world-scroll-container {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+  padding: 20px 0;
+  margin-bottom: 20px;
+  /* Hide scrollbar but keep functionality */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 100, 0, 0.3) rgba(31, 31, 31, 0.5);
 }
 
-/* Applying and adapting the original .selection-card style to .world-item */
-.world-item {
-  /* --- Size --- */
-  min-width: 300px;   /* Significantly larger */
-  min-height: 300px;  /* Significantly larger */
-  aspect-ratio: 1 / 1; 
-  
-  /* --- Base Style (from .selection-card) --- */
-  background-color: rgba(31, 31, 31, 0.85); /* Slightly more opaque */
+.world-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.world-scroll-container::-webkit-scrollbar-track {
+  background: rgba(31, 31, 31, 0.5);
+  border-radius: 4px;
+}
+
+.world-scroll-container::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 100, 0, 0.3);
+  border-radius: 4px;
+}
+
+/* Wrapper for the cards */
+.world-cards-wrapper {
+  display: flex;
+  gap: 30px;
+  padding: 10px 20px;
+  min-width: max-content;
+}
+
+/* World Card Styling (using the same selection-card style) */
+.world-card {
+  width: 300px;
+  height: 400px;  /* 1:3 ratio - more height than width */
+  flex: 0 0 auto;
+  background-color: rgba(31, 31, 31, 0.8);
   border: 2px solid #3a3a3a;
-  border-radius: 15px; 
-  cursor: pointer;
-  transition: all 0.3s ease-out; /* Smoother transition */
-  height: 100%; 
+  border-radius: 8px;
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  position: relative; /* Needed for absolute positioned children like thumbnail */
-  overflow: hidden; /* Keep contents contained */
-  transform-style: preserve-3d; /* For 3D hover */
-  will-change: transform, box-shadow; /* Performance hint */
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
 }
 
-.world-item .card-body { /* Mimic card structure if needed internally */
-   flex: 1;
-   display: flex;
-   flex-direction: column;
-   justify-content: flex-end; /* Align name to bottom */
-   align-items: center;
-   text-align: center;
-   padding: 15px; /* More padding */
-   z-index: 2; /* Ensure text is above image */
-   position: relative; /* Needed for z-index */
-   background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0) 100%); /* Gradient overlay for text readability */
+.world-card .card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
 }
 
-/* --- Thumbnail Image --- */
-.world-item-thumbnail {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover; 
-  z-index: 1;
-  opacity: 0.5; /* Dimmer base image */
-  transition: transform 0.4s ease-out, opacity 0.4s ease; 
-}
-
-/* --- World Name (like .card-title) --- */
-.world-item-name {
-  /* Use original card-title styling */
-  color: #ff6400; 
+.world-card .card-title {
+  color: #ff6400;
   font-family: 'Cinzel', serif;
   border-bottom: 1px solid #3a3a3a;
   padding-bottom: 8px;
   margin-bottom: 10px;
-  font-size: 1.5rem; /* Larger font size */
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
-  width: 90%; /* Make it slightly less wide */
+  font-size: 1.5rem;
 }
 
-/* --- Hover Effects (Adapted from .selection-card:hover & selected) --- */
-.world-item:hover:not(.coming-soon) {
-    border-color: #ff6400; /* Use the vibrant orange for hover border */
-    transform: translateY(-10px) rotateY(5deg) scale(1.03); /* Lift and slight tilt */
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 100, 0, 0.3); /* Deeper shadow + orange glow */
+.world-card .card-text {
+  margin-bottom: 15px;
+  color: #e0e0e0;
+  flex-grow: 1;
 }
 
-.world-item:hover .world-item-thumbnail {
-    opacity: 0.7; /* Image brightens slightly */
-    transform: scale(1.08); /* Zoom image more */
+.world-image-container {
+  width: 100%;
+  height: 60%;
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  margin-top: auto;
+  margin-bottom: 15px;
 }
 
-/* --- Coming Soon Card --- */
-.world-item.coming-soon {
-  background-color: rgba(30, 30, 30, 0.7);
+.world-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.world-card:hover:not(.coming-soon) {
+  border-color: #ff6400;
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(255, 100, 0, 0.3);
+}
+
+.world-card:hover:not(.coming-soon) .world-image {
+  transform: scale(1.05);
+}
+
+.world-card .card-footer {
+  background-color: rgba(41, 41, 41, 0.8);
+  border-top: 1px solid #3a3a3a;
+  padding: 8px;
+}
+
+.world-card .selection-indicator {
+  color: #ff6400;
+  text-align: center;
+  font-weight: bold;
+  display: none;
+}
+
+.world-card:hover:not(.coming-soon) .selection-indicator {
+  display: block;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+/* Coming Soon Card styling */
+.world-card.coming-soon {
   cursor: not-allowed;
-  opacity: 0.6;
-  border: 2px dashed #555;
-  transform: none !important; /* Prevent hover effects */
-  box-shadow: none !important;
-}
-.world-item.coming-soon:hover {
-    border-color: #555; /* Keep border same on hover */
-}
-.world-item.coming-soon .world-item-name {
-    color: #777;
-    border-bottom-color: #555;
-}
-.world-item.coming-soon .world-item-thumbnail {
-    opacity: 0.3;
-    filter: grayscale(80%); /* Desaturate placeholder */
+  opacity: 0.7;
+  border: 2px dashed #3a3a3a;
 }
 
-/* --- Detail View --- */
-/* Keep detail view styles as they were, or adjust if needed */
+.world-card.coming-soon .card-title {
+  color: #999;
+}
+
+.world-card.coming-soon:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #3a3a3a;
+}
+
+/* Enlarged Detail View */
 .world-detail-overlay {
-  /* ... existing styles ... */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
 }
+
 .world-detail-content {
-  /* ... existing styles ... */
-   max-width: 700px; 
-}
-/* ... rest of detail view styles ... */
-
-
-/* --- Responsive --- */
-@media (max-width: 992px) {
-  .world-grid {
-    grid-template-columns: repeat(2, 1fr);
-    max-width: 90%;
-    gap: 30px;
-  }
-  .world-item {
-    min-width: 250px; /* Adjust size */
-    min-height: 250px;
-  }
+  max-width: 600px;
+  width: 90%;
+  background-color: rgba(31, 31, 31, 0.95);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
 }
 
-@media (max-width: 600px) { /* Adjusted breakpoint */
-  .world-grid {
-    grid-template-columns: 1fr; /* Stack to 1 column */
-    max-width: 350px; /* Adjust max width for single column */
-    gap: 35px;
+.close-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 10;
+}
+
+.world-detail-image {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+}
+
+.world-detail-body {
+  padding: 20px;
+}
+
+.world-detail-body h3 {
+  color: #ff6400;
+  font-family: 'Cinzel', serif;
+  margin-bottom: 15px;
+}
+
+.confirm-button {
+  margin-top: 20px;
+  width: 100%;
+  font-family: 'Cinzel', serif;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .world-card {
+      width: 250px;
+      height: 350px;
   }
-   .world-item {
-    min-width: 300px; /* Size for single column */
-    min-height: 300px;
-  }
-  .world-item-name {
-     font-size: 1.3rem; /* Slightly smaller font for single column */
+  
+  .world-detail-content {
+      width: 95%;
   }
 }

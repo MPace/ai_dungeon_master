@@ -1,7 +1,7 @@
 // File: frontend/src/components/steps/Step1_WorldSelector.jsx
 
 import React, { useState, useEffect } from 'react';
-import './Step1_WorldSelector.css'; // We'll create this CSS file next
+import './Step1_WorldSelector.css'; // We'll update this CSS file
 
 // Props passed from CharacterCreator: characterData, updateCharacterData, nextStep
 function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
@@ -19,7 +19,7 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
         fetch('/characters/api/worlds')
             .then(response => {
                 if (!response.ok) {
-                    console.error('Failed fetch for: /characters/api/worlds - Status: ${response.status}');
+                    console.error(`Failed fetch for: /characters/api/worlds - Status: ${response.status}`);
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 return response.json();
@@ -40,7 +40,7 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
             });
     }, []);
 
-    // Handle clicking on a world grid item
+    // Handle clicking on a world card
     const handleWorldClick = (worldId) => {
         if (worldId === 'coming_soon') return; // Do nothing for coming soon cards
         console.log(`World clicked: ${worldId}`);
@@ -66,7 +66,7 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
             worldId: selectedWorld.id,
             worldName: selectedWorld.name,
             // Reset potentially dependent data
-            campaignId: null, campaignName: null, classId: null, etc: null 
+            campaignId: null, campaignName: null, classId: null
         });
         nextStep(); // Proceed to Step 2
     };
@@ -83,67 +83,71 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
     if (error) {
         return <div className="alert alert-danger">{error}</div>;
     }
-
-    // Prepare grid items (max 16 for 4x4)
-    const gridItems = [];
-    const totalGridSlots = 16;
-    const availableWorlds = worlds.slice(0, 1); // Only show first world for now
     
-    // Add available worlds
-    availableWorlds.forEach(world => {
-        gridItems.push({ type: 'world', data: world });
-    });
-
-    // Add "Coming Soon" placeholders
-    const comingSoonCount = totalGridSlots - gridItems.length;
-    for (let i = 0; i < comingSoonCount; i++) {
-        gridItems.push({ type: 'coming_soon', id: `cs-${i}` });
-    }
-
+    // Create the world cards - one real world and three "coming soon"
+    const worldsToShow = [
+        // Take the first real world if available, otherwise create a placeholder
+        ...(worlds.length > 0 ? [worlds[0]] : [{
+            id: 'forgotten_realms',
+            name: 'Forgotten Realms',
+            description: 'The most popular D&D setting, a world of sword and sorcery, heroes and villains, light and darkness.',
+            image: '/static/images/forgotten_realms.jpg'
+        }]),
+        // Add three "coming soon" placeholders
+        { id: 'coming_soon_1', name: 'Coming Soon', description: 'New world coming soon!', isComingSoon: true },
+        { id: 'coming_soon_2', name: 'Coming Soon', description: 'New world coming soon!', isComingSoon: true },
+        { id: 'coming_soon_3', name: 'Coming Soon', description: 'New world coming soon!', isComingSoon: true },
+    ];
 
     return (
         <div className={`step-world-selector ${enlargedWorldId ? 'detail-view-active' : ''}`}>
             <h3 className="mb-4 text-light text-center">Choose Your World</h3>
-
-            {/* The Grid */}
-            <div className="world-grid">
-                {/* Map over fetched worlds, but limit to first 2 */}
-                {worlds.slice(0, 2).map((world) => ( 
-                    <div
-                        key={world.id}
-                        className={`world-item card selection-card`} 
-                        onClick={() => handleWorldClick(world.id)}
-                        role="button"
-                        tabIndex={0} 
-                        onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && handleWorldClick(world.id)}
-                    >
-                        {world.image && 
-                            <img 
-                                src={world.image.startsWith('http') ? world.image : `/static/${world.image.startsWith('/') ? world.image.substring(1) : world.image}`} 
-                                alt={world.name} 
-                                className="world-item-thumbnail"
-                            />
-                        }
-                        <div className="world-item-name">{world.name}</div>
-                    </div>
-                ))}
-
-                {/* Explicitly add "Coming Soon" placeholders to make up 4 total */}
-                {[...Array(Math.max(0, 4 - worlds.slice(0, 2).length))].map((_, index) => (
-                     <div key={`cs-${index}`} className="world-item coming-soon card">
-                         {/* Optional: Add a placeholder image */}
-                         {/* <img src="/static/images/placeholder_world.png" alt="Coming Soon" className="world-item-thumbnail placeholder"/> */}
-                         <div className="world-item-name">Coming Soon</div>
-                     </div>
-                ))}
+            
+            {/* Horizontal scrollable container for world cards */}
+            <div className="world-scroll-container">
+                <div className="world-cards-wrapper">
+                    {worldsToShow.map((world) => (
+                        <div
+                            key={world.id}
+                            className={`world-card selection-card ${world.isComingSoon ? 'coming-soon' : ''}`}
+                            onClick={() => !world.isComingSoon && handleWorldClick(world.id)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyPress={(e) => (!world.isComingSoon && (e.key === 'Enter' || e.key === ' ')) && handleWorldClick(world.id)}
+                        >
+                            <div className="card-body">
+                                <h5 className="card-title">{world.name}</h5>
+                                <p className="card-text small">{world.description || 'An exciting world awaits adventurers.'}</p>
+                                
+                                {world.image && !world.isComingSoon && (
+                                    <div className="world-image-container">
+                                        <img
+                                            src={world.image.startsWith('http') ? world.image : `/static/${world.image.startsWith('/') ? world.image.substring(1) : world.image}`}
+                                            alt={world.name}
+                                            className="world-image"
+                                        />
+                                    </div>
+                                )}
+                                
+                                {!world.isComingSoon && (
+                                    <div className="card-footer">
+                                        <div className="selection-indicator">
+                                            <i className="bi bi-check-circle-fill"></i> Select
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Enlarged Detail View (Conditionally Rendered) */}
             {enlargedWorldData && (
-                // Use a modal-like overlay approach
                 <div className="world-detail-overlay" onClick={handleCloseEnlarged}>
-                    <div className="world-detail-content card" onClick={(e) => e.stopPropagation()}> {/* Stop clicks inside from closing it */}
-                         <button className="btn-close btn-close-white close-button" onClick={handleCloseEnlarged} aria-label="Close"></button>
+                    <div className="world-detail-content card" onClick={(e) => e.stopPropagation()}>
+                        <button className="btn-close btn-close-white close-button" onClick={handleCloseEnlarged} aria-label="Close"></button>
+                        
                         {enlargedWorldData.image && (
                             <img 
                                 src={enlargedWorldData.image.startsWith('http') ? enlargedWorldData.image : `/static/${enlargedWorldData.image.startsWith('/') ? enlargedWorldData.image.substring(1) : enlargedWorldData.image}`} 
@@ -151,27 +155,28 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
                                 className="world-detail-image"
                             />
                         )}
+                        
                         <div className="world-detail-body">
                             <h3>{enlargedWorldData.name}</h3>
-                            <p>{enlargedWorldData.description}</p>
+                            <p>{enlargedWorldData.description || 'An exciting world awaits adventurers.'}</p>
                             <button 
                                 className="btn btn-primary btn-lg confirm-button"
                                 onClick={handleConfirmWorld}
                             >
-                                Confirm World
+                                Begin Adventure
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-             {/* Navigation Buttons - Only show if detail view is NOT active */}
-             {!enlargedWorldId && (
-                 <div className="d-flex justify-content-end mt-4" style={{ visibility: 'hidden' }}> 
-                    {/* Keep for spacing maybe, but disabled */}
+            {/* Navigation Buttons - Only show if detail view is NOT active */}
+            {!enlargedWorldId && (
+                <div className="d-flex justify-content-end mt-4" style={{ visibility: 'hidden' }}> 
+                    {/* Keep for spacing, but hidden */}
                     <button className="btn btn-primary btn-lg">Next</button>
-                 </div>
-             )}
+                </div>
+            )}
         </div>
     );
 }
