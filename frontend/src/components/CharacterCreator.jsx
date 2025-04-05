@@ -1,56 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import './CharacterCreator.css';
 
 // Import step components
 import Step1_WorldSelector from './steps/Step1_WorldSelector';
-// import Step2_CampaignSelector from './steps/Step2_CampaignSelector';
-// ... import other step components as they are created
+// Import other steps when ready
 
-// --- Initial Character Data Structure ---
 const initialCharacterData = {
-    // Step 1
+    // Data structure as before
     worldId: null,
     worldName: null,
-    // Step 2
-    campaignId: null,
-    campaignName: null,
-    campaignMode: 'pre-made',
-    // Step 3
-    classId: null,
-    className: null,
-    // Step 4
-    name: '',
-    raceId: null,
-    raceName: null,
-    subRaceId: null,
-    subRaceName: null,
-    backgroundId: null,
-    backgroundName: null,
-    // Step 5 (Abilities)
-    abilities: {
-        strength: 8,
-        dexterity: 8,
-        constitution: 8,
-        intelligence: 8,
-        wisdom: 8,
-        charisma: 8
-    },
-    // Step 6 (Proficiencies)
-    proficiencies: {
-        skills: [],
-        tools: [],
-        languages: [],
-        armor: [],
-        weapons: []
-    },
-    // Step 7 (Features)
-    features: {},
-    // Step 8 (Spells)
-    spellcasting: {},
-    // Step 9 (Equipment)
-    equipment: {},
-    // Step 10 (Finalization)
-    description: '',
-    // Meta
+    // Rest of the structure
     isDraft: true,
     characterId: null,
     lastStepCompleted: 0,
@@ -62,11 +21,10 @@ function CharacterCreator() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // --- Navigation Functions ---
+    // Navigation functions
     const nextStep = useCallback(() => {
         setCurrentStep(prevStep => {
             const next = prevStep + 1;
-            // Update last step completed *before* moving
             setCharacterData(prevData => ({
                 ...prevData,
                 lastStepCompleted: Math.max(prevData.lastStepCompleted, prevStep)
@@ -87,7 +45,7 @@ function CharacterCreator() {
         }
     }, [characterData.lastStepCompleted, currentStep]);
 
-    // --- Data Update Function ---
+    // Data update function
     const updateCharacterData = useCallback((newData) => {
         setCharacterData(prevData => ({
             ...prevData,
@@ -96,7 +54,7 @@ function CharacterCreator() {
         console.log("Character data updated:", newData);
     }, []);
 
-    // --- Component Rendering Logic ---
+    // Render logic
     const renderCurrentStep = () => {
         switch (currentStep) {
             case 1:
@@ -107,13 +65,13 @@ function CharacterCreator() {
                         nextStep={nextStep}
                     />
                 );
-            // Add cases for other steps as components are created
+            // Add cases for other steps
             default:
                 return <div>Step {currentStep} - Component not implemented yet.</div>;
         }
     };
 
-    // --- Render Step Indicator (Optional but helpful) ---
+    // Step indicator
     const renderStepIndicator = () => {
         const totalSteps = 10;
         return (
@@ -126,7 +84,6 @@ function CharacterCreator() {
                     } else if (stepNumber <= characterData.lastStepCompleted) {
                         stepClass += ' completed';
                     }
-                    // Make indicator clickable to navigate back
                     return (
                          <div 
                              key={stepNumber} 
@@ -142,28 +99,28 @@ function CharacterCreator() {
         );
     };
 
-    // --- Main Component Return ---
+    // Main component return
     return (
-        <div className="container-fluid character-creator-container">
-            <header className="text-center mb-4">
-                <h1 className="display-4 text-light">Character Creation</h1>
-            </header>
+        <div className="character-creator-container">
+            {/* We only need the header for steps 2+ */}
+            {currentStep > 1 && (
+                <header className="text-center mb-4">
+                    <h1 className="display-4 text-light">Character Creation</h1>
+                </header>
+            )}
 
-            {/* Optional: Loading and Error Display */}
+            {/* Loading and error display */}
             {isLoading && <div className="text-center text-light">Loading...</div>}
             {error && <div className="alert alert-danger" role="alert">{error}</div>}
             
-            {/* For step 1, we want a full-width display without the step indicator */}
+            {/* For step 1, we use a full-page layout */}
             {currentStep === 1 ? (
-                <div className="row">
-                    <div className="col-12">
-                        {renderCurrentStep()}
-                    </div>
+                <div className="full-page-step">
+                    {renderCurrentStep()}
                 </div>
             ) : (
                 <div className="row justify-content-center">
                     <div className="col-md-10 col-lg-8">
-                        {/* Step indicator for steps 2+ */}
                         {renderStepIndicator()}
                         
                         <div className="card character-card">

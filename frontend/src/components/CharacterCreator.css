@@ -1,0 +1,98 @@
+/* File: frontend/src/components/CharacterCreator.css */
+
+.character-creator-container {
+    padding: 0;
+    min-height: 100vh;
+    width: 100%;
+    position: relative;
+  }
+  
+  /* Full-page step layout for step 1 */
+  .full-page-step {
+    height: 100vh;
+    width: 100%;
+    position: relative;
+  }
+  
+  /* For steps 2+ with normal layout */
+  .character-creator-container .row {
+    padding: 20px;
+    min-height: calc(100vh - 200px);
+  }
+  
+  /* Step indicator styling */
+  .step-indicator {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  
+  .step {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #3a3a3a;
+    color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 10px;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+  
+  .step.active {
+    background-color: #9b2c2c;
+    box-shadow: 0 0 10px #ff6400;
+  }
+  
+  .step.completed {
+    background-color: #2c852c;
+  }
+  
+  .step::after {
+    content: '';
+    position: absolute;
+    width: 30px;
+    height: 3px;
+    background-color: #3a3a3a;
+    right: -30px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  
+  .step:last-child::after {
+    display: none;
+  }
+  
+  .step:hover {
+    transform: scale(1.1);
+  }
+  
+  /* Card styling for steps 2+ */
+  .character-card {
+    background-color: rgba(31, 31, 31, 0.9);
+    border: 1px solid #3a3a3a;
+    border-radius: 15px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+  }
+  
+  .character-card:hover {
+    box-shadow: 0 0 40px rgba(255, 100, 0, 0.2);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .step {
+      width: 30px;
+      height: 30px;
+      font-size: 0.8rem;
+      margin: 0 5px;
+    }
+    
+    .step::after {
+      width: 15px;
+      right: -15px;
+    }
+  }

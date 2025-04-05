@@ -1,7 +1,7 @@
 // File: frontend/src/components/steps/Step1_WorldSelector.jsx
 
 import React, { useState, useEffect } from 'react';
-import './Step1_WorldSelector.css'; // We'll update this CSS file
+import './Step1_WorldSelector.css';
 
 function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
     const [worlds, setWorlds] = useState([]);
@@ -65,8 +65,14 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
         nextStep(); // Proceed to Step 2
     };
 
-    // --- Render Logic ---
+    // Close the expanded card when clicking outside
+    const handleBackdropClick = (e) => {
+        if (e.target.classList.contains('world-selector-backdrop')) {
+            setSelectedWorldId(null);
+        }
+    };
 
+    // --- Render Logic ---
     if (isLoading) {
         return <div className="text-center p-5 text-light">Loading Worlds... <div className="spinner-border spinner-border-sm" role="status"></div></div>;
     }
@@ -75,9 +81,9 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
         return <div className="alert alert-danger">{error}</div>;
     }
     
-    // Create the world cards - one real world and three "coming soon"
+    // Create the world cards - real worlds plus "coming soon"
     const worldsToShow = [
-        // Take the first real world if available, otherwise create a placeholder
+        // Use available worlds or a placeholder
         ...(worlds.length > 0 ? worlds : [{
             id: 'forgotten_realms',
             name: 'Forgotten Realms',
@@ -89,55 +95,73 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
         { id: 'coming_soon_2', name: 'Coming Soon', isComingSoon: true },
         { id: 'coming_soon_3', name: 'Coming Soon', isComingSoon: true },
     ];
+    
+    // Find the selected world for expanded view
+    const selectedWorld = worldsToShow.find(world => world.id === selectedWorldId);
 
     return (
         <div className="world-selector-container">
             <h2 className="world-selector-title">Choose Your World</h2>
             
-            <div className="worlds-carousel">
-                <div className="worlds-track">
-                    {worldsToShow.map((world) => (
-                        <div
-                            key={world.id}
-                            className={`world-card ${selectedWorldId === world.id ? 'selected' : ''} ${world.isComingSoon ? 'coming-soon' : ''}`}
-                            onClick={() => handleWorldClick(world.id)}
-                        >
-                            {/* Card Front (Image and Name) */}
-                            <div className="world-image-container">
-                                {!world.isComingSoon && world.image ? (
-                                    <img
-                                        src={world.image.startsWith('http') ? world.image : `/static/${world.image.startsWith('/') ? world.image.substring(1) : world.image}`}
-                                        alt={world.name}
-                                        className="world-image"
-                                    />
-                                ) : (
-                                    <div className="coming-soon-placeholder"></div>
-                                )}
+            <div className="worlds-carousel-wrapper">
+                <div className="worlds-carousel">
+                    <div className="worlds-track">
+                        {worldsToShow.map((world) => (
+                            <div
+                                key={world.id}
+                                className={`world-card ${selectedWorldId === world.id ? 'selected' : ''} ${world.isComingSoon ? 'coming-soon' : ''}`}
+                                onClick={() => handleWorldClick(world.id)}
+                            >
+                                <div className="world-image-container">
+                                    {!world.isComingSoon && world.image ? (
+                                        <img
+                                            src={world.image.startsWith('http') ? world.image : `/static/${world.image.startsWith('/') ? world.image.substring(1) : world.image}`}
+                                            alt={world.name}
+                                            className="world-image"
+                                        />
+                                    ) : (
+                                        <div className="coming-soon-placeholder"></div>
+                                    )}
+                                </div>
                                 <div className="world-name-overlay">
                                     <h3 className="world-name">{world.name}</h3>
                                 </div>
                             </div>
-                            
-                            {/* Card Details */}
-                            {!world.isComingSoon && (
-                                <div className="world-card-details">
-                                    <h3 className="world-detail-name">{world.name}</h3>
-                                    <p className="world-description">{world.description}</p>
-                                    <button 
-                                        className="btn btn-primary confirm-world-btn"
-                                        onClick={(e) => {
-                                            e.stopPropagation(); // Prevent toggling the card
-                                            handleConfirmWorld();
-                                        }}
-                                    >
-                                        Begin Adventure
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             </div>
+            
+            {/* Expanded Card Overlay */}
+            {selectedWorld && !selectedWorld.isComingSoon && (
+                <div className="world-selector-backdrop" onClick={handleBackdropClick}>
+                    <div className="world-expanded-card">
+                        <div className="world-expanded-image-container">
+                            {selectedWorld.image && (
+                                <img
+                                    src={selectedWorld.image.startsWith('http') ? selectedWorld.image : `/static/${selectedWorld.image.startsWith('/') ? selectedWorld.image.substring(1) : selectedWorld.image}`}
+                                    alt={selectedWorld.name}
+                                    className="world-expanded-image"
+                                />
+                            )}
+                            <div className="close-button" onClick={() => setSelectedWorldId(null)}>×</div>
+                        </div>
+                        <div className="world-expanded-content">
+                            <h2 className="world-expanded-name">{selectedWorld.name}</h2>
+                            <p className="world-expanded-description">{selectedWorld.description}</p>
+                            <button 
+                                className="btn btn-primary confirm-world-btn"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleConfirmWorld();
+                                }}
+                            >
+                                Begin Adventure
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,10 +1,14 @@
 /* File: frontend/src/components/steps/Step1_WorldSelector.css */
 
 .world-selector-container {
-  padding: 20px;
+  position: relative;
+  width: 100%;
   height: 100%;
+  min-height: 80vh;
+  padding: 20px;
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 
 .world-selector-title {
@@ -13,16 +17,23 @@
   color: #ff6400;
   font-size: 2.5rem;
   text-shadow: 0 0 15px rgba(255, 100, 0, 0.5);
-  margin-bottom: 30px;
+  margin-bottom: 40px;
 }
 
-/* Carousel container with horizontal scroll */
+/* Carousel wrapper to center the carousel */
+.worlds-carousel-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* Carousel with horizontal scroll */
 .worlds-carousel {
   width: 100%;
+  max-width: 1600px; /* Control maximum width */
   overflow-x: auto;
   padding: 20px 0;
-  margin-bottom: 20px;
-  position: relative;
   /* Hide scrollbar for Chrome, Safari and Opera */
   scrollbar-width: thin;
   scrollbar-color: #863a20 #171717;
@@ -46,9 +57,9 @@
 /* Track for cards */
 .worlds-track {
   display: flex;
-  padding: 10px 20px;
-  /* Allow space for overflow */
+  padding: 10px;
   min-width: min-content;
+  justify-content: center; /* Center items if they fit */
 }
 
 /* World card styling */
@@ -59,16 +70,12 @@
   overflow: hidden;
   position: relative;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  margin-right: 30px; /* Space between cards */
+  margin: 0 15px; /* Space between cards */
   cursor: pointer;
   transition: all 0.3s ease-in-out;
   flex-shrink: 0; /* Prevent cards from shrinking */
   background-color: rgba(41, 41, 41, 0.8);
   border: 2px solid #3a3a3a;
-}
-
-.world-card:last-child {
-  margin-right: 20px; /* Add some padding at the end */
 }
 
 .world-card:hover:not(.coming-soon) {
@@ -80,7 +87,7 @@
 /* Image container takes full height of card */
 .world-image-container {
   width: 100%;
-  height: 60%;
+  height: 100%;
   position: relative;
   overflow: hidden;
 }
@@ -103,67 +110,16 @@
   left: 0;
   width: 100%;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.6) 60%, transparent);
-  padding: 60px 20px 20px;
+  padding: 80px 20px 20px;
 }
 
 .world-name {
   color: #ff6400;
   font-family: 'Cinzel', serif;
   text-align: center;
-  font-size: 1.8rem;
+  font-size: 2rem;
   margin: 0;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
-}
-
-/* Card details section */
-.world-card-details {
-  padding: 20px;
-  height: 40%;
-  overflow: auto;
-}
-
-.world-detail-name {
-  color: #ff6400;
-  font-family: 'Cinzel', serif;
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-  text-shadow: 0 0 10px rgba(255, 100, 0, 0.3);
-  text-align: center;
-}
-
-.world-description {
-  color: #e0e0e0;
-  font-size: 1rem;
-  line-height: 1.5;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-/* Button styling */
-.confirm-world-btn {
-  display: block;
-  width: 80%;
-  padding: 10px;
-  margin: 0 auto;
-  font-family: 'Cinzel', serif;
-  font-size: 1.2rem;
-  background-color: #863a20;
-  border-color: #863a20;
-  transition: all 0.3s ease;
-}
-
-.confirm-world-btn:hover {
-  background-color: #a24a2c;
-  border-color: #a24a2c;
-  box-shadow: 0 0 20px rgba(255, 100, 0, 0.6);
-  transform: translateY(-3px);
-}
-
-/* Selected state */
-.world-card.selected {
-  border-color: #ff6400;
-  box-shadow: 0 0 30px rgba(255, 100, 0, 0.5);
-  transform: translateY(-10px);
 }
 
 /* Coming soon card styling */
@@ -202,27 +158,211 @@
   font-size: 2rem;
 }
 
+/* Expanded card backdrop */
+.world-selector-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Expanded card */
+.world-expanded-card {
+  width: 90%;
+  max-width: 1200px;
+  height: 80%;
+  max-height: 800px;
+  display: flex;
+  flex-direction: column;
+  background-color: #232323;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 0 50px rgba(255, 100, 0, 0.3);
+  border: 3px solid #ff6400;
+  animation: expandCard 0.5s ease-in-out;
+  position: relative;
+}
+
+/* Image container for expanded card */
+.world-expanded-image-container {
+  width: 100%;
+  height: 60%;
+  position: relative;
+  overflow: hidden;
+}
+
+.world-expanded-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Close button */
+.close-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background-color: rgba(255, 100, 0, 0.8);
+  transform: scale(1.1);
+}
+
+/* Content area for expanded card */
+.world-expanded-content {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.world-expanded-name {
+  color: #ff6400;
+  font-family: 'Cinzel', serif;
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+  text-shadow: 0 0 15px rgba(255, 100, 0, 0.3);
+  text-align: center;
+}
+
+.world-expanded-description {
+  color: #e0e0e0;
+  font-size: 1.2rem;
+  line-height: 1.6;
+  margin-bottom: 30px;
+  text-align: center;
+  max-width: 800px;
+}
+
+/* Button styling */
+.confirm-world-btn {
+  padding: 15px 40px;
+  font-family: 'Cinzel', serif;
+  font-size: 1.4rem;
+  background-color: #863a20;
+  border-color: #863a20;
+  transition: all 0.3s ease;
+  margin-top: auto;
+}
+
+.confirm-world-btn:hover {
+  background-color: #a24a2c;
+  border-color: #a24a2c;
+  box-shadow: 0 0 20px rgba(255, 100, 0, 0.6);
+  transform: translateY(-3px);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes expandCard {
+  from { 
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Responsive adjustments */
+@media (max-width: 1200px) {
+  .world-expanded-card {
+    width: 95%;
+    height: 85%;
+  }
+  
+  .world-expanded-description {
+    font-size: 1.1rem;
+  }
+}
+
 @media (max-width: 768px) {
   .world-card {
     width: 300px;
-    height: 500px;
+    height: 450px;
   }
   
   .world-name {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
   
-  .world-detail-name {
-    font-size: 1.3rem;
+  .world-expanded-card {
+    width: 95%;
+    height: 90%;
+    flex-direction: column;
   }
   
-  .world-description {
-    font-size: 0.9rem;
+  .world-expanded-image-container {
+    height: 40%;
+  }
+  
+  .world-expanded-name {
+    font-size: 2rem;
+  }
+  
+  .world-expanded-description {
+    font-size: 1rem;
   }
   
   .confirm-world-btn {
-    font-size: 1rem;
-    padding: 8px;
+    font-size: 1.2rem;
+    padding: 12px 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .world-card {
+    width: 250px;
+    height: 400px;
+  }
+  
+  .world-name {
+    font-size: 1.4rem;
+  }
+}
+
+/* Medium screens - landscape tablets */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .world-expanded-card {
+    height: 85%;
+  }
+}
+
+/* Larger screens */
+@media (min-width: 1600px) {
+  .worlds-carousel {
+    max-width: 1800px;
+  }
+  
+  .world-card {
+    width: 500px;
+    height: 650px;
   }
 }
