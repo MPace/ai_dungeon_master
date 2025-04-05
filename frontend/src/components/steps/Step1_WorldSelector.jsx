@@ -3,11 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import './Step1_WorldSelector.css'; // We'll update this CSS file
 
-// Props passed from CharacterCreator: characterData, updateCharacterData, nextStep
 function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
     const [worlds, setWorlds] = useState([]);
-    // State to track which world's detail view is open ('null' means none)
-    const [enlargedWorldId, setEnlargedWorldId] = useState(null);
+    const [selectedWorldId, setSelectedWorldId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -43,22 +41,19 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
     // Handle clicking on a world card
     const handleWorldClick = (worldId) => {
         if (worldId === 'coming_soon') return; // Do nothing for coming soon cards
-        console.log(`World clicked: ${worldId}`);
-        setEnlargedWorldId(worldId); // Set state to show enlarged view
-    };
-
-    // Handle closing the enlarged view
-    const handleCloseEnlarged = (e) => {
-        // Prevent click from propagating to the background if needed
-        if (e) e.stopPropagation(); 
-        console.log('Closing enlarged view');
-        setEnlargedWorldId(null);
+        
+        // Toggle selection
+        if (selectedWorldId === worldId) {
+            setSelectedWorldId(null);
+        } else {
+            setSelectedWorldId(worldId);
+        }
     };
 
     // Handle confirming the world selection
     const handleConfirmWorld = () => {
-        if (!enlargedWorldId) return;
-        const selectedWorld = worlds.find(w => w.id === enlargedWorldId);
+        if (!selectedWorldId) return;
+        const selectedWorld = worlds.find(w => w.id === selectedWorldId);
         if (!selectedWorld) return;
 
         console.log(`World confirmed: ${selectedWorld.name}`);
@@ -70,9 +65,6 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
         });
         nextStep(); // Proceed to Step 2
     };
-
-    // Find the world data for the currently enlarged world
-    const enlargedWorldData = enlargedWorldId ? worlds.find(w => w.id === enlargedWorldId) : null;
 
     // --- Render Logic ---
 
@@ -90,7 +82,7 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
         ...(worlds.length > 0 ? [worlds[0]] : [{
             id: 'forgotten_realms',
             name: 'Forgotten Realms',
-            description: 'The most popular D&D setting, a world of sword and sorcery, heroes and villains, light and darkness.',
+            description: 'The most popular D&D setting, a world of sword and sorcery, heroes and villains, light and darkness. From the shining spires of Waterdeep to the monster-infested depths of the Underdark, adventure awaits in every corner of this vast and varied land.',
             image: '/static/images/forgotten_realms.jpg'
         }]),
         // Add three "coming soon" placeholders
@@ -100,83 +92,49 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
     ];
 
     return (
-        <div className={`step-world-selector ${enlargedWorldId ? 'detail-view-active' : ''}`}>
-            <h3 className="mb-4 text-light text-center">Choose Your World</h3>
+        <div className="world-selector-fullpage">
+            <h3 className="world-selector-title text-light text-center">Choose Your World</h3>
             
-            {/* Horizontal scrollable container for world cards */}
-            <div className="world-scroll-container">
-                <div className="world-cards-wrapper">
-                    {worldsToShow.map((world) => (
-                        <div
-                            key={world.id}
-                            className={`world-card selection-card ${world.isComingSoon ? 'coming-soon' : ''}`}
-                            onClick={() => !world.isComingSoon && handleWorldClick(world.id)}
-                            role="button"
-                            tabIndex={0}
-                            onKeyPress={(e) => (!world.isComingSoon && (e.key === 'Enter' || e.key === ' ')) && handleWorldClick(world.id)}
-                        >
-                            <div className="card-body">
-                                <h5 className="card-title">{world.name}</h5>
-                                <p className="card-text small">{world.description || 'An exciting world awaits adventurers.'}</p>
-                                
-                                {world.image && !world.isComingSoon && (
-                                    <div className="world-image-container">
-                                        <img
-                                            src={world.image.startsWith('http') ? world.image : `/static/${world.image.startsWith('/') ? world.image.substring(1) : world.image}`}
-                                            alt={world.name}
-                                            className="world-image"
-                                        />
-                                    </div>
-                                )}
-                                
-                                {!world.isComingSoon && (
-                                    <div className="card-footer">
-                                        <div className="selection-indicator">
-                                            <i className="bi bi-check-circle-fill"></i> Select
-                                        </div>
-                                    </div>
-                                )}
+            <div className="world-cards-stage">
+                {worldsToShow.map((world) => (
+                    <div
+                        key={world.id}
+                        className={`world-card selection-card ${selectedWorldId === world.id ? 'expanded' : ''} ${world.isComingSoon ? 'coming-soon' : ''}`}
+                        onClick={() => !world.isComingSoon && handleWorldClick(world.id)}
+                    >
+                        {/* Card Front (Always visible) */}
+                        <div className="world-card-front">
+                            <h4 className="world-name">{world.name}</h4>
+                            
+                            {world.image && !world.isComingSoon && (
+                                <div className="world-image-container">
+                                    <img
+                                        src={world.image.startsWith('http') ? world.image : `/static/${world.image.startsWith('/') ? world.image.substring(1) : world.image}`}
+                                        alt={world.name}
+                                        className="world-image"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Card Back (Only visible when expanded) */}
+                        {!world.isComingSoon && (
+                            <div className="world-card-details">
+                                <p className="world-description">{world.description}</p>
+                                <button 
+                                    className="btn btn-primary confirm-world-btn"
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Prevent toggling the card
+                                        handleConfirmWorld();
+                                    }}
+                                >
+                                    Begin Adventure
+                                </button>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Enlarged Detail View (Conditionally Rendered) */}
-            {enlargedWorldData && (
-                <div className="world-detail-overlay" onClick={handleCloseEnlarged}>
-                    <div className="world-detail-content card" onClick={(e) => e.stopPropagation()}>
-                        <button className="btn-close btn-close-white close-button" onClick={handleCloseEnlarged} aria-label="Close"></button>
-                        
-                        {enlargedWorldData.image && (
-                            <img 
-                                src={enlargedWorldData.image.startsWith('http') ? enlargedWorldData.image : `/static/${enlargedWorldData.image.startsWith('/') ? enlargedWorldData.image.substring(1) : enlargedWorldData.image}`} 
-                                alt={enlargedWorldData.name} 
-                                className="world-detail-image"
-                            />
                         )}
-                        
-                        <div className="world-detail-body">
-                            <h3>{enlargedWorldData.name}</h3>
-                            <p>{enlargedWorldData.description || 'An exciting world awaits adventurers.'}</p>
-                            <button 
-                                className="btn btn-primary btn-lg confirm-button"
-                                onClick={handleConfirmWorld}
-                            >
-                                Begin Adventure
-                            </button>
-                        </div>
                     </div>
-                </div>
-            )}
-
-            {/* Navigation Buttons - Only show if detail view is NOT active */}
-            {!enlargedWorldId && (
-                <div className="d-flex justify-content-end mt-4" style={{ visibility: 'hidden' }}> 
-                    {/* Keep for spacing, but hidden */}
-                    <button className="btn btn-primary btn-lg">Next</button>
-                </div>
-            )}
+                ))}
+            </div>
         </div>
     );
 }
