@@ -1298,3 +1298,7 @@ input[value="15"] {
     font-family: monospace; /* Make dice rolls look more "technical" */
     color: #ffc107; /* Yellow text */
 }
+
+#root {
+    padding-top: 56px; 
+  }

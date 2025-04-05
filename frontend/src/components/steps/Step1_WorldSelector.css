@@ -2,7 +2,7 @@
 
 .world-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr); /* 4 columns */
+    grid-template-columns: repeat(2, 1fr); /* 4 columns */
     gap: 15px; /* Spacing between items */
     max-width: 800px; /* Limit grid width */
     margin: 20px auto;
