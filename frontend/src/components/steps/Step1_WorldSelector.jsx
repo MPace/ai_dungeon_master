@@ -40,28 +40,27 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
 
     // Handle clicking on a world card
     const handleWorldClick = (worldId) => {
-        if (worldId === 'coming_soon') return; // Do nothing for coming soon cards
+        if (worldId === 'coming_soon_1' || worldId === 'coming_soon_2' || worldId === 'coming_soon_3') {
+            return; // Do nothing for coming soon cards
+        }
         
         // Toggle selection
-        if (selectedWorldId === worldId) {
-            setSelectedWorldId(null);
-        } else {
-            setSelectedWorldId(worldId);
-        }
+        setSelectedWorldId(selectedWorldId === worldId ? null : worldId);
     };
 
     // Handle confirming the world selection
     const handleConfirmWorld = () => {
         if (!selectedWorldId) return;
-        const selectedWorld = worlds.find(w => w.id === selectedWorldId);
-        if (!selectedWorld) return;
+        const selectedWorld = worlds.find(w => w.id === selectedWorldId) || 
+                            { id: 'forgotten_realms', name: 'Forgotten Realms' };
 
         console.log(`World confirmed: ${selectedWorld.name}`);
         updateCharacterData({
             worldId: selectedWorld.id,
             worldName: selectedWorld.name,
-            // Reset potentially dependent data
-            campaignId: null, campaignName: null, classId: null
+            campaignId: null, 
+            campaignName: null, 
+            classId: null
         });
         nextStep(); // Proceed to Step 2
     };
@@ -86,40 +85,40 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
             image: '/static/images/forgotten_realms.jpg'
         }]),
         // Add three "coming soon" placeholders
-        { id: 'coming_soon_1', name: 'Coming Soon', description: 'New world coming soon!', isComingSoon: true },
-        { id: 'coming_soon_2', name: 'Coming Soon', description: 'New world coming soon!', isComingSoon: true },
-        { id: 'coming_soon_3', name: 'Coming Soon', description: 'New world coming soon!', isComingSoon: true },
+        { id: 'coming_soon_1', name: 'Coming Soon', isComingSoon: true },
+        { id: 'coming_soon_2', name: 'Coming Soon', isComingSoon: true },
+        { id: 'coming_soon_3', name: 'Coming Soon', isComingSoon: true },
     ];
 
     return (
         <div className="world-selector-fullpage">
-            <h3 className="world-selector-title text-light text-center">Choose Your World</h3>
+            <h2 className="world-selector-title">Choose Your World</h2>
             
-            <div className="world-cards-stage">
-                {worldsToShow.map((world) => (
-                    <div
-                        key={world.id}
-                        className={`world-card selection-card ${selectedWorldId === world.id ? 'expanded' : ''} ${world.isComingSoon ? 'coming-soon' : ''}`}
-                        onClick={() => !world.isComingSoon && handleWorldClick(world.id)}
-                    >
-                        {/* Card Front (Always visible) */}
-                        <div className="world-card-front">
-                            <h4 className="world-name">{world.name}</h4>
-                            
-                            {world.image && !world.isComingSoon && (
-                                <div className="world-image-container">
-                                    <img
-                                        src={world.image.startsWith('http') ? world.image : `/static/${world.image.startsWith('/') ? world.image.substring(1) : world.image}`}
-                                        alt={world.name}
-                                        className="world-image"
-                                    />
-                                </div>
-                            )}
+            {worldsToShow.map((world) => (
+                <div
+                    key={world.id}
+                    className={`world-card ${selectedWorldId === world.id ? 'expanded' : ''} ${world.isComingSoon ? 'coming-soon' : ''}`}
+                    onClick={() => handleWorldClick(world.id)}
+                >
+                    {/* Card Front (Image and Name) */}
+                    <div className="world-image-container">
+                        {!world.isComingSoon && world.image && (
+                            <img
+                                src={world.image.startsWith('http') ? world.image : `/static/${world.image.startsWith('/') ? world.image.substring(1) : world.image}`}
+                                alt={world.name}
+                                className="world-image"
+                            />
+                        )}
+                        <div className="world-name-overlay">
+                            <h3 className="world-name">{world.name}</h3>
                         </div>
-                        
-                        {/* Card Back (Only visible when expanded) */}
-                        {!world.isComingSoon && (
-                            <div className="world-card-details">
+                    </div>
+                    
+                    {/* Card Details (Only visible when expanded) */}
+                    {!world.isComingSoon && (
+                        <div className="world-card-details">
+                            <div className="world-description-content">
+                                <h3 className="expanded-world-name">{world.name}</h3>
                                 <p className="world-description">{world.description}</p>
                                 <button 
                                     className="btn btn-primary confirm-world-btn"
@@ -131,10 +130,10 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
                                     Begin Adventure
                                 </button>
                             </div>
-                        )}
-                    </div>
-                ))}
-            </div>
+                        </div>
+                    )}
+                </div>
+            ))}
         </div>
     );
 }
