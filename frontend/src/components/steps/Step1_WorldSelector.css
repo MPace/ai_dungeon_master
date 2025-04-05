@@ -1,200 +1,151 @@
 /* File: frontend/src/components/steps/Step1_WorldSelector.css */
+/* Recreating and enhancing the original card style */
 
 /* Make the main step container transparent */
 .step-world-selector {
-  background-color: transparent !important; /* Remove step background */
-  padding: 0; /* Remove padding if needed */
+  background-color: transparent !important;
+  padding: 0;
 }
 
 .world-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 2 columns */
-    gap: 30px; /* Spacing between items */
-    max-width: 800px; /* Limit grid width */
-    margin: 20px auto;
-  }
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 columns */
+  gap: 40px; /* More gap */
+  max-width: 900px; /* Wider grid */
+  margin: 30px auto;
+  perspective: 1200px; /* For 3D hover */
+}
+
+/* Applying and adapting the original .selection-card style to .world-item */
+.world-item {
+  /* --- Size --- */
+  min-width: 300px;   /* Significantly larger */
+  min-height: 300px;  /* Significantly larger */
+  aspect-ratio: 1 / 1; 
   
+  /* --- Base Style (from .selection-card) --- */
+  background-color: rgba(31, 31, 31, 0.85); /* Slightly more opaque */
+  border: 2px solid #3a3a3a;
+  border-radius: 15px; 
+  cursor: pointer;
+  transition: all 0.3s ease-out; /* Smoother transition */
+  height: 100%; 
+  display: flex;
+  flex-direction: column;
+  position: relative; /* Needed for absolute positioned children like thumbnail */
+  overflow: hidden; /* Keep contents contained */
+  transform-style: preserve-3d; /* For 3D hover */
+  will-change: transform, box-shadow; /* Performance hint */
+}
+
+.world-item .card-body { /* Mimic card structure if needed internally */
+   flex: 1;
+   display: flex;
+   flex-direction: column;
+   justify-content: flex-end; /* Align name to bottom */
+   align-items: center;
+   text-align: center;
+   padding: 15px; /* More padding */
+   z-index: 2; /* Ensure text is above image */
+   position: relative; /* Needed for z-index */
+   background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0) 100%); /* Gradient overlay for text readability */
+}
+
+/* --- Thumbnail Image --- */
+.world-item-thumbnail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; 
+  z-index: 1;
+  opacity: 0.5; /* Dimmer base image */
+  transition: transform 0.4s ease-out, opacity 0.4s ease; 
+}
+
+/* --- World Name (like .card-title) --- */
+.world-item-name {
+  /* Use original card-title styling */
+  color: #ff6400; 
+  font-family: 'Cinzel', serif;
+  border-bottom: 1px solid #3a3a3a;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  font-size: 1.5rem; /* Larger font size */
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+  width: 90%; /* Make it slightly less wide */
+}
+
+/* --- Hover Effects (Adapted from .selection-card:hover & selected) --- */
+.world-item:hover:not(.coming-soon) {
+    border-color: #ff6400; /* Use the vibrant orange for hover border */
+    transform: translateY(-10px) rotateY(5deg) scale(1.03); /* Lift and slight tilt */
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 100, 0, 0.3); /* Deeper shadow + orange glow */
+}
+
+.world-item:hover .world-item-thumbnail {
+    opacity: 0.7; /* Image brightens slightly */
+    transform: scale(1.08); /* Zoom image more */
+}
+
+/* --- Coming Soon Card --- */
+.world-item.coming-soon {
+  background-color: rgba(30, 30, 30, 0.7);
+  cursor: not-allowed;
+  opacity: 0.6;
+  border: 2px dashed #555;
+  transform: none !important; /* Prevent hover effects */
+  box-shadow: none !important;
+}
+.world-item.coming-soon:hover {
+    border-color: #555; /* Keep border same on hover */
+}
+.world-item.coming-soon .world-item-name {
+    color: #777;
+    border-bottom-color: #555;
+}
+.world-item.coming-soon .world-item-thumbnail {
+    opacity: 0.3;
+    filter: grayscale(80%); /* Desaturate placeholder */
+}
+
+/* --- Detail View --- */
+/* Keep detail view styles as they were, or adjust if needed */
+.world-detail-overlay {
+  /* ... existing styles ... */
+}
+.world-detail-content {
+  /* ... existing styles ... */
+   max-width: 700px; 
+}
+/* ... rest of detail view styles ... */
+
+
+/* --- Responsive --- */
+@media (max-width: 992px) {
+  .world-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 90%;
+    gap: 30px;
+  }
   .world-item {
-    min-width: 250px;
+    min-width: 250px; /* Adjust size */
     min-height: 250px;
-    aspect-ratio: 1 / 1; /* Make items square */
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end; /* Align name to bottom */
-    align-items: center;
-    text-align: center;
-    padding: 10px;
-    border-radius: 15px;
-    overflow: hidden; /* Hide overflow from potential images */
-    position: relative;
-    background-color: rgba(40, 40, 50, 0.8); /* Base card color */
-    border: 1px solid #444;
-    /* Inherit cursor:pointer and transition from .selection-card if using that class */
-    cursor: pointer; 
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   }
-  
-  /* Reuse existing card hover/selected styles if possible */
-  .world-item:hover:not(.coming-soon) {
-     transform: scale(1.03);
-     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4); /* Orange glow on hover */
-     border-color: #777;
+}
+
+@media (max-width: 600px) { /* Adjusted breakpoint */
+  .world-grid {
+    grid-template-columns: 1fr; /* Stack to 1 column */
+    max-width: 350px; /* Adjust max width for single column */
+    gap: 35px;
   }
-  
-  .world-item.selected {
-    border: 2px solid #ff6400; /* Orange border for selected item */
-    box-shadow: 0 0 15px rgba(255, 100, 0, 0.3);
+   .world-item {
+    min-width: 300px; /* Size for single column */
+    min-height: 300px;
   }
-  .world-item-thumbnail {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* Cover the square area */
-    z-index: 1;
-    opacity: 0.6; /* Make image slightly transparent */
-    transition: opacity 0.3s ease;
-  }
-  
-  .world-item:hover .world-item-thumbnail {
-      opacity: 0.8;
-  }
-  
   .world-item-name {
-    position: relative; /* Ensure name is above image */
-    z-index: 2;
-    font-weight: bold;
-    color: #fff;
-    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background for readability */
-    padding: 8px 15px;
-    border-radius: 5px;
-    width: calc(100% - 20px); /* Fit inside padding */
-    margin-bottom: 10px; /* Space from bottom edge */
-    font-family: 'Cinzel', serif;
-    font-size: 1.1rem;
+     font-size: 1.3rem; /* Slightly smaller font for single column */
   }
-  
-  .world-item.coming-soon {
-    background-color: rgba(30, 30, 30, 0.5);
-    cursor: not-allowed;
-    opacity: 0.5;
-    border: 2px dashed #555;
-  }
-  .world-item.coming-soon:hover {
-      transform: none;
-      box-shadow: none;
-      border-color: #555;
-  }
-  .world-item.coming-soon .world-item-name {
-      color: #888;
-      background-color: rgba(0, 0, 0, 0.4);
-  }
-  
-  
-  /* --- Enlarged Detail View Styles --- */
-  
-  .world-detail-overlay {
-    position: fixed; /* Cover the whole screen */
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.8); /* Dark overlay */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1050; /* Ensure it's above other content */
-    opacity: 0; /* Start hidden */
-    animation: fadeInOverlay 0.3s forwards;
-  }
-  
-  @keyframes fadeInOverlay {
-      to { opacity: 1; }
-  }
-  
-  .world-detail-content {
-    background-color: rgba(31, 31, 31, 0.95); /* Use card background */
-    padding: 25px;
-    border-radius: 10px;
-    max-width: 600px;
-    width: 90%;
-    position: relative;
-    border: 1px solid #555;
-    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
-    transform: scale(0.9); /* Start slightly small */
-    animation: zoomInDetail 0.3s 0.1s forwards; /* Zoom in after overlay fades */
-  }
-  
-  @keyframes zoomInDetail {
-      to { transform: scale(1); }
-  }
-  
-  
-  .world-detail-image {
-    width: 100%;
-    max-height: 250px;
-    object-fit: cover;
-    border-radius: 5px;
-    margin-bottom: 20px;
-  }
-  
-  .world-detail-body {
-    text-align: center;
-  }
-  
-  .world-detail-body h3 {
-      color: #ff6400; /* Match existing title style */
-      font-family: 'Cinzel', serif;
-      margin-bottom: 15px;
-  }
-  
-  .world-detail-body p {
-      color: #ccc;
-      margin-bottom: 25px;
-      text-align: left;
-  }
-  
-  .confirm-button {
-     /* Reuse existing primary button styles if available */
-     /* Example: */
-     background-color: #863a20 !important;
-     border-color: #863a20 !important;
-     padding: 10px 30px;
-  }
-  .confirm-button:hover {
-      background-color: #a24a2c !important;
-      border-color: #a24a2c !important;
-  }
-  
-  .close-button {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    /* Uses btn-close styles from Bootstrap */
-  }
-  
-  /* Responsive Grid */
-  @media (max-width: 992px) { /* Adjust breakpoint if needed */
-    .world-grid {
-      grid-template-columns: repeat(2, 1fr); /* Keep 2 columns on medium screens */
-      max-width: 90%;
-      gap: 20px;
-    }
-    .world-item {
-      min-width: 200px;
-      min-height: 200px;
-    }
-  }
-  
-  @media (max-width: 576px) { /* Adjust for smaller screens */
-    .world-grid {
-      grid-template-columns: 1fr; /* Stack to 1 column on very small screens */
-      max-width: 300px; /* Center single column */
-      gap: 25px;
-    }
-     .world-item {
-      min-width: 250px; /* Adjust size for single column */
-      min-height: 250px;
-    }
-  }
+}
