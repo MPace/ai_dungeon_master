@@ -1,14 +1,22 @@
 /* File: frontend/src/components/steps/Step1_WorldSelector.css */
 
+/* Make the main step container transparent */
+.step-world-selector {
+  background-color: transparent !important; /* Remove step background */
+  padding: 0; /* Remove padding if needed */
+}
+
 .world-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 4 columns */
-    gap: 15px; /* Spacing between items */
+    grid-template-columns: repeat(2, 1fr); /* 2 columns */
+    gap: 30px; /* Spacing between items */
     max-width: 800px; /* Limit grid width */
     margin: 20px auto;
   }
   
   .world-item {
+    min-width: 250px;
+    min-height: 250px;
     aspect-ratio: 1 / 1; /* Make items square */
     display: flex;
     flex-direction: column;
@@ -16,10 +24,11 @@
     align-items: center;
     text-align: center;
     padding: 10px;
-    border-radius: 8px;
+    border-radius: 15px;
     overflow: hidden; /* Hide overflow from potential images */
     position: relative;
-    background-color: rgba(40, 40, 50, 0.7); /* Base card color */
+    background-color: rgba(40, 40, 50, 0.8); /* Base card color */
+    border: 1px solid #444;
     /* Inherit cursor:pointer and transition from .selection-card if using that class */
     cursor: pointer; 
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -27,10 +36,15 @@
   
   /* Reuse existing card hover/selected styles if possible */
   .world-item:hover:not(.coming-soon) {
-     transform: scale(1.05);
-     box-shadow: 0 0 15px rgba(255, 100, 0, 0.5); /* Orange glow on hover */
+     transform: scale(1.03);
+     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4); /* Orange glow on hover */
+     border-color: #777;
   }
   
+  .world-item.selected {
+    border: 2px solid #ff6400; /* Orange border for selected item */
+    box-shadow: 0 0 15px rgba(255, 100, 0, 0.3);
+  }
   .world-item-thumbnail {
     position: absolute;
     top: 0;
@@ -52,27 +66,29 @@
     z-index: 2;
     font-weight: bold;
     color: #fff;
-    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background for readability */
-    padding: 5px 10px;
-    border-radius: 3px;
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background for readability */
+    padding: 8px 15px;
+    border-radius: 5px;
     width: calc(100% - 20px); /* Fit inside padding */
-    margin-bottom: 5px; /* Space from bottom edge */
+    margin-bottom: 10px; /* Space from bottom edge */
     font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
   }
   
   .world-item.coming-soon {
     background-color: rgba(30, 30, 30, 0.5);
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 0.5;
     border: 2px dashed #555;
   }
   .world-item.coming-soon:hover {
       transform: none;
       box-shadow: none;
+      border-color: #555;
   }
   .world-item.coming-soon .world-item-name {
       color: #888;
-      background-color: rgba(0, 0, 0, 0.3);
+      background-color: rgba(0, 0, 0, 0.4);
   }
   
   
@@ -159,11 +175,26 @@
   }
   
   /* Responsive Grid */
-  @media (max-width: 768px) {
+  @media (max-width: 992px) { /* Adjust breakpoint if needed */
     .world-grid {
-      grid-template-columns: repeat(2, 1fr); /* 2 columns on smaller screens */
+      grid-template-columns: repeat(2, 1fr); /* Keep 2 columns on medium screens */
+      max-width: 90%;
+      gap: 20px;
     }
-    .world-detail-content {
-       max-width: 95%;
+    .world-item {
+      min-width: 200px;
+      min-height: 200px;
+    }
+  }
+  
+  @media (max-width: 576px) { /* Adjust for smaller screens */
+    .world-grid {
+      grid-template-columns: 1fr; /* Stack to 1 column on very small screens */
+      max-width: 300px; /* Center single column */
+      gap: 25px;
+    }
+     .world-item {
+      min-width: 250px; /* Adjust size for single column */
+      min-height: 250px;
     }
   }

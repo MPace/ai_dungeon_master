@@ -107,31 +107,35 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
 
             {/* The Grid */}
             <div className="world-grid">
-                {gridItems.map((item, index) => {
-                    if (item.type === 'world') {
-                        const world = item.data;
-                        return (
-                            <div
-                                key={world.id}
-                                className={`world-item card selection-card`} // Reuse selection-card style
-                                onClick={() => handleWorldClick(world.id)}
-                                role="button"
-                                tabIndex={0}
-                                onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && handleWorldClick(world.id)}
-                            >
-                                {world.image && <img src={world.image.startsWith('http') ? world.image : `/static/${world.image.startsWith('/') ? world.image.substring(1) : world.image}`} alt={world.name} className="world-item-thumbnail"/>}
-                                <div className="world-item-name">{world.name}</div>
-                            </div>
-                        );
-                    } else { // Coming Soon placeholder
-                        return (
-                            <div key={item.id} className="world-item coming-soon card">
-                                {/* <img src="/static/images/placeholder.png" alt="Coming Soon" className="world-item-thumbnail placeholder"/> */}
-                                <div className="world-item-name">Coming Soon</div>
-                            </div>
-                        );
-                    }
-                })}
+                {/* Map over fetched worlds, but limit to first 2 */}
+                {worlds.slice(0, 2).map((world) => ( 
+                    <div
+                        key={world.id}
+                        className={`world-item card selection-card`} 
+                        onClick={() => handleWorldClick(world.id)}
+                        role="button"
+                        tabIndex={0} 
+                        onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && handleWorldClick(world.id)}
+                    >
+                        {world.image && 
+                            <img 
+                                src={world.image.startsWith('http') ? world.image : `/static/${world.image.startsWith('/') ? world.image.substring(1) : world.image}`} 
+                                alt={world.name} 
+                                className="world-item-thumbnail"
+                            />
+                        }
+                        <div className="world-item-name">{world.name}</div>
+                    </div>
+                ))}
+
+                {/* Explicitly add "Coming Soon" placeholders to make up 4 total */}
+                {[...Array(Math.max(0, 4 - worlds.slice(0, 2).length))].map((_, index) => (
+                     <div key={`cs-${index}`} className="world-item coming-soon card">
+                         {/* Optional: Add a placeholder image */}
+                         {/* <img src="/static/images/placeholder_world.png" alt="Coming Soon" className="world-item-thumbnail placeholder"/> */}
+                         <div className="world-item-name">Coming Soon</div>
+                     </div>
+                ))}
             </div>
 
             {/* Enlarged Detail View (Conditionally Rendered) */}

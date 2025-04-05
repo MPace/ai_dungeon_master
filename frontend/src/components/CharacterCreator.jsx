@@ -175,7 +175,6 @@ function CharacterCreator() {
         <div className="container-fluid px-4 py-3">
              <header className="text-center mb-4">
                 <h1 className="display-4 text-light">Character Creation</h1>
-                <p className="lead text-light">Step {currentStep}: Define your hero</p>
             </header>
 
             {/* Optional: Loading and Error Display */}
