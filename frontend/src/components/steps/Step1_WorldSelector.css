@@ -60,7 +60,7 @@
   padding: 10px;
   min-width: min-content;
   width: max-content;
-  justify-content: flex-start; /* Center items if they fit */
+  justify-content: center; /* Center items if they fit */
 }
 
 /* World card styling */
