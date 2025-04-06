@@ -23,6 +23,9 @@ CAMPAIGNS_DIR = os.path.join(DATA_DIR, 'campaigns')
 CLASSES_DIR = os.path.join(DATA_DIR, 'classes')
 RACES_DIR = os.path.join(DATA_DIR, 'races')
 BACKGROUNDS_DIR = os.path.join(DATA_DIR, 'backgrounds')
+VITE_BASE_URL = "https://staging.arcanedm.com:8443/static/build/" # Base URL for Vite assets
+
+
 
 # Helper function to load manifest 
 def load_vite_manifest():
@@ -378,17 +381,19 @@ def delete_draft_route(draft_id):
 def get_worlds():
     """API endpoint to get a list of available worlds"""
     worlds = []
+    worlds_dir = os.path.join(current_app.root_path, '..', 'data', 'worlds')
+    
     try:
-        if not os.path.exists(WORLDS_DIR):
-            current_app.logger.error(f"Worlds directory not found: {WORLDS_DIR}")
+        if not os.path.exists(worlds_dir):
+            current_app.logger.error(f"Worlds directory not found: {worlds_dir}")
             return jsonify({"success": False, "error": "Worlds data not found"}), 500
     
-        for filename in os.listdir(WORLDS_DIR):
+        for filename in os.listdir(worlds_dir):
             if filename.endswith(".yaml") or filename.endswith(".yml"):
-                file_path = os.path.join(WORLDS_DIR, filename)
+                file_path = os.path.join(worlds_dir, filename)
                 current_app.logger.debug(f"Processiong world file: {filename}")
                 try:
-                    with open(file_path, 'r') as f:
+                    with open(file_path, 'r', encoding='utf-8') as f:
                         world_data = yaml.safe_load(f)
                         if not world_data:
                             current_app.logger.warning(f"World file {filename} is empty or invalid")
@@ -403,6 +408,15 @@ def get_worlds():
                             current_app.logger.warning(f"World file {filename} is missing 'name'. Skipping")
                             continue
 
+                        image_path = world_data.get("image")
+                        if image_path and image_path.startswith('/') and not image_path.startswith('http'):
+                            full_image_url = f"{VITE_BASE_URL}{image_path}"
+                            world_data["image"] = full_image_url
+                            current_app.logger.debug(f"Contstructed full image URL: {full_image_url}")
+                        
+                        elif image_path:
+                            world_data["image"] = image_path.strip('\'"')
+                        
                         # Extract only necessary info for the list
                         worlds.append({
                             "id": world_id,
