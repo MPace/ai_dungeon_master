@@ -181,7 +181,7 @@
   max-height: 800px;
   display: flex;
   flex-direction: column;
-  background-color: #232323;
+  position: relative;
   border-radius: 15px;
   overflow: hidden;
   box-shadow: 0 0 50px rgba(255, 100, 0, 0.3);
@@ -192,9 +192,12 @@
 
 /* Image container for expanded card */
 .world-expanded-image-container {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 60%;
-  position: relative;
+  height: 100%;
+  z-index: 1;
   overflow: hidden;
 }
 
@@ -212,14 +215,14 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.6);
   color: #fff;
   font-size: 24px;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  z-index: 10;
+  z-index: 3;
   transition: all 0.2s ease;
 }
 
@@ -230,12 +233,24 @@
 
 /* Content area for expanded card */
 .world-expanded-content {
+  position: relative;
+  z-index: 2;
   padding: 30px;
   display: flex;
   flex-direction: column;
   align-items: center;
   flex-grow: 1;
   overflow-y: auto;
+  height: 100%;
+  justify-content: flex-end;
+
+  background: linear-gradient(
+    to top, 
+    rgba(0, 0, 0, 0.9),0%, 
+    rgba(0, 0, 0, 0.8) 30%, 
+    rgba(0, 0, 0, 0.0) 70px,
+  );
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
 }
 
 .world-expanded-name {
@@ -264,7 +279,8 @@
   background-color: #863a20;
   border-color: #863a20;
   transition: all 0.3s ease;
-  margin-top: auto;
+  margin-top: 20px;
+  margin-bottom: 10px;
 }
 
 .confirm-world-btn:hover {
