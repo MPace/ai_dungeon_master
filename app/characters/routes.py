@@ -442,20 +442,21 @@ def get_worlds():
 
 @characters_bp.route('/api/campaigns/<world_id>', methods=['GET'])
 @login_required
-def get_campaign():
+def get_campaign(world_id):
     """API endpoint to get pre-made campaigns for a specific world."""
     campaigns = []
     
-    campaigns.append({
+    default_campaign = {
         "id": "dm_created",
         "name": "Let the DM create a campaign",
         "description": "Choose this option to have the AI Dungeon Master generate a unique campaign based on your character and world.",
         "themes": ["Varies" "Player-Driven"],
         "estimated_legnth": "Varies",
         "leveling": "Milestone",
-        "is_default": True
-                
-    })
+        "is_default": True           
+    }
+
+    campaigns.append(default_campaign)
 
     world_campaign_dir = os.path.join(CAMPAIGNS_DIR, world_id)
 
