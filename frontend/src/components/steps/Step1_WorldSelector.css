@@ -23,7 +23,7 @@
 /* Carousel wrapper to center the carousel */
 .worlds-carousel-wrapper {
   width: 100%;
-  display: flex;
+  display: block;
   justify-content: center;
   overflow-x: visible;
   margin-top: 20px;
