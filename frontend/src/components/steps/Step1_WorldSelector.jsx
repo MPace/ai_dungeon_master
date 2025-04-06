@@ -88,7 +88,7 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
             id: 'forgotten_realms',
             name: 'Forgotten Realms',
             description: 'The most popular D&D setting, a world of sword and sorcery, heroes and villains, light and darkness. From the shining spires of Waterdeep to the monster-infested depths of the Underdark, adventure awaits in every corner of this vast and varied land.',
-            image: '/images/forgotten_realms.jpg'
+            image: '/images/worlds/forgotten_realms.jpg'
         }]),
         // Add three "coming soon" placeholders
         { id: 'coming_soon_1', name: 'Coming Soon', isComingSoon: true },

@@ -4,7 +4,7 @@ id: forgotten_realms
 name: "Forgotten Realms"
 description: "A classic high-fantasy world of magic, monsters, and adventure, featuring iconic locations along the Sword Coast and beyond. Gods meddle in mortal affairs, ancient ruins hide powerful artifacts, and heroes rise to face looming threats."
 # Optional: Add a path or URL to an image for the UI selection
-image: /images/forgotten_realms.jpg 
+image: /images/worlds/forgotten_realms.jpg 
 
 # --- Allowed Options for Character Creation ---
 # These IDs should correspond to the 'id' field in your class/race/background YAML files.

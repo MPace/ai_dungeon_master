@@ -1,0 +1,66 @@
+/* File: frontend/src/components/steps/Step2_CampaignSelector.css */
+
+.campaign-selector-container {
+    padding: 20px;
+}
+
+.campaign-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Responsive grid */
+    gap: 20px;
+}
+
+.campaign-card {
+    cursor: pointer;
+    min-height: 300px; /* Ensure cards have a minimum height */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-width: 2px; /* Make border slightly thicker */
+}
+
+.campaign-card.default-option {
+    border-color: #ffc107; /* Highlight the default option */
+}
+
+.campaign-card.selected.default-option {
+     border-color: #ffc107; /* Keep highlight even when selected */
+     box-shadow: 0 0 15px rgba(255, 193, 7, 0.6); /* Gold glow for default selected */
+}
+
+.campaign-image {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 5px 5px 0 0;
+    opacity: 0.8;
+}
+
+.campaign-card .card-body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Ensure body takes available space */
+}
+
+.campaign-description {
+    flex-grow: 1; /* Allow description to take up space */
+    margin-bottom: 10px;
+    color: #ccc;
+}
+
+.campaign-details {
+    margin-top: auto; /* Push details to the bottom */
+    font-size: 0.85rem;
+    color: #aaa;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-top: 8px;
+}
+
+.campaign-details div {
+    margin-bottom: 3px;
+}
+
+.navigation-buttons {
+    padding-top: 20px;
+    border-top: 1px solid #3a3a3a;
+}

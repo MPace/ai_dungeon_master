@@ -1,0 +1,32 @@
+# File: data/campaigns/forgotten_realms/lost_mine_of_phandelver.yml
+
+id: lost_mine_of_phandelver # Unique ID for this campaign
+world_id: forgotten_realms  # Links this campaign to the Forgotten Realms world
+
+name: "Lost Mine of Phandelver"
+description: |
+  A classic introductory adventure set in the Sword Coast region. 
+  Hired to escort supplies to the rough-and-tumble frontier town of Phandalin, 
+  you find yourselves embroiled in a tale of goblin ambushes, missing persons, 
+  and the legendary Wave Echo Cave, a mine lost for centuries that holds untold riches 
+  and powerful magic. Uncover the secrets of Phandalin and face the mysterious 
+  Spider who schemes in the shadows.
+
+# Optional: Add an image path if you have one
+# image: /images/campaigns/lmop.jpg 
+
+themes:
+  - Introductory Adventure
+  - Exploration
+  - Dungeon Crawl
+  - Goblinoids
+  - Mystery
+
+estimated_length: "Short (Levels 1-5)" # Typically runs characters from level 1 to 5
+
+leveling: "Milestone" # Standard leveling method for LMoP
+
+# Optional: Add specific starting hooks or adjustments if needed
+# starting_hooks:
+#   - "Meet Gundren Rockseeker in Neverwinter..."
+#   - "Ambushed on the Triboar Trail..."

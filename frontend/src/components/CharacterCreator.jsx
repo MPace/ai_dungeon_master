@@ -3,6 +3,7 @@ import './CharacterCreator.css';
 
 // Import step components
 import Step1_WorldSelector from './steps/Step1_WorldSelector';
+import Step2_CampaignSelector from './steps/Step2_CampaignSelector';
 // Import other steps when ready
 
 const initialCharacterData = {
@@ -65,6 +66,15 @@ function CharacterCreator() {
                         nextStep={nextStep}
                     />
                 );
+            case 2:
+                return (
+                    <Step2_CampaignSelector
+                        characterData={characterData}
+                        updateCharacterData={updateCharacterData}
+                        nextStep={nextStep}
+                        prevStep={prevStep}
+                    />
+                )
             // Add cases for other steps
             default:
                 return <div>Step {currentStep} - Component not implemented yet.</div>;
