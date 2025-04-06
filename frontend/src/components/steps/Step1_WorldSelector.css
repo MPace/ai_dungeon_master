@@ -34,7 +34,7 @@
   max-width: 2400px; /* Control maximum width */
   overflow-x: auto;
   padding: 20px 0;
-  overflow-x: visible;
+  overflow-x: scroll;
   /* Hide scrollbar for Chrome, Safari and Opera */
   scrollbar-width: thin;
   scrollbar-color: #863a20 #171717;
