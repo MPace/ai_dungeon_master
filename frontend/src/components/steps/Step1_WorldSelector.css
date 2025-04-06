@@ -26,7 +26,7 @@
   margin-left: calc(-50vw + 50%);
   display: flex;
   justify-content: center;
-  overflow: visible;
+  overflow-x: visible;
   margin-top: 20px;
 }
 
