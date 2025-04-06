@@ -1,164 +1,281 @@
 /* File: frontend/src/components/steps/Step2_CampaignSelector.css */
 
-.campaign-selector-container {
+.step2-container {
+    display: flex;
+    gap: 25px; /* Space between columns */
     padding: 20px;
+    height: calc(100% - 50px); /* Adjust based on header/footer */
+    position: relative; /* Needed for absolute positioning of nav */
 }
 
-/* Use grid for layout, similar to world selector but maybe wrapping more easily */
-.campaign-grid {
-    display: grid;
-    /* Adjust minmax for potentially smaller campaign cards */
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 25px; /* Increased gap */
-    justify-content: center; /* Center items if they don't fill the row */
-}
-
-/* Base card styling - reuse 'selection-card' if defined globally, or copy relevant styles */
-.campaign-card {
-    /* Inherit or copy styles from .world-card in Step1_WorldSelector.css */
-    border-radius: 15px;
-    overflow: hidden;
-    position: relative;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
-    cursor: pointer;
-    transition: all 0.3s ease-in-out;
-    background-color: rgba(41, 41, 41, 0.8);
-    border: 2px solid #3a3a3a;
-    min-height: 350px; /* Adjust as needed */
+/* Left Column: Campaign List */
+.campaign-list-column {
+    flex: 0 0 300px; /* Fixed width for the list */
     display: flex;
     flex-direction: column;
+    background-color: rgba(31, 31, 31, 0.7); /* Dark bg for the column */
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #3a3a3a;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
-.campaign-card:hover {
-    /* Inherit or copy hover styles */
-    transform: translateY(-8px);
-    box-shadow: 0 10px 25px rgba(255, 100, 0, 0.2);
-    border-color: #a24a2c;
+.list-header {
+    color: #e0e0e0;
+    font-family: 'Cinzel', serif;
+    text-align: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #444;
 }
 
-.campaign-card.selected {
-    /* Inherit or copy selected styles */
-    border-color: #ff6400; /* Use a distinct selection color */
-    box-shadow: 0 0 20px rgba(255, 100, 0, 0.4);
-    transform: translateY(-5px) scale(1.02); /* Slight scale on select */
+.campaign-list-scrollable {
+    flex-grow: 1; /* Take remaining space */
+    overflow-y: auto; /* Enable vertical scrolling */
+    padding-right: 5px; /* Space for scrollbar */
 }
 
-/* Special style for the default 'DM Creates' option */
-.campaign-card.default-option {
-    border-color: #ffc107; /* Gold border */
-    background-color: rgba(51, 44, 31, 0.8); /* Slightly different background */
-}
-.campaign-card.default-option:hover {
-     box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3);
-     border-color: #ffda6b;
-}
-.campaign-card.default-option.selected {
-     border-color: #ffc107;
-     box-shadow: 0 0 20px rgba(255, 193, 7, 0.6); /* Brighter gold glow */
-}
-
-/* Image container */
-.campaign-image-container {
-    width: 100%;
-    height: 150px; /* Fixed height for campaign images */
+/* Styling for individual list items */
+.campaign-list-item {
+    height: 80px; /* Height for the long thin cards */
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border: 2px solid transparent; /* Start transparent */
+    background-color: #2a2a2a; /* Dark background */
+    background-size: cover;
+    background-position: center;
+    position: relative;
     overflow: hidden;
-    position: relative; /* Needed if you add overlays */
-    background-color: #2a2a2a; /* Placeholder bg */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex; /* To help with overlay */
+    align-items: flex-end; /* Align overlay to bottom */
 }
 
-.campaign-image {
+.campaign-list-item:hover {
+    border-color: #a24a2c;
+    transform: scale(1.02);
+    box-shadow: 0 4px 10px rgba(255, 100, 0, 0.2);
+}
+
+.campaign-list-item.selected {
+    border-color: #ff6400; /* Bright orange border when selected */
+    box-shadow: 0 0 15px rgba(255, 100, 0, 0.5);
+}
+
+.campaign-list-item.default-option {
+    border-color: #ffc107; /* Gold border for default */
+}
+
+.campaign-list-item.default-option:hover {
+     border-color: #ffda6b;
+     box-shadow: 0 4px 10px rgba(255, 193, 7, 0.3);
+}
+
+.campaign-list-item.default-option.selected {
+     border-color: #ffc107;
+     box-shadow: 0 0 15px rgba(255, 193, 7, 0.6);
+}
+
+
+/* Overlay for text on list items */
+.item-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, rgba(0, 0, 0, 0.7) 60%, transparent);
+    padding: 20px 10px 8px 10px; /* More padding at bottom */
+    transition: background 0.3s ease;
+}
+
+.item-title {
+    color: #e0e0e0;
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    display: block; /* Ensure it takes full width */
+}
+
+.campaign-list-item:hover .item-overlay {
+     background: linear-gradient(to top, rgba(0, 0, 0, 1) 30%, rgba(0, 0, 0, 0.8) 70%, transparent);
+}
+
+/* Optional: Add a checkmark indicator */
+.list-item-selected-indicator {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: #ff6400;
+    font-size: 1.5rem;
+    background-color: rgba(0,0,0,0.5);
+    border-radius: 50%;
+    padding: 2px;
+    line-height: 1;
+}
+.campaign-list-item.default-option.selected .list-item-selected-indicator {
+    color: #ffc107;
+}
+
+/* Right Column: Campaign Details */
+.campaign-details-column {
+    flex: 1; /* Take remaining space */
+    display: flex; /* Center placeholder if needed */
+    justify-content: center;
+    align-items: center;
+}
+
+.campaign-details-panel {
+    width: 100%;
+    height: 100%;
+    max-height: calc(100vh - 120px); /* Adjust based on header/footer/padding */
+    background-color: rgba(31, 31, 31, 0.85); /* Slightly different bg */
+    border-radius: 10px;
+    border: 2px solid #444; /* Slightly thicker border */
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent content spill */
+    /* Borrow styles from Step 1 expanded card */
+}
+
+.details-image-container {
+    width: 100%;
+    height: 250px; /* Adjust height as needed */
+    flex-shrink: 0; /* Prevent shrinking */
+    overflow: hidden;
+    background-color: #2a2a2a; /* Placeholder */
+}
+
+.details-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.4s ease;
 }
 
-.campaign-card:hover .campaign-image {
-    transform: scale(1.05);
-}
-
-/* Content styling - similar text overlay concept */
-.campaign-card .card-body {
-    padding: 15px;
-    position: relative; /* Use relative for potential absolute positioning inside */
+.details-content {
+    padding: 20px 25px;
     flex-grow: 1;
+    overflow-y: auto; /* Scroll if content overflows */
     display: flex;
     flex-direction: column;
-    /* Add a subtle gradient like the world cards if desired */
-    /* background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent 70%); */
 }
 
-.campaign-card .card-title {
-    /* Style like world name */
+.details-content h3 {
     font-family: 'Cinzel', serif;
-    color: #a24a2c;
-    font-size: 1.4rem;
-    margin-bottom: 10px;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+    color: #a24a2c; /* Match world selector */
+    margin-bottom: 15px;
+    text-align: center;
 }
 
-.campaign-card.default-option .card-title {
-    color: #ffc107; /* Gold title for default */
-}
-
-.campaign-description {
-    font-size: 0.9rem;
+.details-description {
     color: #ccc;
-    line-height: 1.5;
-    flex-grow: 1; /* Allow description to push details down */
-    margin-bottom: 10px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    font-size: 1rem;
 }
 
-.campaign-details {
-    font-size: 0.8rem;
-    color: #aaa;
-    border-top: 1px dashed rgba(255, 255, 255, 0.1);
-    padding-top: 8px;
-    margin-top: auto; /* Push to bottom */
-}
-
-.campaign-details div {
-    margin-bottom: 2px;
-}
-.campaign-details strong {
+.details-info {
+    margin-top: auto; /* Push to bottom before button */
+    padding-top: 15px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.2);
+    font-size: 0.9rem;
     color: #bbb;
 }
 
-/* Footer and selected indicator */
-.campaign-card .card-footer {
-    background: transparent; /* Remove card footer background */
-    border-top: none;
-    padding: 0; /* Remove padding */
-    height: 30px; /* Reserve space for indicator */
-    position: relative;
+.details-info div {
+    margin-bottom: 5px;
 }
 
-.campaign-card .selected-indicator {
+.details-info strong {
+    color: #ddd;
+}
+
+.confirm-button {
+    margin-top: 20px; /* Space above button */
+    width: 100%;
+    padding: 12px;
+    font-size: 1.2rem;
+}
+
+/* Placeholder styling */
+.details-placeholder {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+/* Scrollbar styling for the list */
+.campaign-list-scrollable::-webkit-scrollbar {
+    width: 8px;
+}
+.campaign-list-scrollable::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+.campaign-list-scrollable::-webkit-scrollbar-thumb {
+    background: rgba(108, 139, 172, 0.5);
+    border-radius: 4px;
+}
+.campaign-list-scrollable::-webkit-scrollbar-thumb:hover {
+    background: rgba(108, 139, 172, 0.7);
+}
+
+/* Scrollbar styling for the details panel content */
+.details-content::-webkit-scrollbar {
+    width: 8px;
+}
+.details-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+.details-content::-webkit-scrollbar-thumb {
+    background: rgba(162, 74, 44, 0.5); /* Match theme */
+    border-radius: 4px;
+}
+.details-content::-webkit-scrollbar-thumb:hover {
+     background: rgba(162, 74, 44, 0.7);
+}
+
+/* Navigation buttons at the bottom of the step */
+.step2-navigation {
     position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: #ff6400;
-    font-weight: bold;
-    font-size: 0.9rem;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    display: flex; /* Use flex for icon alignment */
-    align-items: center;
-    gap: 5px; /* Space between icon and text */
-}
-
-.campaign-card.selected .selected-indicator {
-    opacity: 1;
-}
-.campaign-card.default-option.selected .selected-indicator {
-    color: #ffc107; /* Gold indicator for default */
-}
-
-
-/* Navigation buttons */
-.navigation-buttons {
-    padding-top: 25px;
-    margin-top: 20px; /* Add space above buttons */
+    bottom: 20px; /* Adjust as needed */
+    left: 20px; /* Match container padding */
+    right: 20px; /* Match container padding */
+    display: flex;
+    justify-content: space-between;
+    padding-top: 15px;
     border-top: 1px solid #3a3a3a;
+}
+
+/* Loading container */
+.loading-container, .error-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px; /* Give it some height */
+    width: 100%;
+    color: #ccc;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .step2-container {
+        flex-direction: column;
+        height: auto;
+    }
+    .campaign-list-column {
+        flex: 0 0 auto; /* Allow height to adjust */
+        max-height: 40vh; /* Limit height on smaller screens */
+        margin-bottom: 20px;
+    }
+    .campaign-details-column {
+        min-height: 300px; /* Ensure details panel has some height */
+    }
+     .step2-navigation {
+        position: static; /* Change from absolute */
+        margin-top: 20px;
+    }
 }
