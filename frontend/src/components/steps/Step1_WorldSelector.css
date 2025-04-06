@@ -22,9 +22,11 @@
 
 /* Carousel wrapper to center the carousel */
 .worlds-carousel-wrapper {
-  width: 100%;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
   display: flex;
   justify-content: center;
+  overflow: visible;
   margin-top: 20px;
 }
 
