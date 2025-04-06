@@ -23,8 +23,7 @@
 /* Carousel wrapper to center the carousel */
 .worlds-carousel-wrapper {
   width: 100vw;
-  margin-left: calc(-50vw + 50%);
-  display: flex;
+  display: block;
   justify-content: center;
   overflow-x: visible;
   margin-top: 20px;
@@ -33,7 +32,6 @@
 /* Carousel with horizontal scroll */
 .worlds-carousel {
   width: 100%;
-  max-width: 1600px; /* Control maximum width */
   overflow-x: auto;
   padding: 20px 0;
   /* Hide scrollbar for Chrome, Safari and Opera */
@@ -61,7 +59,8 @@
   display: flex;
   padding: 10px;
   min-width: min-content;
-  justify-content: center; /* Center items if they fit */
+  width: max-content;
+  justify-content: flex-start; /* Center items if they fit */
 }
 
 /* World card styling */
