@@ -14,7 +14,7 @@
 .world-selector-title {
   text-align: center;
   font-family: 'Cinzel', serif;
-  color: #ff6400;
+  color: #a24a2c;
   font-size: 2.5rem;
   text-shadow: 0 0 15px rgba(255, 100, 0, 0.5);
   margin-bottom: 40px;
@@ -81,7 +81,7 @@
 .world-card:hover:not(.coming-soon) {
   transform: translateY(-10px);
   box-shadow: 0 15px 40px rgba(255, 100, 0, 0.3);
-  border-color: #ff6400;
+  border-color: #a24a2c;
 }
 
 /* Image container takes full height of card */
@@ -114,7 +114,7 @@
 }
 
 .world-name {
-  color: #ff6400;
+  color: #a24a2c;
   font-family: 'Cinzel', serif;
   text-align: center;
   font-size: 2rem;
@@ -185,7 +185,7 @@
   border-radius: 15px;
   overflow: hidden;
   box-shadow: 0 0 50px rgba(255, 100, 0, 0.3);
-  border: 3px solid #ff6400;
+  border: 3px solid #a24a2c;
   animation: expandCard 0.5s ease-in-out;
   position: relative;
 }
@@ -239,7 +239,7 @@
 }
 
 .world-expanded-name {
-  color: #ff6400;
+  color: #a24a2c;
   font-family: 'Cinzel', serif;
   font-size: 2.5rem;
   margin-bottom: 20px;
