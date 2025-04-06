@@ -245,25 +245,15 @@
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
 }
 
+
 .world-text-overlay {
-  position: relative;
   background: rgba(0, 0, 0, 0.6);
   padding: 30px 20px;
   border-radius: 10px;
+  width: 100%;
   max-width: 900px;
   text-align: center;
   backdrop-filter: blur(2px);
-  overflow: hidden;
-
-  /* 💡 This is the key */
-  -webkit-mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0) 100%);
-  mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0) 100%);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
 }
 
 
