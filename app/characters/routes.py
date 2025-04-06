@@ -442,79 +442,94 @@ def get_worlds():
 
 @characters_bp.route('/api/campaigns/<world_id>', methods=['GET'])
 @login_required
-def get_campaign(world_id):
+def get_campaigns(world_id):
     """API endpoint to get pre-made campaigns for a specific world."""
     campaigns = []
-    
     default_campaign = {
         "id": "dm_created",
-        "name": "Let the DM create a campaign",
+        "name": "Let the DM Create",
         "description": "Choose this option to have the AI Dungeon Master generate a unique campaign based on your character and world.",
-        "themes": ["Varies" "Player-Driven"],
-        "estimated_legnth": "Varies",
-        "leveling": "Milestone",
-        "is_default": True           
+        "themes": ["Varies", "Player-Driven"],
+        "estimated_length": "Varies",
+        "leveling": "Milestone (typically)",
+        "is_default": True
     }
-
     campaigns.append(default_campaign)
 
     world_campaign_dir = os.path.join(CAMPAIGNS_DIR, world_id)
-
-    current_app.logger.info(f"Looking for campaigns in {world_campaign_dir}")
+    current_app.logger.info(f"Attempting to load campaigns for world '{world_id}' from: {world_campaign_dir}")
 
     try:
         if not os.path.exists(CAMPAIGNS_DIR):
             current_app.logger.warning(f"Root campaigns directory not found: {CAMPAIGNS_DIR}")
-            # Return only the default option if the main directory doesn't exist
-            return jsonify({"success": True, "campaigns": campaigns})
+            return jsonify({"success": True, "campaigns": campaigns}) # Return default only
 
-        if not os.path.exists(world_campaign_dir):
-            current_app.logger.info(f"No specific campaign directory found for world: {world_id}. Returning default.")
-            # Return only the default option if the world-specific directory doesn't exist
-            return jsonify({"success": True, "campaigns": campaigns})
+        if not os.path.isdir(world_campaign_dir): # Check if it's a directory
+            current_app.logger.info(f"No campaign directory found for world: {world_id}. Returning default campaign.")
+            return jsonify({"success": True, "campaigns": campaigns}) # Return default only
 
+        try:
+            files_in_dir = os.listdir(world_campaign_dir)
+            current_app.logger.info(f"Files found: {files_in_dir}")
+        except Exception as list_err:
+            current_app.logger.error(f"Error listing files in directory {world_campaign_dir}: {list_err}")
+            return jsonify({"success": True, "Campaigns" : campaigns})
+        
         for filename in os.listdir(world_campaign_dir):
             if filename.endswith((".yaml", ".yml")):
+                
+                current_app.logger.debug(f"Found potential campaign file: {filename}")
                 file_path = os.path.join(world_campaign_dir, filename)
+                current_app.logger.debug(f"Processing campaign file: {filename}")
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:
                         campaign_data = yaml.safe_load(f)
                         if not campaign_data:
-                            current_app.logger.warning(f"Campaign file {filename} is empty or invalid.")
+                            current_app.logger.warning(f"Campaign file {filename} is empty or invalid YAML.")
                             continue
-                            
-                        # Validate required fields
-                        if not all(k in campaign_data for k in ['id', 'name', 'description']):
-                             current_app.logger.warning(f"Campaign file {filename} missing required fields (id, name, description). Skipping.")
-                             continue
 
-                        # Add the loaded campaign data
-                        campaigns.append({
+                        # Basic validation
+                        if not all(k in campaign_data for k in ['id', 'name', 'description']):
+                            current_app.logger.warning(f"Campaign file {filename} missing required fields (id, name, description). Skipping.")
+                            continue
+
+                        # Construct campaign dict
+                        loaded_campaign = {
                             "id": campaign_data.get("id"),
                             "name": campaign_data.get("name"),
                             "description": campaign_data.get("description"),
-                            "themes": campaign_data.get("themes", ["Adventure"]), # Default theme
+                            "themes": campaign_data.get("themes", ["Adventure"]),
                             "estimated_length": campaign_data.get("estimated_length", "Medium"),
                             "leveling": campaign_data.get("leveling", "Milestone"),
-                            "image": campaign_data.get("image", None), # Optional image
+                            "image": campaign_data.get("image"), # Handle image path later if needed
                             "is_default": False
-                        })
-                        current_app.logger.debug(f"Loaded campaign: {campaign_data.get('name')}")
+                        }
+                        campaigns.append(loaded_campaign)
+                        current_app.logger.debug(f"Successfully loaded campaign: {campaign_data.get('name')}")
 
                 except yaml.YAMLError as e:
-                    current_app.logger.error(f"Error parsing YAML file {filename}: {e}")
+                    # Log YAML parsing errors specifically
+                    current_app.logger.error(f"Error parsing YAML file {filename}: {e}", exc_info=True)
+                    # Optionally continue to next file or return error depending on desired behavior
+                    continue # Continue to try loading other files
+                except FileNotFoundError:
+                     current_app.logger.error(f"Campaign file not found during iteration (unexpected): {file_path}")
+                     continue # Continue to try loading other files
                 except Exception as e:
-                    current_app.logger.error(f"Error loading campaign file {filename}: {e}")
+                    # Log other errors during file processing
+                    current_app.logger.error(f"Error loading campaign file {filename}: {e}", exc_info=True)
+                    continue # Continue to try loading other files
 
-        current_app.logger.info(f"Returning {len(campaigns)} campaigns for world {world_id}")
+        current_app.logger.info(f"Successfully loaded {len(campaigns) - 1} campaigns from directory for world {world_id}")
         return jsonify({"success": True, "campaigns": campaigns})
 
     except Exception as e:
-        current_app.logger.error(f"Error reading campaigns directory {world_campaign_dir}: {e}")
-        import traceback
-        current_app.logger.error(traceback.format_exc())
-        # Return only the default option in case of error
-        return jsonify({"success": True, "campaigns": [campaigns[0]]}) # Return only default on error
+        # Log any errors occurring during directory listing or path manipulation
+        current_app.logger.error(f"General error reading campaigns directory {world_campaign_dir}: {e}", exc_info=True)
+        # Return only the default option in case of a significant error
+        # Using 500 status code as the frontend received it
+        return jsonify({"success": False, "error": f"Failed to retrieve campaigns for world {world_id}.", "details": str(e)}), 500
+
 
 def load_data_from_file(file_path):
     """Helper to load YAML data from a file."""

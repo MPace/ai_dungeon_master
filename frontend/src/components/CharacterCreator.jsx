@@ -111,29 +111,31 @@ function CharacterCreator() {
 
     // Main component return
     return (
+        // Consider a conditional class: className={`character-creator-container ${currentStep === 1 ? 'step1-layout' : 'standard-layout'}`}
         <div className="character-creator-container">
-            {/* We only need the header for steps 2+ */}
+            {/* We only need the main header for steps 2+ */}
             {currentStep > 1 && (
                 <header className="text-center mb-4">
-                    <h1 className="display-4 text-light">Character Creation</h1>
+                    {/* You might want a more specific header per step later */}
+                    <h1 className="display-4 text-light">Character Creation - Step {currentStep}</h1>
                 </header>
             )}
 
             {/* Loading and error display */}
             {isLoading && <div className="text-center text-light">Loading...</div>}
             {error && <div className="alert alert-danger" role="alert">{error}</div>}
-            
-            {/* For step 1, we use a full-page layout */}
+
+            {/* For step 1, we use a distinct layout (like the full-page world selector) */}
             {currentStep === 1 ? (
-                <div className="full-page-step">
-                    {renderCurrentStep()}
-                </div>
+                 // Step 1 component doesn't need the card wrapper or step indicator
+                 renderCurrentStep()
             ) : (
+                 // For steps 2+, wrap content in a standard centered layout
                 <div className="row justify-content-center">
                     <div className="col-md-10 col-lg-8">
-                        {renderStepIndicator()}
-                        
-                        <div className="card character-card">
+                        {/* REMOVED: renderStepIndicator() was here */}
+
+                        <div className="card character-card"> {/* Re-use styling */}
                             <div className="card-body">
                                 {renderCurrentStep()}
                             </div>
