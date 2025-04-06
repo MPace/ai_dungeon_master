@@ -272,6 +272,10 @@
   pointer-events: none;
 }
 
+.world-text-overlay > * {
+  position: relative;
+  z-index: 2;
+}
 
 .world-expanded-name {
   color: #a24a2c;
