@@ -23,17 +23,16 @@
 /* Carousel wrapper to center the carousel */
 .worlds-carousel-wrapper {
   width: 100%;
-  display: block;
+  display: flex;
   justify-content: center;
-  overflow-x: visible;
   margin-top: 20px;
 }
 
 /* Carousel with horizontal scroll */
 .worlds-carousel {
   width: 100%;
-  max-width: auto;
-  overflow-x: visible;
+  max-width: 1600px; /* Control maximum width */
+  overflow-x: auto;
   padding: 20px 0;
   /* Hide scrollbar for Chrome, Safari and Opera */
   scrollbar-width: thin;
