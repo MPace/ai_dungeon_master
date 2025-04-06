@@ -147,17 +147,19 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
                             <div className="close-button" onClick={() => { console.log('Close button clicked'); setSelectedWorldId(null); }}>×</div>
                         </div>
                         <div className="world-expanded-content">
-                            <h2 className="world-expanded-name">{selectedWorld.name}</h2>
-                            <p className="world-expanded-description">{selectedWorld.description}</p>
-                            <button 
-                                className="btn btn-primary confirm-world-btn"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleConfirmWorld();
-                                }}
-                            >
-                                Begin Adventure
-                            </button>
+                            <div className="world-text-overlay">
+                                <h2 className="world-expanded-name">{selectedWorld.name}</h2>
+                                <p className="world-expanded-description">{selectedWorld.description}</p>
+                                <button 
+                                    className="btn btn-primary confirm-world-btn"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleConfirmWorld();
+                                    }}
+                                >
+                                    Begin Adventure
+                                </button>
+                            </div>    
                         </div>
                     </div>
                 </div>
