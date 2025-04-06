@@ -144,7 +144,7 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
                                     className="world-expanded-image"
                                 />
                             )}
-                            <div className="close-button" onClick={() => setSelectedWorldId(null)}>×</div>
+                            <div className="close-button" onClick={() => { console.log('Close button clicked'); setSelectedWorldId(null); }}>×</div>
                         </div>
                         <div className="world-expanded-content">
                             <h2 className="world-expanded-name">{selectedWorld.name}</h2>
