@@ -115,7 +115,7 @@ function Step1_WorldSelector({ characterData, updateCharacterData, nextStep }) {
                                 <div className="world-image-container">
                                     {!world.isComingSoon && world.image ? (
                                         <img
-                                            src={world.image.startsWith('http') ? world.image : `/static/${world.image.startsWith('/') ? world.image.substring(1) : world.image}`}
+                                            src={world.image}
                                             alt={world.name}
                                             className="world-image"
                                         />
