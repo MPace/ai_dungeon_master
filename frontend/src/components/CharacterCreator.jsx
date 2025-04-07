@@ -109,36 +109,41 @@ function CharacterCreator() {
         );
     };
 
+    const useCardWrapper = ![1,2].includes(currentStep);
+
     // Main component return
     return (
-        // Consider a conditional class: className={`character-creator-container ${currentStep === 1 ? 'step1-layout' : 'standard-layout'}`}
         <div className="character-creator-container">
-            
+            {currentStep > 1 && (
+                <header className='text-center mb-4'>
+                </header>
+            )}
 
             {/* Loading and error display */}
             {isLoading && <div className="text-center text-light">Loading...</div>}
             {error && <div className="alert alert-danger" role="alert">{error}</div>}
 
-            {/* For step 1, we use a distinct layout (like the full-page world selector) */}
-            {currentStep === 1 ? (
-                 // Step 1 component doesn't need the card wrapper or step indicator
-                 renderCurrentStep()
-            ) : (
-                 // For steps 2+, wrap content in a standard centered layout
-                <div className="row justify-content-center">
-                    <div className="col-md-10 col-lg-8">
-                        {/* REMOVED: renderStepIndicator() was here */}
-
-                        <div className="card character-card"> {/* Re-use styling */}
-                            <div className="card-body">
-                                {renderCurrentStep()}
+            {!isLoading && !error && (
+                useCardWrapper ? (
+                    // Steps 3+ get the card wrapper (for forms, etc.)
+                    <div className="row justify-content-center">
+                        <div className="col-md-10 col-lg-8">
+                            <div className="card character-card">
+                                <div className="card-body">
+                                    {renderCurrentStep()}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                ) : (
+                    // Steps 1 and 2 render without the card wrapper
+                    renderCurrentStep()
+                )
             )}
         </div>
     );
 }
+
+
 
 export default CharacterCreator;

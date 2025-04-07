@@ -1,16 +1,16 @@
 /* File: frontend/src/components/steps/Step2_CampaignSelector.css */
 
-/* Overall container for the step - NO background or border */
+/* Overall container for Step 2 content - no background/border */
 .step2-outer-container {
     padding: 20px;
     display: flex;
     flex-direction: column;
-    align-items: center; /* Center the list horizontally */
-    min-height: calc(100vh - 100px);
-    position: relative;
+    align-items: center; /* Center content like the list */
+    min-height: calc(100vh - 150px); /* Ensure it takes height */
+    position: relative; /* For absolute positioning of nav/overlay */
 }
 
-/* Title Style - Mirror Step 1 */
+/* Title Style - Copied from Step 1 World Selector */
 .step2-title {
     text-align: center;
     font-family: 'Cinzel', serif;
@@ -20,36 +20,35 @@
     margin-bottom: 40px;
 }
 
-/* Container FOR the scrollable list, but WITHOUT visible styling */
+/* Wrapper for the scrollable list - NO VISIBLE STYLES */
 .campaign-list-scrollable-outer {
      width: 100%;
-     max-width: 600px; /* Max width of the list area */
-     flex-grow: 1;
-     overflow-y: auto; /* Still allow scrolling */
-     /* REMOVED background, border, padding from here */
-     /* Optional: Add subtle scrollbar */
+     max-width: 600px; /* Controls list width */
+     flex-grow: 1; /* Allows vertical scroll */
+     overflow-y: auto;
+     /* REMOVED background, border, padding */
+     /* Optional: Subtle scrollbar */
      scrollbar-width: thin;
-     scrollbar-color: #863a20 #171717;
+     scrollbar-color: rgba(134, 58, 32, 0.5) transparent; /* Handle background transparency */
 }
-.campaign-list-scrollable-outer::-webkit-scrollbar { height: 8px; }
-.campaign-list-scrollable-outer::-webkit-scrollbar-track { background: transparent; } /* Make track transparent */
+.campaign-list-scrollable-outer::-webkit-scrollbar { width: 8px; }
+.campaign-list-scrollable-outer::-webkit-scrollbar-track { background: transparent; }
 .campaign-list-scrollable-outer::-webkit-scrollbar-thumb { background-color: rgba(134, 58, 32, 0.5); border-radius: 4px; }
 .campaign-list-scrollable-outer::-webkit-scrollbar-thumb:hover { background-color: rgba(134, 58, 32, 0.8); }
-
 
 .campaign-list {
     display: flex;
     flex-direction: column;
-    gap: 20px; /* Increased gap for more spacing */
-    padding: 10px 0; /* Add some vertical padding if needed */
+    gap: 20px; /* Vertical space BETWEEN items */
+    padding: 10px 0; /* Optional padding top/bottom inside scroll area */
 }
 
-/* Individual list item card styling - These HAVE backgrounds/borders */
+/* Individual list item card - THIS has styling */
 .campaign-list-item {
     height: 90px;
     border-radius: 8px;
-    border: 2px solid #3a3a3a; /* Keep border on item */
-    background-color: #2a2a2a; /* Keep background on item */
+    border: 2px solid #3a3a3a;
+    background-color: rgba(42, 42, 42, 0.8); /* Slightly lighter than pure black */
     background-size: cover;
     background-position: center;
     position: relative;
@@ -60,8 +59,7 @@
     flex-direction: column;
     justify-content: flex-end;
     padding: 10px 15px;
-    box-shadow: 0 3px 8px rgba(0,0,0, 0.3);
-    /* REMOVED margin-bottom, using gap in .campaign-list instead */
+    box-shadow: 0 3px 8px rgba(0,0,0, 0.4); /* Slightly stronger shadow */
 }
 
 .campaign-list-item:hover {
@@ -70,53 +68,42 @@
     box-shadow: 0 5px 15px rgba(255, 100, 0, 0.2);
 }
 
-/* (Keep the rest of the .campaign-list-item styles: .item-overlay, .item-title, .item-themes, .default-option etc.) */
-.item-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, rgba(0, 0, 0, 0.7) 60%, transparent);
-    padding: 20px 10px 8px 10px;
+.campaign-list-item.default-option { border-color: #ffc107; }
+.campaign-list-item.default-option:hover { border-color: #ffda6b; box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3); }
+
+.item-overlay { /* Gradient overlay for text readability */
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.7) 40%, transparent 80%);
     transition: background 0.3s ease;
+    z-index: 1; /* Below text */
+    border-radius: इन्हेरिट; /* Match parent */
 }
-.item-title {
-    color: #e0e0e0;
-    font-family: 'Cinzel', serif;
-    font-size: 1.3rem;
-    font-weight: 500;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
+.campaign-list-item:hover .item-overlay { background: linear-gradient(to top, rgba(0, 0, 0, 1) 10%, rgba(0, 0, 0, 0.8) 50%, transparent 90%); }
+
+.item-title { /* Positioned relative to card */
+    position: relative; /* Needed for z-index */
     z-index: 2;
-    line-height: 1.2;
+    color: #e0e0e0; font-family: 'Cinzel', serif; font-size: 1.3rem; font-weight: 500;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9); line-height: 1.2;
+    padding-left: 5px; /* Add slight padding from edge */
+    padding-bottom: 2px;
 }
-.item-themes {
-     color: #bbb;
-     font-size: 0.8rem;
-     z-index: 2;
-     margin-top: 2px;
-     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
-}
-.campaign-list-item.default-option {
-    border-color: #ffc107;
-}
-.campaign-list-item.default-option:hover {
-     border-color: #ffda6b;
-     box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
+.item-themes { /* Positioned relative to card */
+    position: relative; /* Needed for z-index */
+    z-index: 2;
+    color: #bbb; font-size: 0.8rem; margin-top: 2px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+    padding-left: 5px; /* Add slight padding from edge */
 }
 
-
-/* --- Details Panel (Overlay - Keep As Is) --- */
-.details-backdrop {
-    /* ... (styles from previous answer remain the same) ... */
-     position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.85);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 1050;
+/* --- Details Panel (Overlay) --- */
+.details-backdrop { /* Full screen overlay */
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); display: flex;
+    justify-content: center; align-items: center; z-index: 1050;
     animation: fadeIn 0.3s ease-in-out;
 }
-.campaign-details-panel {
-    /* ... (styles from previous answer remain the same - this is the overlay) ... */
+.campaign-details-panel { /* The card appearing in the overlay */
     width: 90%; max-width: 800px; height: 85vh; max-height: 700px;
     display: flex; flex-direction: column; position: relative;
     border-radius: 15px; overflow: hidden;
@@ -125,14 +112,15 @@
     background-color: rgba(31, 31, 31, 0.95);
     animation: expandCard 0.4s ease-out;
 }
-.close-details-btn {
-    /* ... (styles from previous answer remain the same) ... */
-     position: absolute; top: 15px; right: 15px; width: 35px; height: 35px;
+.close-details-btn { /* Close button styling */
+    position: absolute; top: 15px; right: 15px; width: 35px; height: 35px;
     border-radius: 50%; background-color: rgba(0, 0, 0, 0.7); color: #fff;
     font-size: 24px; display: flex; justify-content: center; align-items: center;
     cursor: pointer; z-index: 10; transition: all 0.2s ease; border: none; line-height: 1;
 }
 .close-details-btn:hover { background-color: rgba(255, 100, 0, 0.8); transform: scale(1.1); }
+
+/* (Keep internal details styles: .details-image-container, .details-content, .details-description, .details-info, .confirm-button etc. from previous CSS) */
 .details-image-container { width: 100%; height: 220px; flex-shrink: 0; overflow: hidden; background-color: #2a2a2a; }
 .details-image { width: 100%; height: 100%; object-fit: cover; }
 .details-content { padding: 20px 25px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; color: #ccc; }
@@ -148,19 +136,19 @@
 .details-content::-webkit-scrollbar-thumb:hover { background: rgba(162, 74, 44, 0.8); }
 
 
-/* Bottom navigation */
+/* Bottom navigation - position relative to outer container */
 .step2-navigation {
     width: 100%;
-    max-width: 800px; /* Align with details panel width */
+    max-width: 800px; /* Align width roughly */
     padding: 20px 0;
-    margin-top: 30px;
+    margin-top: 30px; /* Space above */
     display: flex;
-    justify-content: flex-start; /* Keep back button left */
+    justify-content: flex-start;
     border-top: 1px solid #3a3a3a;
 }
 
-/* (Keep loading/error/animation styles from previous answer) */
-.loading-container, .error-container { display: flex; justify-content: center; align-items: center; min-height: 300px; width: 100%; color: #ccc; }
-.error-container { color: #dc3545; }
+/* (Keep animations and loading/error styles) */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes expandCard { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+.loading-container, .error-container { display: flex; justify-content: center; align-items: center; min-height: 300px; width: 100%; color: #ccc; }
+.error-container { color: #dc3545; }
