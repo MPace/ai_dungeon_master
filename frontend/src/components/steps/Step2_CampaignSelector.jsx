@@ -1,18 +1,22 @@
 // File: frontend/src/components/steps/Step2_CampaignSelector.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import './Step2_CampaignSelector.css'; // We'll create new styles
+import './Step2_CampaignSelector.css'; // Styles will be updated
 
 function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, prevStep }) {
     const [campaigns, setCampaigns] = useState([]);
-    // State to hold the *full data* of the selected campaign for the details panel
-    const [selectedCampaignDetails, setSelectedCampaignDetails] = useState(null);
+    // State to hold the *full data* of the campaign selected for the details overlay
+    const [selectedCampaignDetails, setSelectedCampaignDetails] = useState(null); // Initialize as null
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
     // Fetch campaigns
     useEffect(() => {
-        if (!characterData.worldId) {
+        // ... (Keep the existing fetch logic from the previous version) ...
+        // Make sure it sorts the campaigns with default last and potentially sets
+        // a default selection *without* showing the details panel initially.
+        // We will NOT set selectedCampaignDetails here initially.
+         if (!characterData.worldId) {
             setError("No world selected. Please go back to Step 1.");
             setIsLoading(false);
             return;
@@ -20,37 +24,20 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
 
         setIsLoading(true);
         setError(null);
-        console.log(`Step2: Fetching campaigns for world: ${characterData.worldId}...`);
-
         fetch(`/characters/api/campaigns/${characterData.worldId}`)
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 return response.json();
             })
             .then(data => {
-                console.log("Step2: Campaigns fetched:", data);
                 if (data.success && Array.isArray(data.campaigns)) {
-                    // Ensure "DM Creates" is last
                     const dmOption = data.campaigns.find(c => c.is_default);
                     const otherCampaigns = data.campaigns.filter(c => !c.is_default);
                     const sortedCampaigns = dmOption ? [...otherCampaigns, dmOption] : otherCampaigns;
-
                     setCampaigns(sortedCampaigns);
-
-                    // Pre-select based on existing character data or default to DM option if available
-                    const currentCampaignId = characterData.campaignId;
-                    let initialSelection = null;
-                    if (currentCampaignId) {
-                         initialSelection = sortedCampaigns.find(c => c.id === currentCampaignId);
-                    }
-                    // If no current selection or not found, try selecting the default DM option
-                    if (!initialSelection && dmOption) {
-                         initialSelection = dmOption;
-                    }
-                     // If still nothing selected, maybe select the first one? Or leave null?
-                     // Selecting the DM option is a safe default.
-                     setSelectedCampaignDetails(initialSelection);
-
+                    // DO NOT set selectedCampaignDetails here initially
+                    // If restoring from draft, we store the ID but don't show details yet
+                    // setSelectedCampaignDetails(null);
                 } else {
                     throw new Error(data.error || 'Invalid data format for campaigns.');
                 }
@@ -61,29 +48,30 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
                 setError(`Failed to load campaigns: ${err.message}. Check API endpoint or server logs.`);
                 setIsLoading(false);
             });
-    }, [characterData.worldId, characterData.campaignId]); // Refetch if world changes, update selection if campaignId changes
+    }, [characterData.worldId]); // Only fetch when worldId changes
 
-    // Handler when a campaign is clicked in the list
+    // Handler when a campaign LIST ITEM is clicked
     const handleCampaignSelect = useCallback((campaign) => {
-        setSelectedCampaignDetails(campaign);
+        console.log("Campaign selected for details view:", campaign.name);
+        setSelectedCampaignDetails(campaign); // Set details to show the overlay
     }, []);
 
-    // Handler for the final confirmation button
+     // Handler to close the details overlay
+    const closeDetailsPanel = useCallback(() => {
+        setSelectedCampaignDetails(null);
+    }, []);
+
+    // Handler for the final confirmation button (inside the details overlay)
     const handleConfirmCampaign = () => {
-        if (!selectedCampaignDetails) {
-             setError("Please select a campaign option.");
-             return;
-        }
+        if (!selectedCampaignDetails) return; // Should not happen if button is only in details
 
         console.log(`Campaign confirmed: ${selectedCampaignDetails.name}`);
         updateCharacterData({
             campaignId: selectedCampaignDetails.id,
             campaignName: selectedCampaignDetails.name,
-            // Reset subsequent steps
-            classId: null,
-            // ... reset other relevant fields ...
+            classId: null, // Reset subsequent steps
         });
-        nextStep(); // Proceed to Step 3 (Class Choice)
+        nextStep();
     };
 
     // --- Render Logic ---
@@ -92,54 +80,49 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
     }
 
     if (error) {
-        // Added a button to go back if there's an error
         return (
              <div className="error-container alert alert-danger">
                 <p>{error}</p>
-                 <button className="btn btn-secondary btn-sm" onClick={prevStep}>
-                    Go Back
-                </button>
+                 <button className="btn btn-secondary btn-sm" onClick={prevStep}>Go Back</button>
             </div>
         );
     }
 
+    // Main component structure: Title, List, Overlay (conditional), Navigation
     return (
-        <div className="step2-container">
-            {/* Left Column: Campaign List */}
-            <div className="campaign-list-column">
-                <h4 className="list-header">Select a Campaign</h4>
-                <div className="campaign-list-scrollable">
+        <div className="step2-outer-container"> {/* Use a simple outer container */}
+            {/* Title styled like Step 1 */}
+            <h2 className="step2-title">Choose Your Campaign</h2>
+
+            {/* Vertically scrollable list */}
+            <div className="campaign-list-scrollable-outer">
+                 <div className="campaign-list">
                     {campaigns.map((campaign) => (
                         <div
                             key={campaign.id}
-                            className={`campaign-list-item ${selectedCampaignDetails?.id === campaign.id ? 'selected' : ''} ${campaign.is_default ? 'default-option' : ''}`}
+                            className={`campaign-list-item ${campaign.is_default ? 'default-option' : ''}`}
                             onClick={() => handleCampaignSelect(campaign)}
-                            style={{ backgroundImage: campaign.image ? `url(${campaign.image})` : 'none' }}
-                        >
-                            <div className="item-overlay">
-                                <span className="item-title">{campaign.name}</span>
-                            </div>
-                             {/* Selection Indicator (optional visual cue) */}
-                             {selectedCampaignDetails?.id === campaign.id && (
-                                 <div className="list-item-selected-indicator">
-                                     <i className="bi bi-check-lg"></i>
-                                 </div>
-                             )}
-                        </div>
+                            // Apply background image directly for simplicity here
+                            style={{ backgroundImage: campaign.image ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${campaign.image})` : 'linear-gradient(#333, #222)' }}
+                         >
+                             <span className="item-title">{campaign.name}</span>
+                             {/* Minimal details directly on card if desired, or keep it clean */}
+                             <span className="item-themes small">{campaign.themes?.slice(0, 2).join(', ')}</span>
+                         </div>
                     ))}
-                </div>
-            </div>
+                 </div>
+             </div>
 
-            {/* Right Column: Campaign Details */}
-            <div className="campaign-details-column">
-                {selectedCampaignDetails ? (
-                    <div className="campaign-details-panel">
-                        {/* Use a container for the image to control its size/aspect ratio */}
+            {/* Details Panel Overlay - Conditionally Rendered */}
+            {selectedCampaignDetails && (
+                <div className="details-backdrop" onClick={closeDetailsPanel}> {/* Backdrop closes panel */}
+                    <div className="campaign-details-panel" onClick={(e) => e.stopPropagation()}> {/* Prevent clicks inside from closing */}
+                        <button className="close-details-btn" onClick={closeDetailsPanel}>×</button>
                         {selectedCampaignDetails.image && (
-                             <div className="details-image-container">
-                                 <img src={selectedCampaignDetails.image} alt={selectedCampaignDetails.name} className="details-image"/>
-                             </div>
-                         )}
+                            <div className="details-image-container">
+                                <img src={selectedCampaignDetails.image} alt={selectedCampaignDetails.name} className="details-image"/>
+                            </div>
+                        )}
                         <div className="details-content">
                             <h3>{selectedCampaignDetails.name}</h3>
                             <p className="details-description">{selectedCampaignDetails.description}</p>
@@ -148,7 +131,7 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
                                 {selectedCampaignDetails.estimated_length && <div><strong>Length:</strong> {selectedCampaignDetails.estimated_length}</div>}
                                 {selectedCampaignDetails.leveling && <div><strong>Leveling:</strong> {selectedCampaignDetails.leveling}</div>}
                             </div>
-                             <button
+                            <button
                                 className="btn btn-primary btn-lg mt-4 confirm-button"
                                 onClick={handleConfirmCampaign}
                              >
@@ -156,20 +139,15 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
                              </button>
                         </div>
                     </div>
-                ) : (
-                    // Placeholder if nothing is selected (optional)
-                    <div className="details-placeholder">
-                        <p>Select a campaign from the list to see details.</p>
-                    </div>
-                )}
-            </div>
+                </div>
+            )}
 
-             {/* Navigation Buttons (Bottom of the whole step) */}
+            {/* Navigation Buttons (Bottom) */}
             <div className="step2-navigation">
                 <button className="btn btn-secondary" onClick={prevStep}>
                     <i className="bi bi-arrow-left me-2"></i>Back to World Choice
                 </button>
-                {/* Confirmation is now inside the details panel */}
+                {/* Continue button removed, confirmation happens in details panel */}
             </div>
         </div>
     );

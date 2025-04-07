@@ -1,281 +1,218 @@
 /* File: frontend/src/components/steps/Step2_CampaignSelector.css */
 
-.step2-container {
-    display: flex;
-    gap: 25px; /* Space between columns */
-    padding: 20px;
-    height: calc(100% - 50px); /* Adjust based on header/footer */
-    position: relative; /* Needed for absolute positioning of nav */
-}
-
-/* Left Column: Campaign List */
-.campaign-list-column {
-    flex: 0 0 300px; /* Fixed width for the list */
+/* Remove container backgrounds/borders for the main step */
+.step2-outer-container {
+    padding: 20px; /* Padding for the overall step */
     display: flex;
     flex-direction: column;
-    background-color: rgba(31, 31, 31, 0.7); /* Dark bg for the column */
-    border-radius: 8px;
-    padding: 15px;
-    border: 1px solid #3a3a3a;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    align-items: center; /* Center the list horizontally */
+    min-height: calc(100vh - 100px); /* Adjust based on nav/footer */
+    position: relative;
 }
 
-.list-header {
-    color: #e0e0e0;
-    font-family: 'Cinzel', serif;
+/* Title Style - Mirror Step 1's world selector title */
+.step2-title {
     text-align: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #444;
+    font-family: 'Cinzel', serif; /* Use the same font */
+    color: #a24a2c; /* Use the same color */
+    font-size: 2.5rem; /* Use the same size */
+    text-shadow: 0 0 15px rgba(255, 100, 0, 0.5); /* Use the same shadow */
+    margin-bottom: 40px; /* Use the same margin */
 }
 
-.campaign-list-scrollable {
-    flex-grow: 1; /* Take remaining space */
-    overflow-y: auto; /* Enable vertical scrolling */
-    padding-right: 5px; /* Space for scrollbar */
+/* Container for the scrollable list */
+.campaign-list-scrollable-outer {
+     width: 100%;
+     max-width: 600px; /* Adjust max width of the list */
+     flex-grow: 1; /* Allow it to take space */
+     overflow-y: auto; /* Scroll if list exceeds height */
+     padding: 10px; /* Padding around the list itself */
+     /* Optional: Add subtle scrollbar */
+     scrollbar-width: thin;
+     scrollbar-color: #863a20 #171717;
+}
+.campaign-list-scrollable-outer::-webkit-scrollbar { height: 8px; }
+.campaign-list-scrollable-outer::-webkit-scrollbar-track { background: #171717; border-radius: 10px;}
+.campaign-list-scrollable-outer::-webkit-scrollbar-thumb { background-color: #863a20; border-radius: 10px; }
+
+
+.campaign-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Space between vertical cards */
 }
 
-/* Styling for individual list items */
+/* Individual list item card styling */
 .campaign-list-item {
-    height: 80px; /* Height for the long thin cards */
-    margin-bottom: 10px;
-    border-radius: 6px;
-    border: 2px solid transparent; /* Start transparent */
-    background-color: #2a2a2a; /* Dark background */
+    height: 90px; /* Adjusted height for thin cards */
+    border-radius: 8px; /* Slightly less rounded */
+    border: 2px solid #3a3a3a; /* Standard border */
+    background-color: #2a2a2a;
     background-size: cover;
     background-position: center;
     position: relative;
     overflow: hidden;
     cursor: pointer;
     transition: all 0.3s ease;
-    display: flex; /* To help with overlay */
-    align-items: flex-end; /* Align overlay to bottom */
+    display: flex;
+    flex-direction: column; /* Stack title and themes */
+    justify-content: flex-end; /* Align content to bottom */
+    padding: 10px 15px;
+    box-shadow: 0 3px 8px rgba(0,0,0, 0.3);
 }
 
 .campaign-list-item:hover {
     border-color: #a24a2c;
-    transform: scale(1.02);
-    box-shadow: 0 4px 10px rgba(255, 100, 0, 0.2);
+    transform: scale(1.03); /* Slightly larger scale on hover */
+    box-shadow: 0 5px 15px rgba(255, 100, 0, 0.2);
 }
 
-.campaign-list-item.selected {
-    border-color: #ff6400; /* Bright orange border when selected */
-    box-shadow: 0 0 15px rgba(255, 100, 0, 0.5);
-}
-
-.campaign-list-item.default-option {
-    border-color: #ffc107; /* Gold border for default */
-}
-
-.campaign-list-item.default-option:hover {
-     border-color: #ffda6b;
-     box-shadow: 0 4px 10px rgba(255, 193, 7, 0.3);
-}
-
-.campaign-list-item.default-option.selected {
-     border-color: #ffc107;
-     box-shadow: 0 0 15px rgba(255, 193, 7, 0.6);
-}
-
-
-/* Overlay for text on list items */
-.item-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, rgba(0, 0, 0, 0.7) 60%, transparent);
-    padding: 20px 10px 8px 10px; /* More padding at bottom */
-    transition: background 0.3s ease;
-}
-
+/* Title inside the list item */
 .item-title {
     color: #e0e0e0;
     font-family: 'Cinzel', serif;
-    font-size: 1.1rem;
+    font-size: 1.3rem; /* Larger title */
     font-weight: 500;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-    display: block; /* Ensure it takes full width */
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
+    z-index: 2; /* Ensure text is above background gradient */
+    line-height: 1.2;
 }
 
-.campaign-list-item:hover .item-overlay {
-     background: linear-gradient(to top, rgba(0, 0, 0, 1) 30%, rgba(0, 0, 0, 0.8) 70%, transparent);
+/* Optional: Themes directly on card */
+.item-themes {
+     color: #bbb;
+     font-size: 0.8rem;
+     z-index: 2;
+     margin-top: 2px;
+     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
 }
 
-/* Optional: Add a checkmark indicator */
-.list-item-selected-indicator {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    color: #ff6400;
-    font-size: 1.5rem;
-    background-color: rgba(0,0,0,0.5);
-    border-radius: 50%;
-    padding: 2px;
-    line-height: 1;
+/* Styling for the default option */
+.campaign-list-item.default-option {
+    border-color: #ffc107;
 }
-.campaign-list-item.default-option.selected .list-item-selected-indicator {
-    color: #ffc107;
+.campaign-list-item.default-option:hover {
+     border-color: #ffda6b;
+     box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
 }
 
-/* Right Column: Campaign Details */
-.campaign-details-column {
-    flex: 1; /* Take remaining space */
-    display: flex; /* Center placeholder if needed */
+/* --- Details Panel (Overlay) --- */
+
+/* Backdrop - Mimic Step 1 */
+.details-backdrop {
+    position: fixed; /* Cover the whole screen */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); /* Darker backdrop */
+    display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 1050; /* Ensure it's above other content */
+    animation: fadeIn 0.3s ease-in-out; /* Use Step 1's animation */
 }
 
+/* Details Panel - Styled like Step 1's expanded card */
 .campaign-details-panel {
-    width: 100%;
-    height: 100%;
-    max-height: calc(100vh - 120px); /* Adjust based on header/footer/padding */
-    background-color: rgba(31, 31, 31, 0.85); /* Slightly different bg */
-    border-radius: 10px;
-    border: 2px solid #444; /* Slightly thicker border */
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+    width: 90%;
+    max-width: 800px; /* Adjust width */
+    height: 85vh; /* Adjust height */
+    max-height: 700px;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Prevent content spill */
-    /* Borrow styles from Step 1 expanded card */
+    position: relative;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 0 50px rgba(255, 100, 0, 0.3); /* Use Step 1's shadow */
+    border: 3px solid #a24a2c; /* Use Step 1's border */
+    background-color: rgba(31, 31, 31, 0.95); /* Dark background */
+    animation: expandCard 0.4s ease-out; /* Use similar animation */
 }
 
+/* Close button - Mimic Step 1 */
+.close-details-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    font-size: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s ease;
+    border: none;
+    line-height: 1;
+}
+.close-details-btn:hover {
+    background-color: rgba(255, 100, 0, 0.8);
+    transform: scale(1.1);
+}
+
+
+/* Image container inside details */
 .details-image-container {
     width: 100%;
-    height: 250px; /* Adjust height as needed */
-    flex-shrink: 0; /* Prevent shrinking */
+    height: 220px; /* Adjust height */
+    flex-shrink: 0;
     overflow: hidden;
-    background-color: #2a2a2a; /* Placeholder */
+    background-color: #2a2a2a;
 }
+.details-image { width: 100%; height: 100%; object-fit: cover; }
 
-.details-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
+/* Content area inside details */
 .details-content {
     padding: 20px 25px;
     flex-grow: 1;
-    overflow-y: auto; /* Scroll if content overflows */
+    overflow-y: auto; /* Scroll content if needed */
     display: flex;
     flex-direction: column;
-}
-
-.details-content h3 {
-    font-family: 'Cinzel', serif;
-    color: #a24a2c; /* Match world selector */
-    margin-bottom: 15px;
-    text-align: center;
-}
-
-.details-description {
     color: #ccc;
-    line-height: 1.6;
-    margin-bottom: 20px;
-    font-size: 1rem;
+}
+.details-content h3 { font-family: 'Cinzel', serif; color: #a24a2c; margin-bottom: 15px; text-align: center; }
+.details-description { line-height: 1.6; margin-bottom: 20px; font-size: 1rem; }
+.details-info { margin-top: auto; padding-top: 15px; border-top: 1px dashed rgba(255, 255, 255, 0.2); font-size: 0.9rem; color: #bbb;}
+.details-info div { margin-bottom: 5px; }
+.details-info strong { color: #ddd; }
+.confirm-button { margin-top: 20px; width: 100%; padding: 10px; font-size: 1.1rem; }
+
+/* Scrollbar styling for details content */
+.details-content::-webkit-scrollbar { width: 8px; }
+.details-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+.details-content::-webkit-scrollbar-thumb { background: rgba(162, 74, 44, 0.6); border-radius: 4px; }
+.details-content::-webkit-scrollbar-thumb:hover { background: rgba(162, 74, 44, 0.8); }
+
+/* --- Animations (from Step 1) --- */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes expandCard {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
-.details-info {
-    margin-top: auto; /* Push to bottom before button */
-    padding-top: 15px;
-    border-top: 1px dashed rgba(255, 255, 255, 0.2);
-    font-size: 0.9rem;
-    color: #bbb;
-}
-
-.details-info div {
-    margin-bottom: 5px;
-}
-
-.details-info strong {
-    color: #ddd;
-}
-
-.confirm-button {
-    margin-top: 20px; /* Space above button */
-    width: 100%;
-    padding: 12px;
-    font-size: 1.2rem;
-}
-
-/* Placeholder styling */
-.details-placeholder {
-    text-align: center;
-    color: #666;
-    font-style: italic;
-}
-
-/* Scrollbar styling for the list */
-.campaign-list-scrollable::-webkit-scrollbar {
-    width: 8px;
-}
-.campaign-list-scrollable::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
-}
-.campaign-list-scrollable::-webkit-scrollbar-thumb {
-    background: rgba(108, 139, 172, 0.5);
-    border-radius: 4px;
-}
-.campaign-list-scrollable::-webkit-scrollbar-thumb:hover {
-    background: rgba(108, 139, 172, 0.7);
-}
-
-/* Scrollbar styling for the details panel content */
-.details-content::-webkit-scrollbar {
-    width: 8px;
-}
-.details-content::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
-}
-.details-content::-webkit-scrollbar-thumb {
-    background: rgba(162, 74, 44, 0.5); /* Match theme */
-    border-radius: 4px;
-}
-.details-content::-webkit-scrollbar-thumb:hover {
-     background: rgba(162, 74, 44, 0.7);
-}
-
-/* Navigation buttons at the bottom of the step */
+/* Bottom navigation */
 .step2-navigation {
-    position: absolute;
-    bottom: 20px; /* Adjust as needed */
-    left: 20px; /* Match container padding */
-    right: 20px; /* Match container padding */
+    width: 100%;
+    max-width: 800px; /* Match details panel width */
+    padding: 20px 0; /* Add padding top/bottom */
+    margin-top: 30px; /* Space above nav */
     display: flex;
-    justify-content: space-between;
-    padding-top: 15px;
+    justify-content: flex-start; /* Align back button left */
     border-top: 1px solid #3a3a3a;
 }
 
-/* Loading container */
+/* Loading/Error containers */
 .loading-container, .error-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 300px; /* Give it some height */
+    min-height: 300px;
     width: 100%;
     color: #ccc;
 }
-
-/* Responsive adjustments */
-@media (max-width: 992px) {
-    .step2-container {
-        flex-direction: column;
-        height: auto;
-    }
-    .campaign-list-column {
-        flex: 0 0 auto; /* Allow height to adjust */
-        max-height: 40vh; /* Limit height on smaller screens */
-        margin-bottom: 20px;
-    }
-    .campaign-details-column {
-        min-height: 300px; /* Ensure details panel has some height */
-    }
-     .step2-navigation {
-        position: static; /* Change from absolute */
-        margin-top: 20px;
-    }
-}
+.error-container { color: #dc3545; }
