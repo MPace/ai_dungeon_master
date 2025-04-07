@@ -504,6 +504,17 @@ def get_campaigns(world_id):
                             "image": campaign_data.get("image"), # Handle image path later if needed
                             "is_default": False
                         }
+
+                        if loaded_campaign["image"]:
+                            image_path = loaded_campaign["image"]
+                            if image_path.startswith('/') and not image_path.startswith('http'):
+                                full_image_url = f"{VITE_BASE_URL}{image_path}"
+                                loaded_campaign
+                                current_app.logger.debug(f"Constructed full image URL: {full_image_url}")
+                            elif image_path:
+                                loaded_campaign["image"] = image_path.strip('\'"')
+
+                            
                         campaigns.append(loaded_campaign)
                         current_app.logger.debug(f"Successfully loaded campaign: {campaign_data.get('name')}")
 
