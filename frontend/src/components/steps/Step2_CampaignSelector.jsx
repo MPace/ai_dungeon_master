@@ -48,15 +48,22 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
 
     // Helper to get the full image URL
     const getFullImageUrl = (imagePath) => {
+        console.log("Raw image path received:", imagePath);
+        
         if (!imagePath) {
-            return null; // Return null if no path is provided
+            console.log("Image path is null or undefined");
+            return null;
         }
-        // If it's already a full URL (http or https), use it directly
+        
         if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+            console.log("Using direct URL:", imagePath);
             return imagePath;
         }
-        // Otherwise, construct path with /static/ prefix, removing leading slash if present
-        return `/static/${imagePath.startsWith('/') ? imagePath.substring(1) : imagePath}`;
+        
+        // Try constructing the URL exactly as it works in Step 1
+        const result = `/static/${imagePath.startsWith('/') ? imagePath.substring(1) : imagePath}`;
+        console.log("Constructed URL:", result);
+        return result;
     };
 
     // Handler when a campaign LIST ITEM is clicked
@@ -132,7 +139,6 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
                             >
                                 <div className="item-overlay"> {/* Keep overlay for text */}
                                     <span className="item-title">{campaign.name || "Unnamed Campaign"}</span>
-                                    <span className="item-themes small">{campaign.themes ? campaign.themes.slice(0, 2).join(', ') : 'Adventure'}</span>
                                 </div>
                                 {/* Selection Indicator */}
                                 {selectedCampaignDetails?.id === campaign.id && (
