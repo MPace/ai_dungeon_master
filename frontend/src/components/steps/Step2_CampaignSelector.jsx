@@ -12,11 +12,7 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
 
     // Fetch campaigns
     useEffect(() => {
-        // ... (Keep the existing fetch logic from the previous version) ...
-        // Make sure it sorts the campaigns with default last and potentially sets
-        // a default selection *without* showing the details panel initially.
-        // We will NOT set selectedCampaignDetails here initially.
-         if (!characterData.worldId) {
+        if (!characterData.worldId) {
             setError("No world selected. Please go back to Step 1.");
             setIsLoading(false);
             return;
@@ -31,13 +27,13 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
             })
             .then(data => {
                 if (data.success && Array.isArray(data.campaigns)) {
-                    const dmOption = data.campaigns.find(c => c.is_default);
-                    const otherCampaigns = data.campaigns.filter(c => !c.is_default);
+                    // Filter out any null or undefined items just to be safe
+                    const validCampaigns = data.campaigns.filter(c => c);
+                    const dmOption = validCampaigns.find(c => c.is_default);
+                    const otherCampaigns = validCampaigns.filter(c => !c.is_default);
                     const sortedCampaigns = dmOption ? [...otherCampaigns, dmOption] : otherCampaigns;
                     setCampaigns(sortedCampaigns);
                     // DO NOT set selectedCampaignDetails here initially
-                    // If restoring from draft, we store the ID but don't show details yet
-                    // setSelectedCampaignDetails(null);
                 } else {
                     throw new Error(data.error || 'Invalid data format for campaigns.');
                 }
@@ -53,14 +49,12 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
     // Helper to get the full image URL
     const getFullImageUrl = (imagePath) => {
         if (!imagePath) {
-            return null;
+            return null; // Return null if no path is provided
         }
-        
         // If it's already a full URL (http or https), use it directly
         if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
             return imagePath;
         }
-        
         // Otherwise, construct path with /static/ prefix, removing leading slash if present
         return `/static/${imagePath.startsWith('/') ? imagePath.substring(1) : imagePath}`;
     };
@@ -71,7 +65,7 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
         setSelectedCampaignDetails(campaign); // Set details to show the overlay
     }, []);
 
-     // Handler to close the details overlay
+    // Handler to close the details overlay
     const closeDetailsPanel = useCallback(() => {
         setSelectedCampaignDetails(null);
     }, []);
@@ -96,9 +90,9 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
 
     if (error) {
         return (
-             <div className="error-container alert alert-danger">
+            <div className="error-container alert alert-danger">
                 <p>{error}</p>
-                 <button className="btn btn-secondary btn-sm" onClick={prevStep}>Go Back</button>
+                <button className="btn btn-secondary btn-sm" onClick={prevStep}>Go Back</button>
             </div>
         );
     }
@@ -111,15 +105,25 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
 
             {/* Vertically scrollable list */}
             <div className="campaign-list-scrollable-outer">
-                 <div className="campaign-list">
+                <div className="campaign-list">
                     {campaigns.map((campaign) => {
-                         // Get the full URL for the background
-                         const backgroundImageUrl = getFullImageUrl(campaign.image);
-                         const itemStyle = backgroundImageUrl
+                        // Defensive check to ensure campaign is valid
+                        if (!campaign) {
+                            console.warn("Received null or undefined campaign in data");
+                            return null; // Skip this item
+                        }
+
+                        // Safely access image property
+                        const backgroundImageUrl = campaign.image ? getFullImageUrl(campaign.image) : null;
+                        
+                        // Log for debugging
+                        console.log(`Campaign: ${campaign.name}, Image: ${campaign.image}, URL: ${backgroundImageUrl}`);
+                        
+                        const itemStyle = backgroundImageUrl
                             ? { backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${backgroundImageUrl})` }
                             : { backgroundImage: 'linear-gradient(#333, #222)' }; // Fallback gradient
 
-                         return (
+                        return (
                             <div
                                 key={campaign.id}
                                 className={`campaign-list-item ${selectedCampaignDetails?.id === campaign.id ? 'selected' : ''} ${campaign.is_default ? 'default-option' : ''}`}
@@ -127,24 +131,20 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
                                 style={itemStyle} // Use the generated style object
                             >
                                 <div className="item-overlay"> {/* Keep overlay for text */}
-                                     <span className="item-title">{campaign.name}</span>
-                                     <span className="item-themes small">{campaign.themes?.slice(0, 2).join(', ')}</span>
-                                 </div>
-                                 {/* Selection Indicator */}
-                                 {selectedCampaignDetails.image && (
-                                    <div className="details-image-container">
-                                        <img 
-                                            src={getFullImageUrl(selectedCampaignDetails.image)} 
-                                            alt={selectedCampaignDetails.name} 
-                                            className="details-image"
-                                        />
+                                    <span className="item-title">{campaign.name || "Unnamed Campaign"}</span>
+                                    <span className="item-themes small">{campaign.themes ? campaign.themes.slice(0, 2).join(', ') : 'Adventure'}</span>
+                                </div>
+                                {/* Selection Indicator */}
+                                {selectedCampaignDetails?.id === campaign.id && (
+                                    <div className="list-item-selected-indicator">
+                                        <i className="bi bi-check-lg"></i>
                                     </div>
                                 )}
                             </div>
-                         );
+                        );
                     })}
-                 </div>
-             </div>
+                </div>
+            </div>
 
             {/* Details Panel Overlay - Conditionally Rendered */}
             {selectedCampaignDetails && (
@@ -153,12 +153,16 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
                         <button className="close-details-btn" onClick={closeDetailsPanel}>×</button>
                         {selectedCampaignDetails.image && (
                             <div className="details-image-container">
-                                <img src={selectedCampaignDetails.image} alt={selectedCampaignDetails.name} className="details-image"/>
+                                <img 
+                                    src={getFullImageUrl(selectedCampaignDetails.image)} 
+                                    alt={selectedCampaignDetails.name} 
+                                    className="details-image"
+                                />
                             </div>
                         )}
                         <div className="details-content">
-                            <h3>{selectedCampaignDetails.name}</h3>
-                            <p className="details-description">{selectedCampaignDetails.description}</p>
+                            <h3>{selectedCampaignDetails.name || "Campaign Details"}</h3>
+                            <p className="details-description">{selectedCampaignDetails.description || "No description available"}</p>
                             <div className="details-info">
                                 {selectedCampaignDetails.themes && <div><strong>Themes:</strong> {selectedCampaignDetails.themes.join(', ')}</div>}
                                 {selectedCampaignDetails.estimated_length && <div><strong>Length:</strong> {selectedCampaignDetails.estimated_length}</div>}
@@ -167,9 +171,9 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
                             <button
                                 className="btn btn-primary btn-lg mt-4 confirm-button"
                                 onClick={handleConfirmCampaign}
-                             >
+                            >
                                 Confirm Campaign <i className="bi bi-check-lg ms-2"></i>
-                             </button>
+                            </button>
                         </div>
                     </div>
                 </div>
