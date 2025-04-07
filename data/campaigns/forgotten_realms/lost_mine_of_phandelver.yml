@@ -5,15 +5,17 @@ world_id: forgotten_realms  # Links this campaign to the Forgotten Realms world
 
 name: "Lost Mine of Phandelver"
 description: |
-  A classic introductory adventure set in the Sword Coast region. 
-  Hired to escort supplies to the rough-and-tumble frontier town of Phandalin, 
-  you find yourselves embroiled in a tale of goblin ambushes, missing persons, 
-  and the legendary Wave Echo Cave, a mine lost for centuries that holds untold riches 
-  and powerful magic. Uncover the secrets of Phandalin and face the mysterious 
-  Spider who schemes in the shadows.
+  A classic fantasy adventure full of mystery, danger, and untold riches waiting to be claimed.
+  Set in the rugged frontier of the Sword Coast, this campaign begins with a simple job: escorting a wagon of supplies to the quiet mining town of Phandalin. But as your party ventures off the well-worn roads and into the untamed wilds, you quickly discover that things are not as peaceful as they seem. 
+  Bandits stalk the trade routes. Strange creatures lurk in the woods. Locals whisper of ancient ruins and the return of a long-forgotten power hidden deep beneath the earth.
+  Phandalin becomes your home base — a town with its own secrets, rival factions, and people in need of heroes. From dusty trails and goblin caves to crumbling watchtowers and haunted crypts, your journey will take you across a region teetering on the edge of chaos.
+  You’ll make choices that shape the fate of the land, forge alliances, face dangerous enemies, and uncover the truth behind legends nearly lost to time. Whether you're a cunning rogue, a steadfast cleric, or a wide-eyed wizard casting your first spell, this adventure is the perfect gateway into the world of Dungeons & Dragons.
+
+  Gather your party, prepare your gear, and step into a land of peril and opportunity.
+  The frontier calls.
 
 # Optional: Add an image path if you have one
-# image: /images/campaigns/lmop.jpg 
+image: /images/campaigns/lmop.jpg 
 
 themes:
   - Introductory Adventure
