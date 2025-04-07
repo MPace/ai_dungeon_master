@@ -20,18 +20,18 @@
     margin-bottom: 40px;
 }
 
-/* Wrapper for the scrollable list - NO VISIBLE STYLES */
+/* Wrapper for the scrollable list - Give more space and remove restrictive overflow */
 .campaign-list-scrollable-outer {
-     width: 100%;
-     max-width: 1200px; /* Controls list width */
-     max-height: 700px;
-     flex-grow: 1; /* Allows vertical scroll */
-     overflow-y: auto;
-     overflow-x: visible;
-     /* REMOVED background, border, padding */
-     /* Optional: Subtle scrollbar */
-     scrollbar-width: thin;
-     scrollbar-color: rgba(134, 58, 32, 0.5) transparent; /* Handle background transparency */
+    width: 100%;
+    max-width: 1200px; /* Controls list width */
+    max-height: 700px;
+    flex-grow: 1; /* Allows vertical scroll */
+    overflow-y: auto;
+    overflow-x: visible; /* Allow cards to expand outside on hover */
+    padding: 0 20px; /* Add padding to prevent cards from touching edges */
+    /* Optional: Subtle scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(134, 58, 32, 0.5) transparent; /* Handle background transparency */
 }
 .campaign-list-scrollable-outer::-webkit-scrollbar { width: 8px; }
 .campaign-list-scrollable-outer::-webkit-scrollbar-track { background: transparent; }
@@ -41,13 +41,13 @@
 .campaign-list {
     display: flex;
     flex-direction: column;
-    gap: 20px; /* Vertical space BETWEEN items */
-    padding: 10px 0; /* Optional padding top/bottom inside scroll area */
+    gap: 30px; /* Increased vertical space BETWEEN items */
+    padding: 20px 0; /* Optional padding top/bottom inside scroll area */
 }
 
 /* Individual list item card - THIS has styling */
 .campaign-list-item {
-    height: 90px;
+    height: 120px; /* Increased height from 90px */
     border-radius: 8px;
     border: 2px solid #3a3a3a;
     background-color: rgba(42, 42, 42, 0.8); /* Slightly lighter than pure black */
@@ -60,42 +60,81 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 10px 15px;
+    padding: 15px 20px; /* Increased padding */
     box-shadow: 0 3px 8px rgba(0,0,0, 0.4); /* Slightly stronger shadow */
+    margin: 0 5px; /* Add margin to prevent clipping */
 }
 
 .campaign-list-item:hover {
     border-color: #a24a2c;
-    transform: scale(1.03);
-    box-shadow: 0 5px 15px rgba(255, 100, 0, 0.2);
+    transform: scale(1.03) translateY(-5px); /* Combined scale and lift effect */
+    box-shadow: 0 10px 20px rgba(255, 100, 0, 0.3); /* Stronger shadow on hover */
+    z-index: 5; /* Ensure hovering cards stay on top */
 }
 
 .campaign-list-item.default-option { border-color: #ffc107; }
 .campaign-list-item.default-option:hover { border-color: #ffda6b; box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3); }
 
-.item-overlay { /* Gradient overlay for text readability */
+.item-overlay { /* Gradient overlay for text readability - IMPROVED */
     position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.7) 40%, transparent 80%);
+    /* Modified gradient to be less harsh and start higher */
+    background: linear-gradient(to top, 
+                               rgba(0, 0, 0, 0.8) 0%, 
+                               rgba(0, 0, 0, 0.5) 50%, 
+                               rgba(0, 0, 0, 0.2) 80%, 
+                               transparent 100%);
     transition: background 0.3s ease;
     z-index: 1; /* Below text */
-    border-radius: इन्हेरिट; /* Match parent */
+    border-radius: inherit; /* Match parent */
 }
-.campaign-list-item:hover .item-overlay { background: linear-gradient(to top, rgba(0, 0, 0, 1) 10%, rgba(0, 0, 0, 0.8) 50%, transparent 90%); }
 
-.item-title { /* Positioned relative to card */
+.campaign-list-item:hover .item-overlay { 
+    /* Lighten the gradient slightly on hover */
+    background: linear-gradient(to top, 
+                               rgba(0, 0, 0, 0.75) 0%, 
+                               rgba(0, 0, 0, 0.4) 60%, 
+                               rgba(0, 0, 0, 0.1) 90%);
+}
+
+.item-title { /* Positioned relative to card - INCREASED SIZE */
     position: relative; /* Needed for z-index */
     z-index: 2;
-    color: #e0e0e0; font-family: 'Cinzel', serif; font-size: 1.3rem; font-weight: 500;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9); line-height: 1.2;
+    color: #e0e0e0; 
+    font-family: 'Cinzel', serif; 
+    font-size: 1.5rem; /* Increased from 1.3rem */
+    font-weight: 500;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9); 
+    line-height: 1.2;
     padding-left: 5px; /* Add slight padding from edge */
     padding-bottom: 2px;
+    margin-bottom: 5px; /* Add space between title and themes */
 }
-.item-themes { /* Positioned relative to card */
+
+.item-themes { /* Positioned relative to card - INCREASED SIZE */
     position: relative; /* Needed for z-index */
     z-index: 2;
-    color: #bbb; font-size: 0.8rem; margin-top: 2px;
+    color: #bbb; 
+    font-size: 1rem; /* Increased from 0.8rem */
+    margin-top: 2px;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
     padding-left: 5px; /* Add slight padding from edge */
+}
+
+/* Add selected indicator */
+.list-item-selected-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    background: #a24a2c;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    z-index: 3;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 /* --- Details Panel (Overlay) --- */
@@ -122,11 +161,11 @@
 }
 .close-details-btn:hover { background-color: rgba(255, 100, 0, 0.8); transform: scale(1.1); }
 
-/* (Keep internal details styles: .details-image-container, .details-content, .details-description, .details-info, .confirm-button etc. from previous CSS) */
+/* Details panel internal components */
 .details-image-container { width: 100%; height: 220px; flex-shrink: 0; overflow: hidden; background-color: #2a2a2a; }
 .details-image { width: 100%; height: 100%; object-fit: cover; }
 .details-content { padding: 20px 25px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; color: #ccc; }
-.details-content h3 { font-family: 'Cinzel', serif; color: #a24a2c; margin-bottom: 15px; text-align: center; }
+.details-content h3 { font-family: 'Cinzel', serif; color: #a24a2c; margin-bottom: 15px; text-align: center; font-size: 1.8rem; }
 .details-description { line-height: 1.6; margin-bottom: 20px; font-size: 1rem; }
 .details-info { margin-top: auto; padding-top: 15px; border-top: 1px dashed rgba(255, 255, 255, 0.2); font-size: 0.9rem; color: #bbb;}
 .details-info div { margin-bottom: 5px; }
@@ -149,7 +188,7 @@
     border-top: 1px solid #3a3a3a;
 }
 
-/* (Keep animations and loading/error styles) */
+/* Animations */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes expandCard { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 .loading-container, .error-container { display: flex; justify-content: center; align-items: center; min-height: 300px; width: 100%; color: #ccc; }
