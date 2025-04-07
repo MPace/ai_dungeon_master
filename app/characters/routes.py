@@ -447,8 +447,8 @@ def get_campaigns(world_id):
     campaigns = []
     default_campaign = {
         "id": "dm_created",
-        "name": "Let the DM Create",
-        "description": "Choose this option to have the AI Dungeon Master generate a unique campaign based on your character and world.",
+        "name": "Custom Campaign",
+        "description": "Choose this option to let the AI Dungeon Master generate a unique campaign based on your input. Leave this blank to let the Dungeon Master choose for you.",
         "themes": ["Varies", "Player-Driven"],
         "estimated_length": "Varies",
         "leveling": "Milestone (typically)",

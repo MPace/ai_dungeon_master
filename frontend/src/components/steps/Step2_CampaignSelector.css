@@ -23,9 +23,11 @@
 /* Wrapper for the scrollable list - NO VISIBLE STYLES */
 .campaign-list-scrollable-outer {
      width: 100%;
-     max-width: 600px; /* Controls list width */
+     max-width: 1200px; /* Controls list width */
+     max-height: 700px;
      flex-grow: 1; /* Allows vertical scroll */
      overflow-y: auto;
+     overflow-x: visible;
      /* REMOVED background, border, padding */
      /* Optional: Subtle scrollbar */
      scrollbar-width: thin;
