@@ -48,23 +48,19 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
 
     // Helper to get the full image URL
     const getFullImageUrl = (imagePath) => {
-        console.log("Raw image path received:", imagePath);
-        
         if (!imagePath) {
-            console.log("Image path is null or undefined");
             return null;
         }
         
+        // If it's already a full URL (http or https), use it directly
         if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-            console.log("Using direct URL:", imagePath);
             return imagePath;
         }
         
-        // Try constructing the URL exactly as it works in Step 1
-        const result = `/static/${imagePath.startsWith('/') ? imagePath.substring(1) : imagePath}`;
-        console.log("Constructed URL:", result);
-        return result;
-    };
+        // Match the exact pattern that works for world images
+        // Note the /build/ part that's missing in the failing URL
+        return `/static/build/${imagePath.startsWith('/') ? imagePath.substring(1) : imagePath}`;
+    }
 
     // Handler when a campaign LIST ITEM is clicked
     const handleCampaignSelect = useCallback((campaign) => {
