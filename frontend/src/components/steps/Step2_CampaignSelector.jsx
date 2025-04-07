@@ -50,6 +50,19 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
             });
     }, [characterData.worldId]); // Only fetch when worldId changes
 
+    // Helper to get the full image URL
+     const getFullImageUrl = (imagePath) => {
+        if (!imagePath) return null;
+        // If it's already a full URL, use it directly
+        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+            return imagePath;
+        }
+        // Otherwise, assume it's relative to the static folder
+        // Ensure no double slashes if imagePath already starts with /
+        const path = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+        return `/static/${path}`; // Adjust '/static/' if your Flask static URL path is different
+    };
+
     // Handler when a campaign LIST ITEM is clicked
     const handleCampaignSelect = useCallback((campaign) => {
         console.log("Campaign selected for details view:", campaign.name);
@@ -97,19 +110,33 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
             {/* Vertically scrollable list */}
             <div className="campaign-list-scrollable-outer">
                  <div className="campaign-list">
-                    {campaigns.map((campaign) => (
-                        <div
-                            key={campaign.id}
-                            className={`campaign-list-item ${campaign.is_default ? 'default-option' : ''}`}
-                            onClick={() => handleCampaignSelect(campaign)}
-                            // Apply background image directly for simplicity here
-                            style={{ backgroundImage: campaign.image ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${campaign.image})` : 'linear-gradient(#333, #222)' }}
-                         >
-                             <span className="item-title">{campaign.name}</span>
-                             {/* Minimal details directly on card if desired, or keep it clean */}
-                             <span className="item-themes small">{campaign.themes?.slice(0, 2).join(', ')}</span>
-                         </div>
-                    ))}
+                    {campaigns.map((campaign) => {
+                         // Get the full URL for the background
+                         const backgroundImageUrl = getFullImageUrl(campaign.image);
+                         const itemStyle = backgroundImageUrl
+                             ? { backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${backgroundImageUrl})` }
+                             : { backgroundImage: 'linear-gradient(#333, #222)' }; // Fallback gradient
+
+                         return (
+                            <div
+                                key={campaign.id}
+                                className={`campaign-list-item ${selectedCampaignDetails?.id === campaign.id ? 'selected' : ''} ${campaign.is_default ? 'default-option' : ''}`}
+                                onClick={() => handleCampaignSelect(campaign)}
+                                style={itemStyle} // Use the generated style object
+                            >
+                                <div className="item-overlay"> {/* Keep overlay for text */}
+                                     <span className="item-title">{campaign.name}</span>
+                                     <span className="item-themes small">{campaign.themes?.slice(0, 2).join(', ')}</span>
+                                 </div>
+                                 {/* Selection Indicator */}
+                                 {selectedCampaignDetails?.id === campaign.id && (
+                                     <div className="list-item-selected-indicator">
+                                         <i className="bi bi-check-lg"></i>
+                                     </div>
+                                 )}
+                            </div>
+                         );
+                    })}
                  </div>
              </div>
 
