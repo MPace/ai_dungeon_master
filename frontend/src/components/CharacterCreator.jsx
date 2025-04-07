@@ -113,13 +113,7 @@ function CharacterCreator() {
     return (
         // Consider a conditional class: className={`character-creator-container ${currentStep === 1 ? 'step1-layout' : 'standard-layout'}`}
         <div className="character-creator-container">
-            {/* We only need the main header for steps 2+ */}
-            {currentStep > 1 && (
-                <header className="text-center mb-4">
-                    {/* You might want a more specific header per step later */}
-                    <h1 className="display-4 text-light">Character Creation - Step {currentStep}</h1>
-                </header>
-            )}
+            
 
             {/* Loading and error display */}
             {isLoading && <div className="text-center text-light">Loading...</div>}
