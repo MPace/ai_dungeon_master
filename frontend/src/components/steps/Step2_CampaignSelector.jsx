@@ -51,16 +51,22 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
     }, [characterData.worldId]); // Only fetch when worldId changes
 
     // Helper to get the full image URL
-     const getFullImageUrl = (imagePath) => {
-        if (!imagePath) return null;
-        // If it's already a full URL, use it directly
+    const getFullImageUrl = (imagePath) => {
+        if (!imagePath) {
+             console.warn("getFullImageUrl called with no imagePath");
+             return null; // Return null if no path is provided
+        }
+        // If it's already a full URL (http or https), use it directly
         if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
             return imagePath;
         }
-        // Otherwise, assume it's relative to the static folder
+        // Otherwise, assume it's a path relative to the Flask static folder
         // Ensure no double slashes if imagePath already starts with /
         const path = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
-        return `/static/${path}`; // Adjust '/static/' if your Flask static URL path is different
+        // Prepend the standard Flask static path
+        const fullUrl = `/static/${path}`;
+        // console.log(`Constructed image URL: ${fullUrl}`); // Optional: for debugging
+        return fullUrl;
     };
 
     // Handler when a campaign LIST ITEM is clicked
