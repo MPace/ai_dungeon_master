@@ -1,53 +1,55 @@
 /* File: frontend/src/components/steps/Step2_CampaignSelector.css */
 
-/* Remove container backgrounds/borders for the main step */
+/* Overall container for the step - NO background or border */
 .step2-outer-container {
-    padding: 20px; /* Padding for the overall step */
+    padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center; /* Center the list horizontally */
-    min-height: calc(100vh - 100px); /* Adjust based on nav/footer */
+    min-height: calc(100vh - 100px);
     position: relative;
 }
 
-/* Title Style - Mirror Step 1's world selector title */
+/* Title Style - Mirror Step 1 */
 .step2-title {
     text-align: center;
-    font-family: 'Cinzel', serif; /* Use the same font */
-    color: #a24a2c; /* Use the same color */
-    font-size: 2.5rem; /* Use the same size */
-    text-shadow: 0 0 15px rgba(255, 100, 0, 0.5); /* Use the same shadow */
-    margin-bottom: 40px; /* Use the same margin */
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 2.5rem;
+    text-shadow: 0 0 15px rgba(255, 100, 0, 0.5);
+    margin-bottom: 40px;
 }
 
-/* Container for the scrollable list */
+/* Container FOR the scrollable list, but WITHOUT visible styling */
 .campaign-list-scrollable-outer {
      width: 100%;
-     max-width: 600px; /* Adjust max width of the list */
-     flex-grow: 1; /* Allow it to take space */
-     overflow-y: auto; /* Scroll if list exceeds height */
-     padding: 10px; /* Padding around the list itself */
+     max-width: 600px; /* Max width of the list area */
+     flex-grow: 1;
+     overflow-y: auto; /* Still allow scrolling */
+     /* REMOVED background, border, padding from here */
      /* Optional: Add subtle scrollbar */
      scrollbar-width: thin;
      scrollbar-color: #863a20 #171717;
 }
 .campaign-list-scrollable-outer::-webkit-scrollbar { height: 8px; }
-.campaign-list-scrollable-outer::-webkit-scrollbar-track { background: #171717; border-radius: 10px;}
-.campaign-list-scrollable-outer::-webkit-scrollbar-thumb { background-color: #863a20; border-radius: 10px; }
+.campaign-list-scrollable-outer::-webkit-scrollbar-track { background: transparent; } /* Make track transparent */
+.campaign-list-scrollable-outer::-webkit-scrollbar-thumb { background-color: rgba(134, 58, 32, 0.5); border-radius: 4px; }
+.campaign-list-scrollable-outer::-webkit-scrollbar-thumb:hover { background-color: rgba(134, 58, 32, 0.8); }
 
 
 .campaign-list {
     display: flex;
     flex-direction: column;
-    gap: 15px; /* Space between vertical cards */
+    gap: 20px; /* Increased gap for more spacing */
+    padding: 10px 0; /* Add some vertical padding if needed */
 }
 
-/* Individual list item card styling */
+/* Individual list item card styling - These HAVE backgrounds/borders */
 .campaign-list-item {
-    height: 90px; /* Adjusted height for thin cards */
-    border-radius: 8px; /* Slightly less rounded */
-    border: 2px solid #3a3a3a; /* Standard border */
-    background-color: #2a2a2a;
+    height: 90px;
+    border-radius: 8px;
+    border: 2px solid #3a3a3a; /* Keep border on item */
+    background-color: #2a2a2a; /* Keep background on item */
     background-size: cover;
     background-position: center;
     position: relative;
@@ -55,30 +57,38 @@
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
-    flex-direction: column; /* Stack title and themes */
-    justify-content: flex-end; /* Align content to bottom */
+    flex-direction: column;
+    justify-content: flex-end;
     padding: 10px 15px;
     box-shadow: 0 3px 8px rgba(0,0,0, 0.3);
+    /* REMOVED margin-bottom, using gap in .campaign-list instead */
 }
 
 .campaign-list-item:hover {
     border-color: #a24a2c;
-    transform: scale(1.03); /* Slightly larger scale on hover */
+    transform: scale(1.03);
     box-shadow: 0 5px 15px rgba(255, 100, 0, 0.2);
 }
 
-/* Title inside the list item */
+/* (Keep the rest of the .campaign-list-item styles: .item-overlay, .item-title, .item-themes, .default-option etc.) */
+.item-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, rgba(0, 0, 0, 0.7) 60%, transparent);
+    padding: 20px 10px 8px 10px;
+    transition: background 0.3s ease;
+}
 .item-title {
     color: #e0e0e0;
     font-family: 'Cinzel', serif;
-    font-size: 1.3rem; /* Larger title */
+    font-size: 1.3rem;
     font-weight: 500;
     text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
-    z-index: 2; /* Ensure text is above background gradient */
+    z-index: 2;
     line-height: 1.2;
 }
-
-/* Optional: Themes directly on card */
 .item-themes {
      color: #bbb;
      font-size: 0.8rem;
@@ -86,8 +96,6 @@
      margin-top: 2px;
      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
 }
-
-/* Styling for the default option */
 .campaign-list-item.default-option {
     border-color: #ffc107;
 }
@@ -96,123 +104,63 @@
      box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
 }
 
-/* --- Details Panel (Overlay) --- */
 
-/* Backdrop - Mimic Step 1 */
+/* --- Details Panel (Overlay - Keep As Is) --- */
 .details-backdrop {
-    position: fixed; /* Cover the whole screen */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.85); /* Darker backdrop */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1050; /* Ensure it's above other content */
-    animation: fadeIn 0.3s ease-in-out; /* Use Step 1's animation */
+    /* ... (styles from previous answer remain the same) ... */
+     position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1050;
+    animation: fadeIn 0.3s ease-in-out;
 }
-
-/* Details Panel - Styled like Step 1's expanded card */
 .campaign-details-panel {
-    width: 90%;
-    max-width: 800px; /* Adjust width */
-    height: 85vh; /* Adjust height */
-    max-height: 700px;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 0 50px rgba(255, 100, 0, 0.3); /* Use Step 1's shadow */
-    border: 3px solid #a24a2c; /* Use Step 1's border */
-    background-color: rgba(31, 31, 31, 0.95); /* Dark background */
-    animation: expandCard 0.4s ease-out; /* Use similar animation */
+    /* ... (styles from previous answer remain the same - this is the overlay) ... */
+    width: 90%; max-width: 800px; height: 85vh; max-height: 700px;
+    display: flex; flex-direction: column; position: relative;
+    border-radius: 15px; overflow: hidden;
+    box-shadow: 0 0 50px rgba(255, 100, 0, 0.3);
+    border: 3px solid #a24a2c;
+    background-color: rgba(31, 31, 31, 0.95);
+    animation: expandCard 0.4s ease-out;
 }
-
-/* Close button - Mimic Step 1 */
 .close-details-btn {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: #fff;
-    font-size: 24px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    z-index: 10;
-    transition: all 0.2s ease;
-    border: none;
-    line-height: 1;
+    /* ... (styles from previous answer remain the same) ... */
+     position: absolute; top: 15px; right: 15px; width: 35px; height: 35px;
+    border-radius: 50%; background-color: rgba(0, 0, 0, 0.7); color: #fff;
+    font-size: 24px; display: flex; justify-content: center; align-items: center;
+    cursor: pointer; z-index: 10; transition: all 0.2s ease; border: none; line-height: 1;
 }
-.close-details-btn:hover {
-    background-color: rgba(255, 100, 0, 0.8);
-    transform: scale(1.1);
-}
-
-
-/* Image container inside details */
-.details-image-container {
-    width: 100%;
-    height: 220px; /* Adjust height */
-    flex-shrink: 0;
-    overflow: hidden;
-    background-color: #2a2a2a;
-}
+.close-details-btn:hover { background-color: rgba(255, 100, 0, 0.8); transform: scale(1.1); }
+.details-image-container { width: 100%; height: 220px; flex-shrink: 0; overflow: hidden; background-color: #2a2a2a; }
 .details-image { width: 100%; height: 100%; object-fit: cover; }
-
-/* Content area inside details */
-.details-content {
-    padding: 20px 25px;
-    flex-grow: 1;
-    overflow-y: auto; /* Scroll content if needed */
-    display: flex;
-    flex-direction: column;
-    color: #ccc;
-}
+.details-content { padding: 20px 25px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; color: #ccc; }
 .details-content h3 { font-family: 'Cinzel', serif; color: #a24a2c; margin-bottom: 15px; text-align: center; }
 .details-description { line-height: 1.6; margin-bottom: 20px; font-size: 1rem; }
 .details-info { margin-top: auto; padding-top: 15px; border-top: 1px dashed rgba(255, 255, 255, 0.2); font-size: 0.9rem; color: #bbb;}
 .details-info div { margin-bottom: 5px; }
 .details-info strong { color: #ddd; }
 .confirm-button { margin-top: 20px; width: 100%; padding: 10px; font-size: 1.1rem; }
-
-/* Scrollbar styling for details content */
 .details-content::-webkit-scrollbar { width: 8px; }
 .details-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
 .details-content::-webkit-scrollbar-thumb { background: rgba(162, 74, 44, 0.6); border-radius: 4px; }
 .details-content::-webkit-scrollbar-thumb:hover { background: rgba(162, 74, 44, 0.8); }
 
-/* --- Animations (from Step 1) --- */
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes expandCard {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
 
 /* Bottom navigation */
 .step2-navigation {
     width: 100%;
-    max-width: 800px; /* Match details panel width */
-    padding: 20px 0; /* Add padding top/bottom */
-    margin-top: 30px; /* Space above nav */
+    max-width: 800px; /* Align with details panel width */
+    padding: 20px 0;
+    margin-top: 30px;
     display: flex;
-    justify-content: flex-start; /* Align back button left */
+    justify-content: flex-start; /* Keep back button left */
     border-top: 1px solid #3a3a3a;
 }
 
-/* Loading/Error containers */
-.loading-container, .error-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 300px;
-    width: 100%;
-    color: #ccc;
-}
+/* (Keep loading/error/animation styles from previous answer) */
+.loading-container, .error-container { display: flex; justify-content: center; align-items: center; min-height: 300px; width: 100%; color: #ccc; }
 .error-container { color: #dc3545; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes expandCard { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
