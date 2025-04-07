@@ -53,20 +53,16 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
     // Helper to get the full image URL
     const getFullImageUrl = (imagePath) => {
         if (!imagePath) {
-             console.warn("getFullImageUrl called with no imagePath");
-             return null; // Return null if no path is provided
+            return null;
         }
+        
         // If it's already a full URL (http or https), use it directly
         if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
             return imagePath;
         }
-        // Otherwise, assume it's a path relative to the Flask static folder
-        // Ensure no double slashes if imagePath already starts with /
-        const path = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
-        // Prepend the standard Flask static path
-        const fullUrl = `/static/${path}`;
-        // console.log(`Constructed image URL: ${fullUrl}`); // Optional: for debugging
-        return fullUrl;
+        
+        // Otherwise, construct path with /static/ prefix, removing leading slash if present
+        return `/static/${imagePath.startsWith('/') ? imagePath.substring(1) : imagePath}`;
     };
 
     // Handler when a campaign LIST ITEM is clicked
@@ -120,8 +116,8 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
                          // Get the full URL for the background
                          const backgroundImageUrl = getFullImageUrl(campaign.image);
                          const itemStyle = backgroundImageUrl
-                             ? { backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${backgroundImageUrl})` }
-                             : { backgroundImage: 'linear-gradient(#333, #222)' }; // Fallback gradient
+                            ? { backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${backgroundImageUrl})` }
+                            : { backgroundImage: 'linear-gradient(#333, #222)' }; // Fallback gradient
 
                          return (
                             <div
@@ -135,11 +131,15 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
                                      <span className="item-themes small">{campaign.themes?.slice(0, 2).join(', ')}</span>
                                  </div>
                                  {/* Selection Indicator */}
-                                 {selectedCampaignDetails?.id === campaign.id && (
-                                     <div className="list-item-selected-indicator">
-                                         <i className="bi bi-check-lg"></i>
-                                     </div>
-                                 )}
+                                 {selectedCampaignDetails.image && (
+                                    <div className="details-image-container">
+                                        <img 
+                                            src={getFullImageUrl(selectedCampaignDetails.image)} 
+                                            alt={selectedCampaignDetails.name} 
+                                            className="details-image"
+                                        />
+                                    </div>
+                                )}
                             </div>
                          );
                     })}
