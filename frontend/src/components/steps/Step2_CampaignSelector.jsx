@@ -1,14 +1,17 @@
 // File: frontend/src/components/steps/Step2_CampaignSelector.jsx
 
-import React, { useState, useEffect, useCallback } from 'react';
-import './Step2_CampaignSelector.css'; // Styles will be updated
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import './Step2_CampaignSelector.css';
 
 function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, prevStep }) {
     const [campaigns, setCampaigns] = useState([]);
-    // State to hold the *full data* of the campaign selected for the details overlay
-    const [selectedCampaignDetails, setSelectedCampaignDetails] = useState(null); // Initialize as null
+    const [selectedCampaignDetails, setSelectedCampaignDetails] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    
+    // Ref for modal
+    const modalRef = useRef(null);
 
     // Fetch campaigns
     useEffect(() => {
@@ -33,7 +36,6 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
                     const otherCampaigns = validCampaigns.filter(c => !c.is_default);
                     const sortedCampaigns = dmOption ? [...otherCampaigns, dmOption] : otherCampaigns;
                     setCampaigns(sortedCampaigns);
-                    // DO NOT set selectedCampaignDetails here initially
                 } else {
                     throw new Error(data.error || 'Invalid data format for campaigns.');
                 }
@@ -44,7 +46,7 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
                 setError(`Failed to load campaigns: ${err.message}. Check API endpoint or server logs.`);
                 setIsLoading(false);
             });
-    }, [characterData.worldId]); // Only fetch when worldId changes
+    }, [characterData.worldId]);
 
     // Helper to get the full image URL
     const getFullImageUrl = (imagePath) => {
@@ -58,24 +60,40 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
         }
         
         // Match the exact pattern that works for world images
-        // Note the /build/ part that's missing in the failing URL
         return `/static/build/${imagePath.startsWith('/') ? imagePath.substring(1) : imagePath}`;
     }
 
-    // Handler when a campaign LIST ITEM is clicked
+    // Handler when a campaign card is clicked
     const handleCampaignSelect = useCallback((campaign) => {
         console.log("Campaign selected for details view:", campaign.name);
-        setSelectedCampaignDetails(campaign); // Set details to show the overlay
+        setSelectedCampaignDetails(campaign);
+        setIsModalOpen(true);
+        
+        // Add a slight delay before adding the active class for animation
+        setTimeout(() => {
+            if (modalRef.current) {
+                modalRef.current.classList.add('active');
+            }
+        }, 10);
     }, []);
 
-    // Handler to close the details overlay
-    const closeDetailsPanel = useCallback(() => {
-        setSelectedCampaignDetails(null);
+    // Handler to close the modal
+    const closeModal = useCallback(() => {
+        if (modalRef.current) {
+            modalRef.current.classList.remove('active');
+            
+            // Wait for animation to complete before removing modal
+            setTimeout(() => {
+                setIsModalOpen(false);
+            }, 400);
+        } else {
+            setIsModalOpen(false);
+        }
     }, []);
 
-    // Handler for the final confirmation button (inside the details overlay)
+    // Handler for the final confirmation button
     const handleConfirmCampaign = () => {
-        if (!selectedCampaignDetails) return; // Should not happen if button is only in details
+        if (!selectedCampaignDetails) return;
 
         console.log(`Campaign confirmed: ${selectedCampaignDetails.name}`);
         updateCharacterData({
@@ -88,105 +106,155 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
 
     // --- Render Logic ---
     if (isLoading) {
-        return <div className="loading-container"><div className="spinner-border" role="status"></div> Loading Campaigns...</div>;
-    }
-
-    if (error) {
         return (
-            <div className="error-container alert alert-danger">
-                <p>{error}</p>
-                <button className="btn btn-secondary btn-sm" onClick={prevStep}>Go Back</button>
+            <div className="loading-container">
+                <div className="spinner-border" role="status"></div>
+                <div>Loading Campaigns...</div>
             </div>
         );
     }
 
-    // Main component structure: Title, List, Overlay (conditional), Navigation
+    if (error) {
+        return (
+            <div className="error-container">
+                <p>{error}</p>
+                <button className="back-button" onClick={prevStep}>
+                    <i className="bi bi-arrow-left"></i> Go Back
+                </button>
+            </div>
+        );
+    }
+
     return (
-        <div className="step2-outer-container"> {/* Use a simple outer container */}
-            {/* Title styled like Step 1 */}
+        <div className="step2-outer-container">
+            {/* Title with subtle underline effect */}
             <h2 className="step2-title">Choose Your Campaign</h2>
 
-            {/* Vertically scrollable list */}
-            <div className="campaign-list-scrollable-outer">
-                <div className="campaign-list">
-                    {campaigns.map((campaign) => {
-                        // Defensive check to ensure campaign is valid
-                        if (!campaign) {
-                            console.warn("Received null or undefined campaign in data");
-                            return null; // Skip this item
-                        }
+            {/* Grid of Campaign Cards */}
+            <div className="campaign-grid-container">
+                {campaigns.map((campaign) => {
+                    // Skip if campaign is invalid
+                    if (!campaign) {
+                        console.warn("Received null or undefined campaign in data");
+                        return null;
+                    }
 
-                        // Safely access image property
-                        const backgroundImageUrl = campaign.image ? getFullImageUrl(campaign.image) : null;
-                        
-                        // Log for debugging
-                        console.log(`Campaign: ${campaign.name}, Image: ${campaign.image}, URL: ${backgroundImageUrl}`);
-                        
-                        const itemStyle = backgroundImageUrl
-                            ? { backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${backgroundImageUrl})` }
-                            : { backgroundImage: 'linear-gradient(#333, #222)' }; // Fallback gradient
+                    // Get image URL if available
+                    const backgroundImageUrl = campaign.image ? getFullImageUrl(campaign.image) : null;
+                    
+                    // Define background style with image or fallback gradient
+                    const cardStyle = backgroundImageUrl
+                        ? { backgroundImage: `url(${backgroundImageUrl})` }
+                        : { backgroundImage: 'linear-gradient(135deg, #2a2a2a, #1a1a1a)' };
 
-                        return (
-                            <div
-                                key={campaign.id}
-                                className={`campaign-list-item ${selectedCampaignDetails?.id === campaign.id ? 'selected' : ''} ${campaign.is_default ? 'default-option' : ''}`}
-                                onClick={() => handleCampaignSelect(campaign)}
-                                style={itemStyle} // Use the generated style object
-                            >
-                                <div className="item-overlay"> {/* Keep overlay for text */}
-                                    <span className="item-title">{campaign.name || "Unnamed Campaign"}</span>
-                                </div>
-                                {/* Selection Indicator */}
-                                {selectedCampaignDetails?.id === campaign.id && (
-                                    <div className="list-item-selected-indicator">
-                                        <i className="bi bi-check-lg"></i>
-                                    </div>
-                                )}
+                    return (
+                        <div
+                            key={campaign.id}
+                            className={`campaign-card ${selectedCampaignDetails?.id === campaign.id ? 'selected' : ''} ${campaign.is_default ? 'default-option' : ''}`}
+                            onClick={() => handleCampaignSelect(campaign)}
+                            style={cardStyle}
+                        >
+                            {/* Content inside card */}
+                            <div className="campaign-card-content">
+                                <h3 className="campaign-card-title">{campaign.name || "Unnamed Campaign"}</h3>
                             </div>
-                        );
-                    })}
-                </div>
+                            
+                            {/* Selection indicator */}
+                            {selectedCampaignDetails?.id === campaign.id && (
+                                <div className="selection-indicator">
+                                    <i className="bi bi-check-lg"></i>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
 
-            {/* Details Panel Overlay - Conditionally Rendered */}
-            {selectedCampaignDetails && (
-                <div className="details-backdrop" onClick={closeDetailsPanel}> {/* Backdrop closes panel */}
-                    <div className="campaign-details-panel" onClick={(e) => e.stopPropagation()}> {/* Prevent clicks inside from closing */}
-                        <button className="close-details-btn" onClick={closeDetailsPanel}>×</button>
+            {/* Details Modal - Conditionally Rendered */}
+            {isModalOpen && (
+                <div className="campaign-modal-overlay" ref={modalRef} onClick={closeModal}>
+                    <div className="campaign-modal" onClick={(e) => e.stopPropagation()}>
+                        <button className="modal-close-btn" onClick={closeModal}>×</button>
+                        
+                        {/* Campaign Image */}
                         {selectedCampaignDetails.image && (
-                            <div className="details-image-container">
+                            <div className="modal-image-container">
                                 <img 
                                     src={getFullImageUrl(selectedCampaignDetails.image)} 
                                     alt={selectedCampaignDetails.name} 
-                                    className="details-image"
+                                    className="modal-image"
                                 />
                             </div>
                         )}
-                        <div className="details-content">
-                            <h3>{selectedCampaignDetails.name || "Campaign Details"}</h3>
-                            <p className="details-description">{selectedCampaignDetails.description || "No description available"}</p>
-                            <div className="details-info">
-                                {selectedCampaignDetails.themes && <div><strong>Themes:</strong> {selectedCampaignDetails.themes.join(', ')}</div>}
-                                {selectedCampaignDetails.estimated_length && <div><strong>Length:</strong> {selectedCampaignDetails.estimated_length}</div>}
-                                {selectedCampaignDetails.leveling && <div><strong>Leveling:</strong> {selectedCampaignDetails.leveling}</div>}
+                        
+                        <div className="modal-content">
+                            {/* Campaign Title */}
+                            <h2 className="modal-title">{selectedCampaignDetails.name || "Campaign Details"}</h2>
+                            
+                            {/* Campaign Description */}
+                            <p className="modal-description">{selectedCampaignDetails.description || "No description available"}</p>
+                            
+                            <div className="modal-divider"></div>
+                            
+                            {/* Campaign Details in Card Format */}
+                            <div className="modal-details">
+                                {/* Length Detail */}
+                                {selectedCampaignDetails.estimated_length && (
+                                    <div className="detail-item">
+                                        <div className="detail-label">Estimated Length</div>
+                                        <div className="detail-value">{selectedCampaignDetails.estimated_length}</div>
+                                    </div>
+                                )}
+                                
+                                {/* Leveling Method */}
+                                {selectedCampaignDetails.leveling && (
+                                    <div className="detail-item">
+                                        <div className="detail-label">Leveling Method</div>
+                                        <div className="detail-value">{selectedCampaignDetails.leveling}</div>
+                                    </div>
+                                )}
+                                
+                                {/* Themes Display */}
+                                {selectedCampaignDetails.themes && selectedCampaignDetails.themes.length > 0 && (
+                                    <div className="detail-item">
+                                        <div className="detail-label">Themes</div>
+                                        <div className="themes-container">
+                                            {selectedCampaignDetails.themes.map((theme, index) => (
+                                                <span key={index} className="theme-tag">{theme}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                            <button
-                                className="btn btn-primary btn-lg mt-4 confirm-button"
-                                onClick={handleConfirmCampaign}
-                            >
-                                Confirm Campaign <i className="bi bi-check-lg ms-2"></i>
-                            </button>
+                            
+                            {/* Confirm Button */}
+                            <div className="confirm-button-container">
+                                <button 
+                                    className="confirm-campaign-btn"
+                                    onClick={handleConfirmCampaign}
+                                >
+                                    Begin This Adventure
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Navigation Buttons (Bottom) */}
+            {/* Navigation Buttons */}
             <div className="step2-navigation">
-                <button className="btn btn-secondary" onClick={prevStep}>
-                    <i className="bi bi-arrow-left me-2"></i>Back to World Choice
+                <button className="back-button" onClick={prevStep}>
+                    <i className="bi bi-arrow-left"></i> Back to World Choice
                 </button>
-                {/* Continue button removed, confirmation happens in details panel */}
+                
+                {/* Optional: Add a Continue button that's enabled when a campaign is selected */}
+                <button 
+                    className={`continue-button ${selectedCampaignDetails ? 'active' : ''}`}
+                    onClick={selectedCampaignDetails ? () => handleCampaignSelect(selectedCampaignDetails) : undefined}
+                    disabled={!selectedCampaignDetails}
+                >
+                    View Selected Campaign <i className="bi bi-arrow-right"></i>
+                </button>
             </div>
         </div>
     );

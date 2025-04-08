@@ -1,16 +1,18 @@
 /* File: frontend/src/components/steps/Step2_CampaignSelector.css */
 
-/* Overall container for Step 2 content - no background/border */
+/* Overall container */
 .step2-outer-container {
-    padding: 20px;
     display: flex;
     flex-direction: column;
-    align-items: center; /* Center content like the list */
-    min-height: calc(100vh - 150px); /* Ensure it takes height */
-    position: relative; /* For absolute positioning of nav/overlay */
+    align-items: center;
+    min-height: calc(100vh - 150px);
+    position: relative;
+    padding: 40px 20px;
+    max-width: 100%;
+    margin: 0 auto;
 }
 
-/* Title Style - Copied from Step 1 World Selector */
+/* Title Style */
 .step2-title {
     text-align: center;
     font-family: 'Cinzel', serif;
@@ -18,178 +20,560 @@
     font-size: 2.5rem;
     text-shadow: 0 0 15px rgba(255, 100, 0, 0.5);
     margin-bottom: 40px;
+    position: relative;
 }
 
-/* Wrapper for the scrollable list - Give more space and remove restrictive overflow */
-.campaign-list-scrollable-outer {
+.step2-title::after {
+    content: "";
+    position: absolute;
+    width: 120px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #a24a2c, transparent);
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Campaign Grid Container */
+.campaign-grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 30px;
     width: 100%;
-    max-width: 1200px; /* Controls list width */
-    max-height: 700px;
-    flex-grow: 1; /* Allows vertical scroll */
-    overflow-y: auto;
-    overflow-x: visible; /* Allow cards to expand outside on hover */
-    padding: 0 20px; /* Add padding to prevent cards from touching edges */
-    /* Optional: Subtle scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: rgba(134, 58, 32, 0.5) transparent; /* Handle background transparency */
-}
-.campaign-list-scrollable-outer::-webkit-scrollbar { width: 8px; }
-.campaign-list-scrollable-outer::-webkit-scrollbar-track { background: transparent; }
-.campaign-list-scrollable-outer::-webkit-scrollbar-thumb { background-color: rgba(134, 58, 32, 0.5); border-radius: 4px; }
-.campaign-list-scrollable-outer::-webkit-scrollbar-thumb:hover { background-color: rgba(134, 58, 32, 0.8); }
-
-.campaign-list {
-    display: flex;
-    flex-direction: column;
-    gap: 30px; /* Increased vertical space BETWEEN items */
-    padding: 20px 0; /* Optional padding top/bottom inside scroll area */
+    max-width: 1400px;
+    padding: 20px;
+    position: relative;
 }
 
-/* Individual list item card - THIS has styling */
-.campaign-list-item {
-    height: 120px; /* Increased height from 90px */
-    border-radius: 8px;
-    border: 2px solid #3a3a3a;
-    background-color: rgba(42, 42, 42, 0.8); /* Slightly lighter than pure black */
+/* Campaign Card */
+.campaign-card {
+    position: relative;
+    height: 240px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     background-size: cover;
     background-position: center;
-    position: relative;
-    overflow: hidden;
+    border: 3px solid rgba(60, 60, 70, 0.6);
     cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 15px 20px; /* Increased padding */
-    box-shadow: 0 3px 8px rgba(0,0,0, 0.4); /* Slightly stronger shadow */
-    margin: 0 5px; /* Add margin to prevent clipping */
+    transform-origin: center;
 }
 
-.campaign-list-item:hover {
-    border-color: #a24a2c;
-    transform: scale(1.03) translateY(-5px); /* Combined scale and lift effect */
-    box-shadow: 0 10px 20px rgba(255, 100, 0, 0.3); /* Stronger shadow on hover */
-    z-index: 5; /* Ensure hovering cards stay on top */
-}
-
-.campaign-list-item.default-option { border-color: #ffc107; }
-.campaign-list-item.default-option:hover { border-color: #ffda6b; box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3); }
-
-.item-overlay { /* Gradient overlay for text readability - IMPROVED */
-    position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
-    /* Modified gradient to be less harsh and start higher */
-    background: linear-gradient(to top, 
-                               rgba(0, 0, 0, 0.8) 0%, 
-                               rgba(0, 0, 0, 0.5) 50%, 
-                               rgba(0, 0, 0, 0.2) 80%, 
-                               transparent 100%);
-    transition: background 0.3s ease;
-    z-index: 1; /* Below text */
-    border-radius: inherit; /* Match parent */
-}
-
-.campaign-list-item:hover .item-overlay { 
-    /* Lighten the gradient slightly on hover */
-    background: linear-gradient(to top, 
-                               rgba(0, 0, 0, 0.75) 0%, 
-                               rgba(0, 0, 0, 0.4) 60%, 
-                               rgba(0, 0, 0, 0.1) 90%);
-}
-
-.item-title { /* Positioned relative to card - INCREASED SIZE */
-    position: relative; /* Needed for z-index */
-    z-index: 2;
-    color: #e0e0e0; 
-    font-family: 'Cinzel', serif; 
-    font-size: 1.5rem; /* Increased from 1.3rem */
-    font-weight: 500;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9); 
-    line-height: 1.2;
-    padding-left: 5px; /* Add slight padding from edge */
-    padding-bottom: 2px;
-    margin-bottom: 5px; /* Add space between title and themes */
-}
-
-.item-themes { /* Positioned relative to card - INCREASED SIZE */
-    position: relative; /* Needed for z-index */
-    z-index: 2;
-    color: #bbb; 
-    font-size: 1rem; /* Increased from 0.8rem */
-    margin-top: 2px;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
-    padding-left: 5px; /* Add slight padding from edge */
-}
-
-/* Add selected indicator */
-.list-item-selected-indicator {
+.campaign-card::before {
+    content: "";
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 24px;
-    height: 24px;
-    background: #a24a2c;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to top, 
+                  rgba(0, 0, 0, 0.9) 0%, 
+                  rgba(0, 0, 0, 0.6) 40%, 
+                  rgba(0, 0, 0, 0.3) 80%);
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.campaign-card:hover {
+    transform: translateY(-15px) scale(1.02);
+    box-shadow: 0 15px 35px rgba(255, 100, 0, 0.25);
+    border-color: #a24a2c;
+}
+
+.campaign-card:hover::before {
+    background: linear-gradient(to top, 
+                  rgba(0, 0, 0, 0.8) 0%, 
+                  rgba(0, 0, 0, 0.5) 50%, 
+                  rgba(0, 0, 0, 0.2) 90%);
+}
+
+.campaign-card.selected {
+    border-color: #a24a2c;
+    box-shadow: 0 15px 35px rgba(255, 100, 0, 0.4), 0 0 20px rgba(255, 100, 0, 0.4);
+}
+
+.campaign-card.default-option {
+    border-color: rgba(255, 193, 7, 0.6);
+}
+
+.campaign-card.default-option:hover {
+    border-color: #ffc107;
+    box-shadow: 0 15px 35px rgba(255, 193, 7, 0.25);
+}
+
+/* Card Content */
+.campaign-card-content {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 20px;
+    z-index: 2;
+    transform: translateY(0);
+    transition: transform 0.3s ease;
+}
+
+.campaign-card:hover .campaign-card-content {
+    transform: translateY(-5px);
+}
+
+.campaign-card-title {
+    color: #ffffff;
+    font-family: 'Cinzel', serif;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin: 0;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.campaign-card-title::after {
+    content: "";
+    position: absolute;
+    width: 60px;
+    height: 2px;
+    background-color: #a24a2c;
+    bottom: 0;
+    left: 0;
+    transition: width 0.3s ease;
+}
+
+.campaign-card:hover .campaign-card-title::after {
+    width: 80px;
+}
+
+/* Selection Indicator */
+.selection-indicator {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
+    background-color: #a24a2c;
+    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
     z-index: 3;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
 }
 
-/* --- Details Panel (Overlay) --- */
-.details-backdrop { /* Full screen overlay */
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.85); display: flex;
-    justify-content: center; align-items: center; z-index: 1050;
-    animation: fadeIn 0.3s ease-in-out;
+.campaign-card.selected .selection-indicator {
+    opacity: 1;
+    transform: scale(1);
 }
-.campaign-details-panel { /* The card appearing in the overlay */
-    width: 90%; max-width: 800px; height: 85vh; max-height: 700px;
-    display: flex; flex-direction: column; position: relative;
-    border-radius: 15px; overflow: hidden;
-    box-shadow: 0 0 50px rgba(255, 100, 0, 0.3);
+
+/* Modal Styles */
+.campaign-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
+}
+
+.campaign-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.campaign-modal {
+    width: 90%;
+    max-width: 900px;
+    background-color: #1a1a20;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 100, 0, 0.2);
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
     border: 3px solid #a24a2c;
-    background-color: rgba(31, 31, 31, 0.95);
-    animation: expandCard 0.4s ease-out;
+    position: relative;
 }
-.close-details-btn { /* Close button styling */
-    position: absolute; top: 15px; right: 15px; width: 35px; height: 35px;
-    border-radius: 50%; background-color: rgba(0, 0, 0, 0.7); color: #fff;
-    font-size: 24px; display: flex; justify-content: center; align-items: center;
-    cursor: pointer; z-index: 10; transition: all 0.2s ease; border: none; line-height: 1;
+
+.campaign-modal-overlay.active .campaign-modal {
+    transform: translateY(0) scale(1);
+    opacity: 1;
 }
-.close-details-btn:hover { background-color: rgba(255, 100, 0, 0.8); transform: scale(1.1); }
 
-/* Details panel internal components */
-.details-image-container { width: 100%; height: 220px; flex-shrink: 0; overflow: hidden; background-color: #2a2a2a; }
-.details-image { width: 100%; height: 100%; object-fit: cover; }
-.details-content { padding: 20px 25px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; color: #ccc; }
-.details-content h3 { font-family: 'Cinzel', serif; color: #a24a2c; margin-bottom: 15px; text-align: center; font-size: 1.8rem; }
-.details-description { line-height: 1.6; margin-bottom: 20px; font-size: 1rem; }
-.details-info { margin-top: auto; padding-top: 15px; border-top: 1px dashed rgba(255, 255, 255, 0.2); font-size: 0.9rem; color: #bbb;}
-.details-info div { margin-bottom: 5px; }
-.details-info strong { color: #ddd; }
-.confirm-button { margin-top: 20px; width: 100%; padding: 10px; font-size: 1.1rem; }
-.details-content::-webkit-scrollbar { width: 8px; }
-.details-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
-.details-content::-webkit-scrollbar-thumb { background: rgba(162, 74, 44, 0.6); border-radius: 4px; }
-.details-content::-webkit-scrollbar-thumb:hover { background: rgba(162, 74, 44, 0.8); }
+.modal-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    border: none;
+    outline: none;
+}
 
+.modal-close-btn:hover {
+    background-color: #a24a2c;
+    transform: rotate(90deg);
+}
 
-/* Bottom navigation - position relative to outer container */
+/* Modal Content */
+.modal-image-container {
+    width: 100%;
+    height: 280px;
+    position: relative;
+    overflow: hidden;
+}
+
+.modal-image-container::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100px;
+    background: linear-gradient(to top, #1a1a20, transparent);
+    z-index: 1;
+}
+
+.modal-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.modal-content {
+    padding: 30px 40px 40px;
+    position: relative;
+}
+
+.modal-title {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    text-align: center;
+    text-shadow: 0 0 15px rgba(255, 100, 0, 0.2);
+}
+
+.modal-description {
+    color: #cccccc;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 25px;
+    text-align: center;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.modal-divider {
+    width: 60%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 100, 0, 0.3), transparent);
+    margin: 25px auto;
+}
+
+.modal-details {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.detail-item {
+    flex: 1;
+    min-width: 220px;
+    padding: 15px;
+    background-color: rgba(40, 40, 50, 0.6);
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.detail-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    background-color: rgba(50, 50, 60, 0.6);
+}
+
+.detail-label {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+}
+
+.detail-value {
+    color: #ffffff;
+    font-size: 1rem;
+}
+
+.themes-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.theme-tag {
+    background-color: rgba(162, 74, 44, 0.2);
+    border: 1px solid rgba(162, 74, 44, 0.5);
+    border-radius: 20px;
+    padding: 5px 12px;
+    color: #e5e5e5;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.theme-tag:hover {
+    background-color: rgba(162, 74, 44, 0.4);
+    transform: translateY(-2px);
+}
+
+.confirm-button-container {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.confirm-campaign-btn {
+    background-color: #863a20;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 14px 45px;
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+    outline: none;
+}
+
+.confirm-campaign-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: all 0.5s ease;
+}
+
+.confirm-campaign-btn:hover {
+    background-color: #a24a2c;
+    box-shadow: 0 8px 25px rgba(255, 100, 0, 0.3);
+    transform: translateY(-3px);
+}
+
+.confirm-campaign-btn:hover::before {
+    left: 100%;
+}
+
+.confirm-campaign-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Bottom navigation */
 .step2-navigation {
     width: 100%;
-    max-width: 800px; /* Align width roughly */
-    padding: 20px 0;
-    margin-top: 30px; /* Space above */
+    max-width: 900px;
+    padding: 30px 0 20px;
+    margin-top: 30px;
     display: flex;
-    justify-content: flex-start;
-    border-top: 1px solid #3a3a3a;
+    justify-content: space-between;
+    border-top: 1px solid rgba(80, 80, 90, 0.3);
+}
+
+.back-button {
+    background-color: transparent;
+    color: #cccccc;
+    border: 1px solid #555;
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.back-button:hover {
+    background-color: rgba(60, 60, 70, 0.5);
+    border-color: #777;
+    color: #ffffff;
+}
+
+.continue-button {
+    background-color: rgba(134, 58, 32, 0.2);
+    color: #888;
+    border: 1px solid rgba(134, 58, 32, 0.3);
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.continue-button.active {
+    background-color: #863a20;
+    color: white;
+    border-color: #863a20;
+    cursor: pointer;
+}
+
+.continue-button.active:hover {
+    background-color: #a24a2c;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(255, 100, 0, 0.2);
+}
+
+/* Loading and Error States */
+.loading-container, 
+.error-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    width: 100%;
+    color: #ccc;
+    gap: 20px;
+}
+
+.loading-container .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: #a24a2c;
+}
+
+.error-container {
+    color: #dc3545;
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 8px;
+    padding: 30px;
 }
 
 /* Animations */
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes expandCard { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-.loading-container, .error-container { display: flex; justify-content: center; align-items: center; min-height: 300px; width: 100%; color: #ccc; }
-.error-container { color: #dc3545; }
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 100, 0, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(255, 100, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 100, 0, 0); }
+}
+
+.campaign-card {
+    animation: fadeIn 0.5s ease-out, slideUp 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+.campaign-card:nth-child(2) { animation-delay: 0.1s; }
+.campaign-card:nth-child(3) { animation-delay: 0.2s; }
+.campaign-card:nth-child(4) { animation-delay: 0.3s; }
+.campaign-card:nth-child(5) { animation-delay: 0.4s; }
+.campaign-card:nth-child(6) { animation-delay: 0.5s; }
+
+.campaign-card.selected {
+    animation: pulse 2s infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .campaign-grid-container {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        padding: 10px;
+    }
+    
+    .campaign-card {
+        height: 200px;
+    }
+    
+    .campaign-card-title {
+        font-size: 1.5rem;
+    }
+    
+    .modal-content {
+        padding: 20px;
+    }
+    
+    .modal-title {
+        font-size: 2rem;
+    }
+    
+    .modal-description {
+        font-size: 1rem;
+    }
+    
+    .detail-item {
+        min-width: 150px;
+    }
+    
+    .confirm-campaign-btn {
+        padding: 12px 30px;
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .step2-title {
+        font-size: 2rem;
+    }
+    
+    .campaign-grid-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .detail-item {
+        min-width: 100%;
+    }
+    
+    .modal-title {
+        font-size: 1.8rem;
+    }
+    
+    .modal-description {
+        font-size: 0.95rem;
+    }
+}
