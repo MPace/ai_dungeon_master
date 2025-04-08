@@ -1,0 +1,159 @@
+# Basic Class Information
+id: cleric
+name: Cleric
+icon: cross  # Bootstrap icon name
+image: /images/classes/cleric.jpg  # Path to class artwork
+
+# Short description for selection screen
+shortDescription: A priestly champion who wields divine magic
+
+# Full description for details modal
+description: |
+  Clutching a holy symbol, a dwarf kneels behind a wall of shields, calling on the gods to heal the 
+  wounded around him. Radiant light mends torn flesh and broken bones.
+
+  A half-elf raises her shield high, divine energy pulsing outward as the undead recoil in fear. 
+  Chanting ancient rites, she banishes darkness with holy power.
+
+  A tiefling mutters a prayer through gritted teeth as flames erupt from her fingers, burning her enemies 
+  in righteous fury.
+
+  Clerics are intermediaries between the mortal world and the distant planes of the divine. As varied 
+  as the gods they serve, clerics strive to embody the ideals of their deity through healing, protection, 
+  and destruction alike.
+
+# Core class mechanics
+primaryAbility: Wisdom
+secondaryAbility: Strength or Charisma
+hitDie: d8
+savingThrows: [Wisdom, Charisma]
+
+# Proficiencies
+armorProficiency: Light armor, medium armor, shields
+weaponProficiency: Simple weapons
+toolProficiency: None
+skillChoices: [History, Insight, Medicine, Persuasion, Religion]
+skillCount: 2
+
+# Playstyle description for details modal
+playstyle: |
+  Clerics are versatile divine spellcasters capable of healing, supporting, and smiting foes with holy 
+  power. Depending on their chosen domain, they can be frontline tanks, long-range blasters, or party 
+  protectors. Great for players who enjoy flexible roles and thematic spellcasting.
+
+# Categorization tags
+tags: [Healer, Spellcaster, Support, Divine Magic, Versatile]
+
+# Starting equipment options
+startingEquipment:
+  options:
+    - group:
+        - item: Mace
+          type: simple melee weapon
+      or:
+        - item: Warhammer
+          type: martial melee weapon (if proficient)
+    - group:
+        - item: Scale mail
+          type: medium armor
+      or:
+        - item: Leather armor
+          type: light armor
+      or:
+        - item: Chain mail
+          type: heavy armor (if proficient)
+    - group:
+        - item: Light crossbow and 20 bolts
+          type: simple ranged weapon
+      or:
+        - item: Any simple weapon
+          type: simple weapon
+    - group:
+        - item: Priest's Pack
+          type: pack
+      or:
+        - item: Explorer's Pack
+          type: pack
+  default:
+    - item: Shield
+      type: armor
+    - item: Holy symbol
+      type: focus
+
+# Features by level
+features:
+  level1:
+    - name: Spellcasting
+      type: active
+      description: |
+        As a conduit for divine power, you can cast spells drawn from the cleric spell list. Wisdom is 
+        your spellcasting ability. You prepare a number of spells equal to your Wisdom modifier + your 
+        cleric level.
+
+    - name: Divine Domain
+      type: choice
+      description: |
+        You choose a divine domain that shapes your magic and role. Each domain grants you domain spells 
+        and additional abilities at 1st, 2nd, and 6th level.
+      options:
+        - id: life
+          name: Life Domain
+          description: |
+            The Life Domain focuses on vitality, healing, and protection. Clerics of this domain are 
+            guardians of life and conduits for restorative power.
+          features:
+            - name: Disciple of Life
+              type: passive
+              description: |
+                Your healing spells are more effective. When you cast a healing spell, the target regains 
+                additional hit points equal to 2 + the spell's level.
+
+        - id: light
+          name: Light Domain
+          description: |
+            The Light Domain champions the cause of illumination and truth, wielding radiant fire to 
+            burn away darkness and deceit.
+          features:
+            - name: Warding Flare
+              type: reaction
+              description: |
+                When you're attacked by a creature within 30 feet that you can see, you can use your reaction 
+                to impose disadvantage on the attack roll by flashing divine light.
+
+  level2:
+    - name: Channel Divinity
+      type: active
+      uses: 1
+      description: |
+        You gain the ability to channel divine energy to fuel magical effects. You start with one effect: 
+        Turn Undead. Your domain may provide additional options.
+        
+        • Turn Undead: As an action, you present your holy symbol and speak a prayer. Each undead within 
+        30 feet must make a Wisdom save or be turned for 1 minute or until it takes damage.
+
+  level3:
+    - name: 2nd-Level Spells
+      type: passive
+      description: |
+        You gain access to 2nd-level cleric spells. You can now prepare and cast them using your spell slots.
+
+  level4:
+    - name: Ability Score Improvement
+      type: passive
+      description: |
+        You can increase one ability score of your choice by 2, or you can increase two ability scores 
+        of your choice by 1. As normal, you can't increase an ability score above 20 using this feature.
+
+        Alternatively, you can choose a feat.
+
+  level5:
+    - name: Destroy Undead
+      type: passive
+      description: |
+        When an undead fails its saving throw against your Turn Undead feature, it is instantly destroyed 
+        if its challenge rating is 1/2 or lower.
+
+    - name: 3rd-Level Spells
+      type: passive
+      description: |
+        You gain access to 3rd-level cleric spells.

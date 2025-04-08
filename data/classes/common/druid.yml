@@ -1,0 +1,142 @@
+# Basic Class Information
+id: druid
+name: Druid
+icon: leaf  # Bootstrap icon name
+image: /images/classes/druid.jpg  # Path to class artwork
+
+# Short description for selection screen
+shortDescription: A priest of the Old Faith, wielding the powers of nature
+
+# Full description for details modal
+description: |
+  Holding aloft a staff wreathed in thorns, an elf chants in Druidic, summoning vines to ensnare a charging beast.
+
+  A halfling whispers to the trees, and the forest answers, cloaking her in fog and shadows as she disappears.
+
+  A dragonborn snarls and twists, her form collapsing and reforming into that of a massive dire wolf.
+
+  Druids are wielders of primal magic, drawing their power from the natural world and the elements. Guardians 
+  of balance, they shapechange into beasts, command fire and ice, and defend sacred groves from corruption.
+
+# Core class mechanics
+primaryAbility: Wisdom
+secondaryAbility: Constitution
+hitDie: d8
+savingThrows: [Intelligence, Wisdom]
+
+# Proficiencies
+armorProficiency: Light armor, medium armor (non-metal), shields (non-metal)
+weaponProficiency: Clubs, daggers, darts, javelins, maces, quarterstaffs, scimitars, sickles, slings, spears
+toolProficiency: Herbalism kit
+skillChoices: [Arcana, Animal Handling, Insight, Medicine, Nature, Perception, Religion, Survival]
+skillCount: 2
+
+# Playstyle description for details modal
+playstyle: |
+  Druids are nature-themed spellcasters who adapt to many roles: healing allies, controlling battlefields, 
+  and transforming into animals. They're ideal for players who want flexibility, exploration, and 
+  powerful nature-based magic.
+
+# Categorization tags
+tags: [Spellcaster, Shapechanger, Healer, Utility, Nature Magic]
+
+# Starting equipment options
+startingEquipment:
+  options:
+    - group:
+        - item: Wooden shield
+          type: shield
+      or:
+        - item: Any simple weapon
+          type: simple weapon
+    - group:
+        - item: Scimitar
+          type: martial melee weapon
+      or:
+        - item: Any simple melee weapon
+          type: simple melee weapon
+    - group:
+        - item: Explorer's Pack
+          type: pack
+      or:
+        - item: Dungeoneer's Pack
+          type: pack
+  default:
+    - item: Leather armor
+      type: armor
+    - item: Druidic focus
+      type: focus
+
+# Features by level
+features:
+  level1:
+    - name: Spellcasting
+      type: active
+      description: |
+        You can cast spells drawn from the druid spell list. Wisdom is your spellcasting ability. You 
+        prepare a number of spells equal to your Wisdom modifier + your druid level.
+
+    - name: Druidic
+      type: passive
+      description: |
+        You know Druidic, the secret language of druids. You can speak the language and use it to leave 
+        hidden messages.
+
+  level2:
+    - name: Wild Shape
+      type: active
+      uses: 2
+      description: |
+        You can magically assume the shape of a beast you have seen before. As an action, you can transform 
+        into a beast with a CR of 1/4 or lower that doesn’t have a flying or swimming speed.
+
+        You can stay in beast shape for a number of hours equal to half your druid level (rounded down). 
+        You revert earlier if you drop to 0 hit points or use a bonus action to revert.
+
+    - name: Druid Circle
+      type: choice
+      description: |
+        You choose a circle that represents your philosophy and path. Your choice grants features at 2nd, 
+        6th, 10th, and 14th level.
+      options:
+        - id: land
+          name: Circle of the Land
+          description: |
+            These druids guard ancient knowledge and sacred lands. They gain additional spellcasting and 
+            the ability to recover spells during rest.
+          features:
+            - name: Natural Recovery
+              type: passive
+              description: |
+                Once per day when you finish a short rest, you can recover a number of spell slots equal 
+                to half your druid level (rounded up).
+
+        - id: moon
+          name: Circle of the Moon
+          description: |
+            These druids are fierce defenders of the wild who specialize in combat while in beast form.
+          features:
+            - name: Combat Wild Shape
+              type: passive
+              description: |
+                You can use Wild Shape as a bonus action and can transform into more dangerous beasts, 
+                up to CR 1 at level 2.
+
+  level3:
+    - name: 2nd-Level Spells
+      type: passive
+      description: |
+        You gain access to 2nd-level druid spells.
+
+  level4:
+    - name: Ability Score Improvement
+      type: passive
+      description: |
+        You can increase one ability score of your choice by 2, or two scores by 1 each. You can’t increase 
+        a score above 20 using this feature. Alternatively, you can take a feat.
+
+  level5:
+    - name: 3rd-Level Spells
+      type: passive
+      description: |
+        You gain access to 3rd-level druid spells.

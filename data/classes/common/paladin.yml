@@ -1,0 +1,148 @@
+# Basic Class Information
+id: paladin
+name: Paladin
+icon: shield-lock  # Bootstrap icon name
+image: /images/classes/paladin.jpg  # Path to class artwork
+
+# Short description for selection screen
+shortDescription: A holy warrior bound to a sacred oath
+
+# Full description for details modal
+description: |
+  A human in gleaming armor strides into battle, a radiant sword in hand and divine fire in her eyes.
+
+  A dragonborn places a comforting hand on a fallen comrade, healing wounds with a whispered prayer.
+
+  A dwarf lifts his shield and bellows an oath, vowing to smite the evil that threatens his homeland.
+
+  Paladins are champions of righteousness and justice, empowered by divine magic and sacred oaths. They 
+  are tanks, healers, and slayers of evil who embody honor, courage, and unwavering devotion to their cause.
+
+# Core class mechanics
+primaryAbility: Strength and Charisma
+secondaryAbility: Constitution
+hitDie: d10
+savingThrows: [Wisdom, Charisma]
+
+# Proficiencies
+armorProficiency: All armor, shields
+weaponProficiency: Simple weapons, martial weapons
+toolProficiency: None
+skillChoices: [Athletics, Insight, Intimidation, Medicine, Persuasion, Religion]
+skillCount: 2
+
+# Playstyle description for details modal
+playstyle: |
+  Paladins are frontline warriors who blend martial prowess with divine spells and powerful smites. 
+  They're ideal for players who want to protect allies, punish evil, and act with noble purpose.
+
+# Categorization tags
+tags: [Tank, Healer, Support, Divine Magic, Frontline]
+
+# Starting equipment options
+startingEquipment:
+  options:
+    - group:
+        - item: Martial weapon and shield
+          type: martial melee weapon
+      or:
+        - item: Two martial weapons
+          type: martial melee weapon
+    - group:
+        - item: Five javelins
+          type: simple ranged weapon
+      or:
+        - item: Any simple melee weapon
+          type: simple melee weapon
+    - group:
+        - item: Priest's Pack
+          type: pack
+      or:
+        - item: Explorer's Pack
+          type: pack
+  default:
+    - item: Chain mail
+      type: armor
+    - item: Holy symbol
+      type: focus
+
+# Features by level
+features:
+  level1:
+    - name: Divine Sense
+      type: active
+      uses: 5
+      description: |
+        As an action, you can detect good and evil. Until the end of your next turn, you know the location 
+        of any celestial, fiend, or undead within 60 feet that is not behind total cover.
+
+    - name: Lay on Hands
+      type: active
+      description: |
+        You have a pool of healing power that replenishes when you take a long rest. You can restore a total 
+        number of hit points equal to your paladin level × 5.
+
+  level2:
+    - name: Spellcasting
+      type: active
+      description: |
+        You can cast prepared spells from the paladin list using Charisma as your spellcasting ability. 
+        You prepare a number of spells equal to your Charisma modifier + half your paladin level.
+
+    - name: Divine Smite
+      type: active
+      description: |
+        When you hit a creature with a melee weapon attack, you can expend a spell slot to deal radiant 
+        damage in addition to the weapon’s damage. The extra damage is 2d8 for a 1st-level spell slot, plus 
+        1d8 for each spell level higher than 1st (maximum 5d8). The damage increases by 1d8 against undead 
+        and fiends.
+
+  level3:
+    - name: Sacred Oath
+      type: choice
+      description: |
+        You swear an oath that grants magical abilities and defines your path. You gain oath spells and features 
+        at levels 3, 7, 15, and 20.
+      options:
+        - id: devotion
+          name: Oath of Devotion
+          description: |
+            Paladins who take the Oath of Devotion fight for honor and virtue, wielding radiant magic 
+            to protect and purify.
+          features:
+            - name: Channel Divinity: Sacred Weapon
+              type: active
+              description: |
+                As an action, you can imbue one weapon with positive energy. For 1 minute, you add your 
+                Charisma modifier to attack rolls with it (minimum +1). The weapon also emits bright light.
+
+        - id: vengeance
+          name: Oath of Vengeance
+          description: |
+            Paladins who swear this oath seek to punish the wicked. They are relentless avengers, striking 
+            swiftly and mercilessly.
+          features:
+            - name: Channel Divinity: Vow of Enmity
+              type: active
+              description: |
+                As a bonus action, choose one creature you can see within 10 feet. You gain advantage on 
+                attack rolls against it for 1 minute or until it drops to 0 hit points.
+
+  level4:
+    - name: Ability Score Improvement
+      type: passive
+      description: |
+        You can increase one ability score of your choice by 2, or two by 1 each. You can't increase a score 
+        above 20 using this feature. Alternatively, choose a feat.
+
+  level5:
+    - name: Extra Attack
+      type: passive
+      description: |
+        You can attack twice, instead of once, whenever you take the Attack action on your turn.
+
+    - name: Aura of Protection
+      type: passive
+      description: |
+        Whenever you or a friendly creature within 10 feet makes a saving throw, they gain a bonus equal 
+        to your Charisma modifier (minimum +1). You must be conscious to grant this bonus.

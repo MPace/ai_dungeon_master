@@ -1,0 +1,131 @@
+# Basic Class Information
+id: rogue
+name: Rogue
+icon: eye  # Bootstrap icon name
+image: /images/classes/rogue.jpg  # Path to class artwork
+
+# Short description for selection screen
+shortDescription: A stealthy and dexterous scoundrel who strikes with precision
+
+# Full description for details modal
+description: |
+  A half-elf picks a lock with delicate precision, sliding into a vault without making a sound.
+
+  A halfling vanishes into the crowd, her mark clutching his side as the blade disappears just as quickly as it struck.
+
+  A tiefling leaps from a rooftop, dagger flashing under moonlight as she delivers a critical blow.
+
+  Rogues are masters of stealth, agility, and cunning. Whether operating in the shadows, striking with deadly precision, or talking their way through trouble, they thrive where others falter. They rely on quick thinking, skill mastery, and sudden, devastating strikes.
+
+# Core class mechanics
+primaryAbility: Dexterity
+secondaryAbility: Intelligence
+hitDie: d8
+savingThrows: [Dexterity, Intelligence]
+
+# Proficiencies
+armorProficiency: Light armor
+weaponProficiency: Simple weapons, hand crossbows, longswords, rapiers, shortswords
+toolProficiency: Thieves’ tools
+skillChoices: [Acrobatics, Athletics, Deception, Insight, Intimidation, Investigation, Perception, Performance, Persuasion, Sleight of Hand, Stealth]
+skillCount: 4
+
+# Playstyle description for details modal
+playstyle: |
+  Rogues are precision-based fighters and experts in skill usage. Whether dealing massive damage with sneak attacks or disabling traps and locks, they’re ideal for players who like high mobility, tactical thinking, and versatility.
+
+# Categorization tags
+tags: [Stealth, Damage Dealer, Dexterity-based, Skill Monkey]
+
+# Starting equipment options
+startingEquipment:
+  options:
+    - group:
+        - item: Rapier
+          type: martial melee weapon
+      or:
+        - item: Shortsword
+          type: martial melee weapon
+    - group:
+        - item: Shortbow and 20 arrows
+          type: martial ranged weapon
+      or:
+        - item: Shortsword
+          type: martial melee weapon
+    - group:
+        - item: Burglar's Pack
+          type: pack
+      or:
+        - item: Dungeoneer's Pack
+          type: pack
+      or:
+        - item: Explorer's Pack
+          type: pack
+  default:
+    - item: Leather armor
+      type: armor
+    - item: Two daggers
+      type: simple melee weapon
+    - item: Thieves’ tools
+      type: tool
+
+# Features by level
+features:
+  level1:
+    - name: Sneak Attack
+      type: passive
+      description: |
+        Once per turn, you can deal an extra 1d6 damage to one creature you hit with an attack if you have 
+        advantage on the attack roll or an ally is within 5 feet of the target. The damage increases as you level.
+
+    - name: Thieves’ Cant
+      type: passive
+      description: |
+        You know the secret language of thieves. You can communicate messages and read signs only understood 
+        by other rogues or those trained in its use.
+
+  level2:
+    - name: Cunning Action
+      type: active
+      description: |
+        You can take a bonus action on each of your turns in combat to Dash, Disengage, or Hide.
+
+  level3:
+    - name: Roguish Archetype
+      type: choice
+      description: |
+        Choose a roguish path that grants unique features at levels 3, 9, 13, and 17.
+      options:
+        - id: thief
+          name: Thief
+          description: |
+            Thieves are fast, agile, and masters of climbing, stealing, and using objects in combat.
+          features:
+            - name: Fast Hands
+              type: passive
+              description: |
+                You can use the Use an Object action as a bonus action, and you gain bonuses to Sleight of Hand checks.
+
+        - id: assassin
+          name: Assassin
+          description: |
+            Assassins specialize in infiltration, disguise, and dealing massive damage with surprise attacks.
+          features:
+            - name: Assassinate
+              type: passive
+              description: |
+                You have advantage on attack rolls against creatures that haven’t taken a turn in combat yet. 
+                Any hit you score against a surprised creature is a critical hit.
+
+  level4:
+    - name: Ability Score Improvement
+      type: passive
+      description: |
+        You can increase one ability score of your choice by 2, or two by 1 each. You can’t raise a score 
+        above 20 using this feature. Alternatively, choose a feat.
+
+  level5:
+    - name: Uncanny Dodge
+      type: reaction
+      description: |
+        When an attacker you can see hits you with an attack, you can use your reaction to halve the damage.

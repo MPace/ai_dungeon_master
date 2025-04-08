@@ -1,0 +1,133 @@
+# Basic Class Information
+id: monk
+name: Monk
+icon: kanban  # Bootstrap icon name (use something Zen or minimal)
+image: /images/classes/monk.jpg  # Path to class artwork
+
+# Short description for selection screen
+shortDescription: A master of martial arts harnessing the power of ki
+
+# Full description for details modal
+description: |
+  A bald human moves like a blur across the battlefield, fists striking with pinpoint precision.
+
+  A halfling balances on a bamboo stalk, redirecting an ogre's club with graceful ease.
+
+  A tiefling inhales deeply, then vanishes from view, reappearing behind her foe with a focused strike.
+
+  Monks are ascetic warriors who channel mystical energy called ki to perform superhuman feats. Unarmored 
+  and swift, they strike with blinding speed and evade danger through discipline and self-perfection.
+
+# Core class mechanics
+primaryAbility: Dexterity
+secondaryAbility: Wisdom
+hitDie: d8
+savingThrows: [Strength, Dexterity]
+
+# Proficiencies
+armorProficiency: None
+weaponProficiency: Simple weapons, shortswords
+toolProficiency: Choose one type of artisan's tools or musical instrument
+skillChoices: [Acrobatics, Athletics, History, Insight, Religion, Stealth]
+skillCount: 2
+
+# Playstyle description for details modal
+playstyle: |
+  Monks are agile and disciplined martial artists who excel in speed, mobility, and unarmed combat. 
+  Perfect for players who enjoy precision, movement, and resource-based abilities.
+
+# Categorization tags
+tags: [Martial, Mobility, Ki Points, Agile, Unarmored]
+
+# Starting equipment options
+startingEquipment:
+  options:
+    - group:
+        - item: Shortsword
+          type: martial melee weapon
+      or:
+        - item: Any simple weapon
+          type: simple weapon
+    - group:
+        - item: Dungeoneer's Pack
+          type: pack
+      or:
+        - item: Explorer's Pack
+          type: pack
+  default:
+    - item: 10 darts
+      type: simple ranged weapon
+
+# Features by level
+features:
+  level1:
+    - name: Martial Arts
+      type: passive
+      description: |
+        You can use Dexterity instead of Strength for unarmed strikes and monk weapons. You roll a d4 in 
+        place of normal damage for unarmed strikes. When you attack with an unarmed strike or monk weapon 
+        on your turn, you can make one unarmed strike as a bonus action.
+
+  level2:
+    - name: Ki
+      type: resource
+      uses: 2  # equal to monk level
+      description: |
+        You gain ki points equal to your monk level. You can spend them to fuel special features:
+        
+        • Flurry of Blows: After an Attack action, spend 1 ki to make two unarmed strikes as a bonus action.  
+        • Patient Defense: Spend 1 ki to take the Dodge action as a bonus action.  
+        • Step of the Wind: Spend 1 ki to take the Disengage or Dash action as a bonus action; jump distance is doubled.
+
+    - name: Unarmored Movement
+      type: passive
+      description: |
+        Your speed increases by 10 feet while not wearing armor or wielding a shield.
+
+  level3:
+    - name: Monastic Tradition
+      type: choice
+      description: |
+        You commit to a monastic tradition. Your choice grants features at levels 3, 6, 11, and 17.
+      options:
+        - id: open_hand
+          name: Way of the Open Hand
+          description: |
+            Masters of unarmed combat who focus on defeating foes with precise strikes and controlling techniques.
+          features:
+            - name: Open Hand Technique
+              type: passive
+              description: |
+                When you hit a creature with a Flurry of Blows attack, you can impose one of the following:
+                • It must succeed on a Dexterity save or be knocked prone.  
+                • It must make a Strength save or be pushed 15 feet away.  
+                • It can't take reactions until the end of your next turn.
+
+        - id: shadow
+          name: Way of Shadow
+          description: |
+            Stealthy and deadly, these monks use ki to manipulate darkness and move unseen.
+          features:
+            - name: Shadow Arts
+              type: active
+              description: |
+                You can spend 2 ki points to cast Darkness, Darkvision, Pass without Trace, or Silence.
+
+  level4:
+    - name: Ability Score Improvement
+      type: passive
+      description: |
+        You can increase one ability score of your choice by 2, or two scores by 1. You can’t raise a score 
+        above 20 this way. Alternatively, choose a feat.
+
+  level5:
+    - name: Extra Attack
+      type: passive
+      description: |
+        You can attack twice instead of once whenever you take the Attack action on your turn.
+
+    - name: Stunning Strike
+      type: active
+      description: |
+        When you hit a creature with a melee weapon attack, you can spend 1 ki to attempt a stunning strike. 
+        The target must succeed on a Constitution save or be stunned until the end of your next turn.

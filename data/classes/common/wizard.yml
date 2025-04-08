@@ -1,0 +1,121 @@
+# Basic Class Information
+id: wizard
+name: Wizard
+icon: book  # Bootstrap icon name
+image: /images/classes/wizard.jpg  # Path to class artwork
+
+# Short description for selection screen
+shortDescription: A scholarly magic-user capable of manipulating the fabric of reality
+
+# Full description for details modal
+description: |
+  An old gnome traces glowing runes into the air, freezing a charging ogre mid-stride.
+
+  A tiefling adjusts her spectacles, flipping to a bookmarked page as a thunderclap erupts from her staff.
+
+  A human mutters an incantation from an ancient tome, his shadow twisting with arcane force.
+
+  Wizards are supreme magic-users, defined by their mastery of the arcane arts through intense study and rigorous practice. Armed with a spellbook and sharp intellect, they command magic more varied and powerful than any other class—if they survive long enough to master it.
+
+# Core class mechanics
+primaryAbility: Intelligence
+secondaryAbility: Constitution
+hitDie: d6
+savingThrows: [Intelligence, Wisdom]
+
+# Proficiencies
+armorProficiency: None
+weaponProficiency: Daggers, darts, slings, quarterstaffs, light crossbows
+toolProficiency: None
+skillChoices: [Arcana, History, Insight, Investigation, Medicine, Religion]
+skillCount: 2
+
+# Playstyle description for details modal
+playstyle: |
+  Wizards are the most versatile spellcasters, wielding a massive selection of prepared spells. While fragile, 
+  they offer unmatched magical flexibility and power. Best suited for players who enjoy planning, strategy, and arcane lore.
+
+# Categorization tags
+tags: [Spellcaster, Scholar, Utility, Powerful Magic, Fragile]
+
+# Starting equipment options
+startingEquipment:
+  options:
+    - group:
+        - item: Quarterstaff
+          type: simple melee weapon
+      or:
+        - item: Dagger
+          type: simple melee weapon
+    - group:
+        - item: Component pouch
+          type: focus
+      or:
+        - item: Arcane focus
+          type: focus
+    - group:
+        - item: Scholar's Pack
+          type: pack
+      or:
+        - item: Explorer's Pack
+          type: pack
+  default:
+    - item: Spellbook
+      type: special
+
+# Features by level
+features:
+  level1:
+    - name: Spellcasting
+      type: active
+      description: |
+        You have a spellbook containing wizard spells. Intelligence is your spellcasting ability. You prepare a number of spells each day equal to your Intelligence modifier + your wizard level.
+
+    - name: Arcane Recovery
+      type: passive
+      description: |
+        Once per day after a short rest, you can recover a number of spell slots equal to half your wizard level (rounded up).
+
+  level2:
+    - name: Arcane Tradition
+      type: choice
+      description: |
+        You choose a school of magic to focus your studies. It grants features at levels 2, 6, 10, and 14.
+      options:
+        - id: evocation
+          name: School of Evocation
+          description: |
+            You specialize in powerful elemental magic that destroys your foes while sparing your allies.
+          features:
+            - name: Sculpt Spells
+              type: passive
+              description: |
+                When you cast an evocation spell that affects other creatures you can see, you can protect a number of them equal to 1 + the spell’s level. These creatures automatically succeed on saving throws and take no damage.
+
+        - id: illusion
+          name: School of Illusion
+          description: |
+            You master the art of deceiving the senses and minds of others.
+          features:
+            - name: Improved Minor Illusion
+              type: passive
+              description: |
+                You learn the Minor Illusion cantrip and can create both sound and image with a single casting.
+
+  level3:
+    - name: 2nd-Level Spells
+      type: passive
+      description: |
+        You can now prepare and cast 2nd-level wizard spells.
+
+  level4:
+    - name: Ability Score Improvement
+      type: passive
+      description: |
+        You can increase one ability score of your choice by 2, or two by 1 each. You can’t raise a score above 20 this way. Alternatively, choose a feat.
+
+  level5:
+    - name: 3rd-Level Spells
+      type: passive
+      description: |
+        You gain access to 3rd-level wizard spells.

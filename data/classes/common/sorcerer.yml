@@ -1,0 +1,136 @@
+# Basic Class Information
+id: sorcerer
+name: Sorcerer
+icon: stars  # Bootstrap icon name
+image: /images/classes/sorcerer.jpg  # Path to class artwork
+
+# Short description for selection screen
+shortDescription: A spellcaster who draws magic from an innate source
+
+# Full description for details modal
+description: |
+  A human's eyes glow with arcane light as lightning dances across his fingertips.
+
+  A dragonborn lifts into the air on fiery wings, her bloodline pulsing with magical power.
+
+  A tiefling grins as reality warps around her, a chaotic storm answering her call without incantation.
+
+  Sorcerers possess magic in their blood—innate power granted by birth, heritage, or some strange twist of fate. They shape spells through sheer will and instinct, channeling raw arcane energy in flexible and explosive ways.
+
+# Core class mechanics
+primaryAbility: Charisma
+secondaryAbility: Constitution
+hitDie: d6
+savingThrows: [Constitution, Charisma]
+
+# Proficiencies
+armorProficiency: None
+weaponProficiency: Daggers, darts, slings, quarterstaffs, light crossbows
+toolProficiency: None
+skillChoices: [Arcana, Deception, Insight, Intimidation, Persuasion, Religion]
+skillCount: 2
+
+# Playstyle description for details modal
+playstyle: |
+  Sorcerers are powerful spellcasters who rely on innate talent over study. They have fewer known spells than other casters, but can bend magic using sorcery points for flexibility. Ideal for players who enjoy flashy, adaptable magic.
+
+# Categorization tags
+tags: [Spellcaster, Arcane, Damage Dealer, Flexible Magic]
+
+# Starting equipment options
+startingEquipment:
+  options:
+    - group:
+        - item: Light crossbow and 20 bolts
+          type: simple ranged weapon
+      or:
+        - item: Any simple weapon
+          type: simple weapon
+    - group:
+        - item: Component pouch
+          type: focus
+      or:
+        - item: Arcane focus
+          type: focus
+    - group:
+        - item: Dungeoneer's Pack
+          type: pack
+      or:
+        - item: Explorer's Pack
+          type: pack
+  default:
+    - item: Two daggers
+      type: simple melee weapon
+
+# Features by level
+features:
+  level1:
+    - name: Spellcasting
+      type: active
+      description: |
+        You can cast spells from the sorcerer spell list. Charisma is your spellcasting ability. You know a limited number of spells but regain all spell slots on a long rest.
+
+    - name: Sorcerous Origin
+      type: choice
+      description: |
+        Choose the origin of your magical power, which grants features at levels 1, 6, 14, and 18.
+      options:
+        - id: draconic
+          name: Draconic Bloodline
+          description: |
+            Your magic flows from draconic ancestry. You gain a bonus to hit points and your skin takes on dragon-like traits.
+          features:
+            - name: Draconic Resilience
+              type: passive
+              description: |
+                Your hit point maximum increases by 1 at 1st level and increases by 1 again whenever you gain a level. When not wearing armor, your AC = 13 + Dexterity modifier.
+
+        - id: wild_magic
+          name: Wild Magic
+          description: |
+            Your magic is unpredictable and may trigger random effects.
+          features:
+            - name: Wild Magic Surge
+              type: passive
+              description: |
+                After casting a sorcerer spell of 1st level or higher, the DM may call for a roll on the Wild Magic Surge table.
+
+  level2:
+    - name: Font of Magic
+      type: resource
+      uses: 2
+      description: |
+        You gain sorcery points, a resource you can use to create spell slots or fuel Metamagic features later.
+
+  level3:
+    - name: Metamagic
+      type: choice
+      description: |
+        You gain the ability to twist your spells to suit your needs. Choose two Metamagic options.
+      options:
+        - id: careful_spell
+          name: Careful Spell
+          description: |
+            Protect allies from your area spells—creatures you choose automatically succeed on saving throws.
+
+        - id: quickened_spell
+          name: Quickened Spell
+          description: |
+            Cast a spell that normally takes 1 action as a bonus action by spending 2 sorcery points.
+
+        - id: twinned_spell
+          name: Twinned Spell
+          description: |
+            Target a second creature with a single-target spell by spending sorcery points equal to the spell’s level.
+
+  level4:
+    - name: Ability Score Improvement
+      type: passive
+      description: |
+        You can increase one ability score of your choice by 2, or two by 1 each. You can’t raise a score above 20 this way. Alternatively, choose a feat.
+
+  level5:
+    - name: Magical Versatility
+      type: passive
+      description: |
+        Whenever you gain a level in this class, you can replace one known spell and one Metamagic option with another from the sorcerer list.

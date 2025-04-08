@@ -1,0 +1,147 @@
+# Basic Class Information
+id: fighter
+name: Fighter
+icon: sword  # Bootstrap icon name
+image: /images/classes/fighter.jpg  # Path to class artwork
+
+# Short description for selection screen
+shortDescription: A master of martial combat, skilled with weapons and armor
+
+# Full description for details modal
+description: |
+  A human in full plate armor braces with shield raised, holding a chokepoint against a horde of enemies.
+
+  A half-elf duelist moves like a dancer, blade flashing in the candlelight as she parries a deadly strike.
+
+  A dragonborn hefts a massive longbow, loosing arrows faster than most can blink.
+
+  Fighters are unparalleled warriors, trained in every form of weapon and armor. Whether defending the front line, raining arrows from afar, or leading with tactical precision, they dominate the battlefield through sheer skill and discipline.
+
+# Core class mechanics
+primaryAbility: Strength or Dexterity
+secondaryAbility: Constitution
+hitDie: d10
+savingThrows: [Strength, Constitution]
+
+# Proficiencies
+armorProficiency: All armor, shields
+weaponProficiency: Simple weapons, martial weapons
+toolProficiency: None
+skillChoices: [Acrobatics, Animal Handling, Athletics, History, Insight, Intimidation, Perception, Survival]
+skillCount: 2
+
+# Playstyle description for details modal
+playstyle: |
+  Fighters are highly customizable martial characters. With extra attacks, action surges, and a variety of fighting styles, they can be built for offense, defense, or versatility. Great for players who enjoy straightforward but powerful combat.
+
+# Categorization tags
+tags: [Martial, Damage Dealer, Tank, Customizable, Beginner-friendly]
+
+# Starting equipment options
+startingEquipment:
+  options:
+    - group:
+        - item: Chain mail
+          type: armor
+      or:
+        - item: Leather armor
+          type: armor
+        - item: Longbow and 20 arrows
+          type: martial ranged weapon
+    - group:
+        - item: Martial weapon and shield
+          type: martial melee weapon
+      or:
+        - item: Two martial weapons
+          type: martial melee weapon
+    - group:
+        - item: Light crossbow and 20 bolts
+          type: simple ranged weapon
+      or:
+        - item: Two handaxes
+          type: simple melee weapon
+    - group:
+        - item: Dungeoneer's Pack
+          type: pack
+      or:
+        - item: Explorer's Pack
+          type: pack
+
+# Features by level
+features:
+  level1:
+    - name: Fighting Style
+      type: choice
+      description: |
+        You adopt a particular style of fighting as your specialty. Choose one of the following options.
+      options:
+        - id: defense
+          name: Defense
+          description: |
+            While wearing armor, you gain a +1 bonus to AC.
+
+        - id: dueling
+          name: Dueling
+          description: |
+            When you are wielding a melee weapon in one hand and no other weapons, you gain a +2 bonus to damage rolls with that weapon.
+
+        - id: great_weapon_fighting
+          name: Great Weapon Fighting
+          description: |
+            When you roll a 1 or 2 on a damage die for an attack you make with a two-handed or versatile melee weapon, you can reroll the die.
+
+        - id: archery
+          name: Archery
+          description: |
+            You gain a +2 bonus to attack rolls you make with ranged weapons.
+
+    - name: Second Wind
+      type: active
+      uses: 1
+      description: |
+        You can use a bonus action to regain hit points equal to 1d10 + your fighter level. Once you use this feature, you must finish a short or long rest before using it again.
+
+  level2:
+    - name: Action Surge
+      type: active
+      uses: 1
+      description: |
+        You can push yourself beyond your normal limits for a moment. On your turn, you can take one additional action. You must finish a short or long rest to use it again.
+
+  level3:
+    - name: Martial Archetype
+      type: choice
+      description: |
+        You choose an archetype that represents your style of combat. This grants features at levels 3, 7, 10, 15, and 18.
+      options:
+        - id: champion
+          name: Champion
+          description: |
+            The Champion focuses on raw physical power and improved critical strikes.
+          features:
+            - name: Improved Critical
+              type: passive
+              description: |
+                Your weapon attacks score a critical hit on a roll of 19 or 20.
+
+        - id: battle_master
+          name: Battle Master
+          description: |
+            The Battle Master uses maneuvers and tactics to control the battlefield.
+          features:
+            - name: Combat Superiority
+              type: active
+              description: |
+                You learn maneuvers that use superiority dice to deal extra damage and apply effects. You start with four dice (d8s) and three maneuvers.
+
+  level4:
+    - name: Ability Score Improvement
+      type: passive
+      description: |
+        You can increase one ability score of your choice by 2, or two by 1 each. You can't increase a score above 20 using this feature. Alternatively, choose a feat.
+
+  level5:
+    - name: Extra Attack
+      type: passive
+      description: |
+        You can attack twice, instead of once, whenever you take the Attack action on your turn.

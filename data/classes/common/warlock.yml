@@ -1,0 +1,149 @@
+# Basic Class Information
+id: warlock
+name: Warlock
+icon: moon-stars  # Bootstrap icon name
+image: /images/classes/warlock.jpg  # Path to class artwork
+
+# Short description for selection screen
+shortDescription: A wielder of magic granted by a pact with an otherworldly being
+
+# Full description for details modal
+description: |
+  A half-elf whispers forbidden words under his breath, calling forth eldritch fire from the shadows.
+
+  A tiefling’s eyes glow with pact-born fury as she utters a curse, her voice echoing with power not her own.
+
+  A human traces a sigil midair, summoning a raven to her side and commanding it in a voice like distant thunder.
+
+  Warlocks channel power from mysterious patrons—beings beyond comprehension that forge magical pacts with mortals. Whether for ambition, revenge, or survival, warlocks trade service for magic, wielding arcane abilities fueled by their pact.
+
+# Core class mechanics
+primaryAbility: Charisma
+secondaryAbility: Constitution
+hitDie: d8
+savingThrows: [Wisdom, Charisma]
+
+# Proficiencies
+armorProficiency: Light armor
+weaponProficiency: Simple weapons
+toolProficiency: None
+skillChoices: [Arcana, Deception, History, Intimidation, Investigation, Nature, Religion]
+skillCount: 2
+
+# Playstyle description for details modal
+playstyle: |
+  Warlocks are unique spellcasters with powerful cantrips, few spell slots, and supernatural abilities based on their pact and patron. Great for players who enjoy flavorful magic, thematic storytelling, and versatile power with a dark twist.
+
+# Categorization tags
+tags: [Spellcaster, Pact Magic, Thematic, Eldritch, Customizable]
+
+# Starting equipment options
+startingEquipment:
+  options:
+    - group:
+        - item: Light crossbow and 20 bolts
+          type: simple ranged weapon
+      or:
+        - item: Any simple weapon
+          type: simple weapon
+    - group:
+        - item: Component pouch
+          type: focus
+      or:
+        - item: Arcane focus
+          type: focus
+    - group:
+        - item: Scholar's Pack
+          type: pack
+      or:
+        - item: Dungeoneer's Pack
+          type: pack
+  default:
+    - item: Leather armor
+      type: armor
+    - item: Simple weapon (dagger)
+      type: simple melee weapon
+    - item: Book of shadows
+      type: special
+
+# Features by level
+features:
+  level1:
+    - name: Otherworldly Patron
+      type: choice
+      description: |
+        You forge a pact with a mysterious entity. Your choice grants features at levels 1, 6, 10, and 14.
+      options:
+        - id: fiend
+          name: The Fiend
+          description: |
+            You’ve made a pact with a powerful demon, devil, or other fiend from the lower planes.
+          features:
+            - name: Dark One’s Blessing
+              type: passive
+              description: |
+                When you reduce a hostile creature to 0 hit points, you gain temporary hit points equal to your Charisma modifier + your warlock level.
+
+        - id: great_old_one
+          name: The Great Old One
+          description: |
+            You’ve forged a pact with an ancient being of the Far Realm. Its thoughts touch your mind.
+          features:
+            - name: Awakened Mind
+              type: passive
+              description: |
+                You can telepathically speak to any creature within 30 feet that understands at least one language.
+
+    - name: Pact Magic
+      type: active
+      description: |
+        You can cast spells using your limited but powerful Pact Magic slots. All your spell slots are the same level and recharge on a short rest. Charisma is your spellcasting ability.
+
+  level2:
+    - name: Eldritch Invocations
+      type: choice
+      description: |
+        You learn magical secrets called invocations. Choose two to start.
+      options:
+        - id: agonizing_blast
+          name: Agonizing Blast
+          description: |
+            Add your Charisma modifier to the damage of your Eldritch Blast cantrip.
+
+        - id: devil_sight
+          name: Devil’s Sight
+          description: |
+            You can see normally in darkness, both magical and nonmagical, to a distance of 120 feet.
+
+  level3:
+    - name: Pact Boon
+      type: choice
+      description: |
+        Your patron bestows a magical gift. Choose one boon.
+      options:
+        - id: pact_of_the_chain
+          name: Pact of the Chain
+          description: |
+            You gain a familiar that can take on unique forms, like an imp or pseudodragon.
+
+        - id: pact_of_the_blade
+          name: Pact of the Blade
+          description: |
+            You can create a magical weapon in your hand and bond with it as your pact weapon.
+
+        - id: pact_of_the_tome
+          name: Pact of the Tome
+          description: |
+            You receive a grimoire called a Book of Shadows, containing three cantrips of your choice from any class.
+
+  level4:
+    - name: Ability Score Improvement
+      type: passive
+      description: |
+        You can increase one ability score of your choice by 2, or two by 1 each. You can’t raise a score above 20 this way. Alternatively, choose a feat.
+
+  level5:
+    - name: Eldritch Invocation Upgrade
+      type: passive
+      description: |
+        You can learn another Eldritch Invocation, expanding your magical arsenal.

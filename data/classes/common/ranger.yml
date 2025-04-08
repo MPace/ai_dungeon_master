@@ -1,0 +1,171 @@
+# Basic Class Information
+id: ranger
+name: Ranger
+icon: compass  # Bootstrap icon name
+image: /images/classes/ranger.jpg  # Path to class artwork
+
+# Short description for selection screen
+shortDescription: A warrior who uses martial prowess and nature magic
+
+# Full description for details modal
+description: |
+  A hooded half-elf melts into the forest shadows, her arrow already nocked before the orc patrol senses danger.
+
+  A human crouches beside a beast companion, reading the tracks of a monstrous predator through the muddy earth.
+
+  A tiefling marks her quarry with an oath, calling on primal magic as her blades gleam with supernatural focus.
+
+  Rangers are versatile hunters and guardians of the wild, combining martial skill with spellcasting and survivalist instincts. Whether protecting the wilderness or stalking dangerous prey, they excel at precision, preparation, and adaptability.
+
+# Core class mechanics
+primaryAbility: Dexterity and Wisdom
+secondaryAbility: Constitution
+hitDie: d10
+savingThrows: [Strength, Dexterity]
+
+# Proficiencies
+armorProficiency: Light armor, medium armor, shields
+weaponProficiency: Simple weapons, martial weapons
+toolProficiency: None
+skillChoices: [Animal Handling, Athletics, Insight, Investigation, Nature, Perception, Stealth, Survival]
+skillCount: 3
+
+# Playstyle description for details modal
+playstyle: |
+  Rangers are skilled explorers and hunters who shine in wilderness and skirmish combat. They offer 
+  stealth, tracking, magical support, and damage against key enemies. Great for players who enjoy 
+  tactical choices and long-term planning.
+
+# Categorization tags
+tags: [Damage Dealer, Nature Magic, Stealth, Explorer, Ranged Combat]
+
+# Starting equipment options
+startingEquipment:
+  options:
+    - group:
+        - item: Scale mail
+          type: medium armor
+      or:
+        - item: Leather armor
+          type: light armor
+    - group:
+        - item: Two shortswords
+          type: martial melee weapon
+      or:
+        - item: Two simple melee weapons
+          type: simple melee weapon
+    - group:
+        - item: Dungeoneer's Pack
+          type: pack
+      or:
+        - item: Explorer's Pack
+          type: pack
+  default:
+    - item: Longbow and 20 arrows
+      type: martial ranged weapon
+
+# Features by level
+features:
+  level1:
+    - name: Favored Enemy
+      type: choice
+      description: |
+        You have significant experience studying, tracking, and hunting a chosen type of foe. You gain 
+        advantages when fighting them and proficiency in a related language.
+      options:
+        - id: beasts
+          name: Beasts
+          description: Advantage on survival checks and tracking related to beasts.
+
+        - id: undead
+          name: Undead
+          description: Advantage on checks to track and recall information about undead.
+
+    - name: Natural Explorer
+      type: choice
+      description: |
+        You are particularly familiar with one type of natural environment and are adept at traveling 
+        and surviving in such regions.
+      options:
+        - id: forest
+          name: Forest
+          description: |
+            Difficult terrain doesn’t slow your group’s travel. You’re alert and stealthy in wooded areas.
+
+        - id: desert
+          name: Desert
+          description: |
+            You can find water and resist harsh conditions in arid terrain.
+
+  level2:
+    - name: Fighting Style
+      type: choice
+      description: |
+        You adopt a particular style of fighting as your specialty.
+      options:
+        - id: archery
+          name: Archery
+          description: |
+            You gain a +2 bonus to attack rolls you make with ranged weapons.
+
+        - id: two_weapon_fighting
+          name: Two-Weapon Fighting
+          description: |
+            You add your ability modifier to the damage of your off-hand attack.
+
+    - name: Spellcasting
+      type: active
+      description: |
+        You can cast ranger spells. Wisdom is your spellcasting ability. You prepare a number of spells 
+        equal to your Wisdom modifier + half your ranger level (minimum 1).
+
+  level3:
+    - name: Ranger Archetype
+      type: choice
+      description: |
+        You choose an archetype that defines your ranger’s approach to tracking and combat. It grants 
+        features at levels 3, 7, 11, and 15.
+      options:
+        - id: hunter
+          name: Hunter
+          description: |
+            Hunters focus on taking down threats efficiently with tactical choices.
+          features:
+            - name: Hunter's Prey
+              type: choice
+              description: |
+                Choose a tactic that enhances your damage.
+              options:
+                - id: colossus_slayer
+                  name: Colossus Slayer
+                  description: |
+                    Once per turn, when you hit a creature with a weapon attack, the target takes an extra 1d8 damage if it's below its hit point maximum.
+
+                - id: horde_breaker
+                  name: Horde Breaker
+                  description: |
+                    Once on each of your turns, you can make another weapon attack against a different creature within 5 feet of the original target.
+
+        - id: beast_master
+          name: Beast Master
+          description: |
+            You gain a beast companion that fights alongside you and obeys your commands.
+          features:
+            - name: Ranger's Companion
+              type: passive
+              description: |
+                You gain a beast companion that you control in combat. It uses its own initiative and 
+                acts on your command.
+
+  level4:
+    - name: Ability Score Improvement
+      type: passive
+      description: |
+        You can increase one ability score of your choice by 2, or two by 1 each. You can't increase a 
+        score above 20 this way. Alternatively, choose a feat.
+
+  level5:
+    - name: Extra Attack
+      type: passive
+      description: |
+        You can attack twice, instead of once, whenever you take the Attack action on your turn.

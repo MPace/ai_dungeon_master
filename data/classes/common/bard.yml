@@ -1,0 +1,162 @@
+# Basic Class Information
+id: bard
+name: Bard
+icon: music-note-beamed  # Bootstrap icon name
+image: /images/classes/bard.jpg  # Path to class artwork
+
+# Short description for selection screen
+shortDescription: A master of song, speech, and magic
+
+# Full description for details modal
+description: |
+  Humming as she traces her fingers over an ancient monument in a long-forgotten ruin, a half-elf 
+  in rugged leathers finds knowledge springing into her mind, conjured forth by the magic of her song.
+  
+  A stern human warrior barks commands to rally his comrades into battle, his voice magically infused 
+  with vigor and bravery.
+  
+  Laughing, a gnome twirls a dagger and launches into a raucous tale of heroism, subtly weaving in 
+  enchantments to charm the crowd.
+
+  Bards are wielders of the magic of creation and inspiration, their power derived from performance, 
+  lore, and their commanding presence.
+
+# Core class mechanics
+primaryAbility: Charisma
+secondaryAbility: Dexterity
+hitDie: d8
+savingThrows: [Dexterity, Charisma]
+
+# Proficiencies
+armorProficiency: Light armor
+weaponProficiency: Simple weapons, hand crossbows, longswords, rapiers, shortswords
+toolProficiency: Three musical instruments of your choice
+skillChoices: [Acrobatics, Animal Handling, Arcana, Deception, History, Insight, Intimidation, Investigation, Medicine, Nature, Perception, Performance, Persuasion, Religion, Sleight of Hand, Stealth, Survival]
+skillCount: 3
+
+# Playstyle description for details modal
+playstyle: |
+  Bards are versatile spellcasters and skill specialists. They inspire allies, manipulate the 
+  battlefield with enchantments and illusions, and bring utility to any situation. Ideal for players 
+  who enjoy creativity, roleplay, and magical versatility.
+
+# Categorization tags
+tags: [Support, Spellcaster, Utility, Charismatic, Roleplay-heavy]
+
+# Starting equipment options
+startingEquipment:
+  options:
+    - group:
+        - item: Rapier
+          type: martial melee weapon
+      or:
+        - item: Longsword
+          type: martial melee weapon
+      or:
+        - item: Any simple weapon
+          type: simple weapon
+    - group:
+        - item: Diplomat's Pack
+          type: pack
+      or:
+        - item: Entertainer's Pack
+          type: pack
+  default:
+    - item: Lute
+      type: musical instrument
+    - item: Leather armor
+      type: armor
+    - item: Dagger
+      type: simple melee weapon
+
+# Features by level
+features:
+  level1:
+    - name: Spellcasting
+      type: active
+      description: |
+        You can cast spells using your charisma and musical talent. You know a number of bard spells 
+        and can cast them using Charisma as your spellcasting ability.
+
+    - name: Bardic Inspiration
+      type: active
+      uses: 3
+      description: |
+        You can inspire others through stirring words or music. As a bonus action, choose one creature 
+        other than yourself within 60 feet who can hear you. That creature gains one Bardic Inspiration 
+        die, a d6.
+        
+        Once within the next 10 minutes, the creature can roll the die and add the number rolled to one 
+        ability check, attack roll, or saving throw it makes. The creature can wait until after it rolls 
+        the d20 before deciding to use the Bardic Inspiration die, but must decide before the DM says 
+        whether the roll succeeds or fails.
+
+  level2:
+    - name: Jack of All Trades
+      type: passive
+      description: |
+        You can add half your proficiency bonus, rounded down, to any ability check you make that doesn't 
+        already include your proficiency bonus.
+
+    - name: Song of Rest
+      type: passive
+      description: |
+        You can use soothing music or oration to help revitalize your wounded allies during a short rest. 
+        If you or any friendly creatures who can hear your performance regain hit points by spending Hit 
+        Dice at the end of the short rest, each of those creatures regains an extra 1d6 hit points.
+
+  level3:
+    - name: Bard College
+      type: choice
+      description: |
+        You delve into the advanced techniques of a bardic college. Choose the College of Lore or the 
+        College of Valor, which grants you features at levels 3, 6, and 14.
+      options:
+        - id: lore
+          name: College of Lore
+          description: |
+            Bards of the College of Lore know something about most things, collecting bits of knowledge 
+            from sources as diverse as scholarly tomes and peasant tales. They use their lore to bolster 
+            their magic and sharpen their wit.
+          features:
+            - name: Cutting Words
+              type: reaction
+              description: |
+                You can use your wit to distract, confuse, and sap the confidence of others. When a creature 
+                that you can see within 60 feet makes an attack roll, ability check, or damage roll, you can 
+                use your reaction to expend a Bardic Inspiration die, subtracting it from the result.
+        
+        - id: valor
+          name: College of Valor
+          description: |
+            Bards of the College of Valor are daring skalds who inspire others to greatness in battle. They 
+            learn to fight with weapons and wear armor, and they channel their magic to bolster the might 
+            of their allies.
+          features:
+            - name: Combat Inspiration
+              type: passive
+              description: |
+                When a creature has a Bardic Inspiration die from you, they can roll it and add the number 
+                to a weapon damage roll or use it to increase their AC as a reaction to being hit.
+
+  level4:
+    - name: Ability Score Improvement
+      type: passive
+      description: |
+        You can increase one ability score of your choice by 2, or you can increase two ability scores of 
+        your choice by 1. As normal, you can't increase an ability score above 20 using this feature.
+
+        Alternatively, you can choose a feat.
+
+  level5:
+    - name: Font of Inspiration
+      type: passive
+      description: |
+        You regain all of your expended uses of Bardic Inspiration when you finish a short or long rest.
+
+    - name: Countercharm
+      type: active
+      description: |
+        You can use musical notes or words of power to disrupt mind-influencing effects. As an action, you 
+        grant yourself and all friendly creatures within 30 feet advantage on saving throws against being 
+        frightened or charmed. The effect lasts until the start of your next turn.

@@ -1,0 +1,726 @@
+/* File: frontend/src/components/steps/Step3_ClassSelector.css */
+
+/* Overall container */
+.step3-outer-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: calc(100vh - 150px);
+    position: relative;
+    padding: 40px 20px;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+/* Title Style */
+.step3-title {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 2.5rem;
+    text-shadow: 0 0 15px rgba(255, 100, 0, 0.5);
+    margin-bottom: 40px;
+    position: relative;
+}
+
+.step3-title::after {
+    content: "";
+    position: absolute;
+    width: 120px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #a24a2c, transparent);
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Class Grid Container */
+.class-grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 25px;
+    width: 100%;
+    max-width: 1400px;
+    padding: 20px;
+    position: relative;
+    justify-items: center;
+}
+
+/* Class Card */
+.class-card {
+    width: 260px;
+    height: 320px;
+    position: relative;
+    border-radius: 12px;
+    background-color: rgba(31, 31, 41, 0.7);
+    border: 3px solid rgba(60, 60, 70, 0.6);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    padding: 25px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+}
+
+.class-card:hover {
+    transform: translateY(-15px) scale(1.03);
+    box-shadow: 0 15px 35px rgba(255, 100, 0, 0.25);
+    border-color: #a24a2c;
+}
+
+.class-card.selected {
+    border-color: #a24a2c;
+    box-shadow: 0 15px 35px rgba(255, 100, 0, 0.4), 0 0 20px rgba(255, 100, 0, 0.4);
+    animation: pulse 2s infinite;
+}
+
+/* Class Icon */
+.class-icon {
+    font-size: 2.5rem;
+    color: #a24a2c;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.class-card:hover .class-icon {
+    transform: scale(1.2);
+    color: #ff6400;
+}
+
+/* Class Name */
+.class-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1.8rem;
+    color: #fff;
+    margin-bottom: 10px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.class-card:hover .class-name {
+    color: #a24a2c;
+}
+
+/* Class Description */
+.class-description {
+    color: #cccccc;
+    text-align: center;
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+    line-height: 1.4;
+    flex-grow: 1;
+}
+
+/* Class Ability and Hit Die */
+.class-primary-ability, .class-hit-die {
+    width: 100%;
+    padding: 5px 0;
+    text-align: center;
+    color: #aaaaaa;
+    font-size: 0.9rem;
+}
+
+.ability-label, .hit-die-label {
+    color: #a24a2c;
+    font-weight: 500;
+}
+
+.ability-value, .hit-die-value {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* Modal Styles */
+.class-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
+}
+
+.class-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.class-modal {
+    width: 90%;
+    max-width: 900px;
+    max-height: 85vh;
+    background-color: #1a1a20;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 100, 0, 0.2);
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    border: 3px solid #a24a2c;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.class-modal-overlay.active .class-modal {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    border: none;
+    outline: none;
+}
+
+.modal-close-btn:hover {
+    background-color: #a24a2c;
+    transform: rotate(90deg);
+}
+
+/* Class Modal Header */
+.class-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 25px 40px;
+    background-color: rgba(31, 31, 41, 0.8);
+    border-bottom: 1px solid rgba(162, 74, 44, 0.3);
+    flex-direction: column;
+    gap: 10px;
+}
+
+.class-modal-icon {
+    font-size: 3rem;
+    color: #a24a2c;
+}
+
+.class-modal-title {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 2.8rem;
+    text-align: center;
+    text-shadow: 0 0 15px rgba(255, 100, 0, 0.2);
+    margin: 0;
+}
+
+/* Class Image Container */
+.class-image-container {
+    width: 100%;
+    height: 250px;
+    position: relative;
+    overflow: hidden;
+}
+
+.class-image-container::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100px;
+    background: linear-gradient(to top, #1a1a20, transparent);
+    z-index: 1;
+}
+
+.class-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Class Modal Content */
+.class-modal-content {
+    padding: 30px 40px 40px;
+    position: relative;
+    overflow-y: auto;
+    max-height: calc(85vh - 350px); /* Subtract header and image height */
+}
+
+.class-full-description {
+    color: #cccccc;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    margin-bottom: 25px;
+    text-align: center;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Class Details Grid */
+.class-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.class-detail-card {
+    background-color: rgba(40, 40, 50, 0.6);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.class-detail-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    background-color: rgba(50, 50, 60, 0.6);
+}
+
+.detail-title {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+    text-align: center;
+    border-bottom: 1px solid rgba(162, 74, 44, 0.3);
+    padding-bottom: 10px;
+}
+
+.detail-content {
+    color: #cccccc;
+}
+
+/* Feature Rows */
+.feature-row {
+    display: flex;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.feature-label {
+    color: #a24a2c;
+    font-weight: 500;
+    min-width: 130px;
+    padding-right: 10px;
+}
+
+.feature-value {
+    color: #ffffff;
+    flex: 1;
+}
+
+/* Ability Items */
+.ability-item {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px dotted rgba(255, 255, 255, 0.1);
+}
+
+.ability-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.ability-name {
+    color: #a24a2c;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 5px;
+}
+
+.ability-desc {
+    color: #cccccc;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.ability-type {
+    display: inline-block;
+    margin-top: 5px;
+    font-size: 0.85rem;
+    color: #aaaaaa;
+    background-color: rgba(31, 31, 41, 0.6);
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+/* Playstyle Tags */
+.playstyle-desc {
+    color: #cccccc;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+.playstyle-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.playstyle-tag {
+    background-color: rgba(162, 74, 44, 0.2);
+    border: 1px solid rgba(162, 74, 44, 0.5);
+    border-radius: 20px;
+    padding: 5px 12px;
+    color: #e5e5e5;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.playstyle-tag:hover {
+    background-color: rgba(162, 74, 44, 0.4);
+    transform: translateY(-2px);
+}
+
+/* Equipment Section */
+.equipment-section {
+    margin-top: 30px;
+    background-color: rgba(40, 40, 50, 0.6);
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.section-title {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.section-desc {
+    color: #cccccc;
+    font-size: 0.95rem;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.equipment-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.equipment-option {
+    display: flex;
+    color: #cccccc;
+    font-size: 0.95rem;
+}
+
+.option-number {
+    margin-right: 10px;
+    color: #a24a2c;
+    font-weight: bold;
+}
+
+.option-items {
+    flex: 1;
+}
+
+.option-or {
+    font-style: italic;
+    margin-left: 10px;
+    color: #aaaaaa;
+}
+
+.default-equipment {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dotted rgba(255, 255, 255, 0.1);
+}
+
+.default-label {
+    color: #a24a2c;
+    font-weight: 500;
+    margin-right: 10px;
+}
+
+.default-items {
+    color: #cccccc;
+}
+
+/* Confirm Button Container */
+.confirm-button-container {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.confirm-class-btn {
+    background-color: #863a20;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 14px 45px;
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+    outline: none;
+}
+
+.confirm-class-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: all 0.5s ease;
+}
+
+.confirm-class-btn:hover {
+    background-color: #a24a2c;
+    box-shadow: 0 8px 25px rgba(255, 100, 0, 0.3);
+    transform: translateY(-3px);
+}
+
+.confirm-class-btn:hover::before {
+    left: 100%;
+}
+
+.confirm-class-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Bottom navigation */
+.step3-navigation {
+    width: 100%;
+    max-width: 900px;
+    padding: 30px 0 20px;
+    margin-top: 30px;
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid rgba(80, 80, 90, 0.3);
+}
+
+.back-button {
+    background-color: transparent;
+    color: #cccccc;
+    border: 1px solid #555;
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.back-button:hover {
+    background-color: rgba(60, 60, 70, 0.5);
+    border-color: #777;
+    color: #ffffff;
+}
+
+.continue-button {
+    background-color: rgba(134, 58, 32, 0.2);
+    color: #888;
+    border: 1px solid rgba(134, 58, 32, 0.3);
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.continue-button.active {
+    background-color: #863a20;
+    color: white;
+    border-color: #863a20;
+    cursor: pointer;
+}
+
+.continue-button.active:hover {
+    background-color: #a24a2c;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(255, 100, 0, 0.2);
+}
+
+/* Loading and Error States */
+.loading-container, 
+.error-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    width: 100%;
+    color: #ccc;
+    gap: 20px;
+}
+
+.loading-container .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: #a24a2c;
+}
+
+.error-container {
+    color: #dc3545;
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 8px;
+    padding: 30px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 100, 0, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(255, 100, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 100, 0, 0); }
+}
+
+.class-card {
+    animation: fadeIn 0.5s ease-out, slideUp 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+/* Staggered animation for cards */
+.class-card:nth-child(1) { animation-delay: 0.05s; }
+.class-card:nth-child(2) { animation-delay: 0.1s; }
+.class-card:nth-child(3) { animation-delay: 0.15s; }
+.class-card:nth-child(4) { animation-delay: 0.2s; }
+.class-card:nth-child(5) { animation-delay: 0.25s; }
+.class-card:nth-child(6) { animation-delay: 0.3s; }
+.class-card:nth-child(7) { animation-delay: 0.35s; }
+.class-card:nth-child(8) { animation-delay: 0.4s; }
+.class-card:nth-child(9) { animation-delay: 0.45s; }
+.class-card:nth-child(10) { animation-delay: 0.5s; }
+.class-card:nth-child(11) { animation-delay: 0.55s; }
+.class-card:nth-child(12) { animation-delay: 0.6s; }
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .class-grid-container {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+    
+    .class-card {
+        width: 240px;
+        height: 300px;
+    }
+    
+    .class-name {
+        font-size: 1.6rem;
+    }
+    
+    .class-modal-title {
+        font-size: 2.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .step3-title {
+        font-size: 2.2rem;
+    }
+    
+    .class-grid-container {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 15px;
+    }
+    
+    .class-card {
+        width: 220px;
+        height: 280px;
+        padding: 20px 15px;
+    }
+    
+    .class-name {
+        font-size: 1.5rem;
+    }
+    
+    .class-description {
+        font-size: 0.9rem;
+    }
+    
+    .class-modal-header {
+        padding: 20px;
+    }
+    
+    .class-modal-title {
+        font-size: 2.2rem;
+    }
+    
+    .class-modal-content {
+        padding: 20px;
+    }
+    
+    .class-details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .step3-navigation {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .back-button, .continue-button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .step3-title {
+        font-size: 2rem;
+    }
+    
+    .class-grid-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .class-card {
+        width: 100%;
+        max-width: 280px;
+    }
+    
+    .class-image-container {
+        height: 180px;
+    }
+    
+    .detail-content {
+        font-size: 0.9rem;
+    }
+}
