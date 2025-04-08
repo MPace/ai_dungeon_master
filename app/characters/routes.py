@@ -553,7 +553,7 @@ def load_data_from_file(file_path):
 
 @characters_bp.route('/api/creation-data/<world_id>', methods=['GET'])
 @login_required
-def get_world_data():
+def get_world_data(world_id):
     """API endpoint to get filtered creation data (classes, races, etc.) for a world."""
     try:
         # 1. Load the main world definition file to see what's allowed
@@ -581,47 +581,105 @@ def get_world_data():
         }
 
         # Load Classes
+        current_app.logger.info(f"Loading classes for world '{world_id}'")
         for class_id in allowed_classes_ids:
             # Check for world-specific class file first, then common
-            class_file = os.path.join(CLASSES_DIR, world_id, f"{class_id}.yaml")
-            if not os.path.exists(class_file):
-                 class_file = os.path.join(CLASSES_DIR, world_id, f"{class_id}.yml")
-            if not os.path.exists(class_file):
-                class_file = os.path.join(CLASSES_DIR, 'common', f"{class_id}.yaml")
-            if not os.path.exists(class_file):
-                 class_file = os.path.join(CLASSES_DIR, 'common', f"{class_id}.yml")
-                 
-            class_data = load_data_from_file(class_file)
-            if class_data:
-                 world_specific_data["classes"].append(class_data)
+            class_file = None
+            # Try world-specific class files first
+            potential_paths = [
+                os.path.join(CLASSES_DIR, world_id, f"{class_id}.yaml"),
+                os.path.join(CLASSES_DIR, world_id, f"{class_id}.yml"),
+                # Then fall back to common
+                os.path.join(CLASSES_DIR, 'common', f"{class_id}.yaml"),
+                os.path.join(CLASSES_DIR, 'common', f"{class_id}.yml")
+            ]
+            
+            for path in potential_paths:
+                if os.path.exists(path):
+                    class_file = path
+                    break
+                    
+            if class_file:
+                current_app.logger.debug(f"Loading class file: {class_file}")
+                class_data = load_data_from_file(class_file)
+                if class_data:
+                    # Add image prefix if it's a relative path
+                    if class_data.get('image') and not class_data['image'].startswith(('http://', 'https://')):
+                        class_data['image'] = f"{VITE_BASE_URL}{class_data['image']}"
+                        
+                    world_specific_data["classes"].append(class_data)
+                    current_app.logger.debug(f"Added class: {class_data.get('name')}")
+                else:
+                    current_app.logger.warning(f"Failed to load class data from {class_file}")
+            else:
+                current_app.logger.warning(f"Could not find class file for {class_id}")
 
         # Load Races (similar logic for world-specific vs common)
+        current_app.logger.info(f"Loading races for world {world_id}")
         for race_id in allowed_races_ids:
-            race_file = os.path.join(RACES_DIR, world_id, f"{race_id}.yaml") # Check world specific first
-            if not os.path.exists(race_file):
-                race_file = os.path.join(RACES_DIR, world_id, f"{race_id}.yml")
-            if not os.path.exists(race_file):
-                 race_file = os.path.join(RACES_DIR, 'common', f"{race_id}.yaml") # Fallback to common
-            if not os.path.exists(race_file):
-                race_file = os.path.join(RACES_DIR, 'common', f"{race_id}.yml")
+            race_file = None
+            # Try world-specific race files first
+            potential_paths = [
+                os.path.join(RACES_DIR, world_id, f"{race_id}.yaml"),
+                os.path.join(RACES_DIR, world_id, f"{race_id}.yml"),
+                # Then fall back to common
+                os.path.join(RACES_DIR, 'common', f"{race_id}.yaml"),
+                os.path.join(RACES_DIR, 'common', f"{race_id}.yml")
+            ]
+            
+            for path in potential_paths:
+                if os.path.exists(path):
+                    race_file = path
+                    break
+                    
+            if race_file:
+                current_app.logger.debug(f"Loading race file: {race_file}")
+                race_data = load_data_from_file(race_file)
+                if race_data:
+                    # Add image prefix if it's a relative path
+                    if race_data.get('image') and not race_data['image'].startswith(('http://', 'https://')):
+                        race_data['image'] = f"{VITE_BASE_URL}{race_data['image']}"
+                        
+                    world_specific_data["races"].append(race_data)
+                    current_app.logger.debug(f"Added race: {race_data.get('name')}")
+                else:
+                    current_app.logger.warning(f"Failed to load race data from {race_file}")
+            else:
+                current_app.logger.warning(f"Could not find race file for {race_id}")
 
-            race_data = load_data_from_file(race_file)
-            if race_data:
-                world_specific_data["races"].append(race_data)
 
         # Load Backgrounds (similar logic)
+        current_app.logger.info(f"Loading backgrounds for world {world_id}")
         for bg_id in allowed_backgrounds_ids:
-            bg_file = os.path.join(BACKGROUNDS_DIR, world_id, f"{bg_id}.yaml") # Check world specific first
-            if not os.path.exists(bg_file):
-                 bg_file = os.path.join(BACKGROUNDS_DIR, world_id, f"{bg_id}.yml")
-            if not os.path.exists(bg_file):
-                bg_file = os.path.join(BACKGROUNDS_DIR, 'common', f"{bg_id}.yaml") # Fallback to common
-            if not os.path.exists(bg_file):
-                bg_file = os.path.join(BACKGROUNDS_DIR, 'common', f"{bg_id}.yml")
-
-            bg_data = load_data_from_file(bg_file)
-            if bg_data:
-                world_specific_data["backgrounds"].append(bg_data)
+            bg_file = None
+            # Try world-specific background files first
+            potential_paths = [
+                os.path.join(BACKGROUNDS_DIR, world_id, f"{bg_id}.yaml"),
+                os.path.join(BACKGROUNDS_DIR, world_id, f"{bg_id}.yml"),
+                # Then fall back to common
+                os.path.join(BACKGROUNDS_DIR, 'common', f"{bg_id}.yaml"),
+                os.path.join(BACKGROUNDS_DIR, 'common', f"{bg_id}.yml")
+            ]
+            
+            for path in potential_paths:
+                if os.path.exists(path):
+                    bg_file = path
+                    break
+                    
+            if bg_file:
+                current_app.logger.debug(f"Loading background file: {bg_file}")
+                bg_data = load_data_from_file(bg_file)
+                if bg_data:
+                    # Add image prefix if it's a relative path
+                    if bg_data.get('image') and not bg_data['image'].startswith(('http://', 'https://')):
+                        bg_data['image'] = f"{VITE_BASE_URL}{bg_data['image']}"
+                        
+                    world_specific_data["backgrounds"].append(bg_data)
+                    current_app.logger.debug(f"Added background: {bg_data.get('name')}")
+                else:
+                    current_app.logger.warning(f"Failed to load background data from {bg_file}")
+            else:
+                current_app.logger.warning(f"Could not find background file for {bg_id}")
 
         # --- TODO: Add similar loading logic for spells, equipment packs etc. ---
 
