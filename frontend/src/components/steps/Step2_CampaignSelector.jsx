@@ -158,13 +158,6 @@ function Step2_CampaignSelector({ characterData, updateCharacterData, nextStep, 
                             <div className="campaign-card-content">
                                 <h3 className="campaign-card-title">{campaign.name || "Unnamed Campaign"}</h3>
                             </div>
-                            
-                            {/* Selection indicator */}
-                            {selectedCampaignDetails?.id === campaign.id && (
-                                <div className="selection-indicator">
-                                    <i className="bi bi-check-lg"></i>
-                                </div>
-                            )}
                         </div>
                     );
                 })}
