@@ -181,6 +181,8 @@
     transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
     border: 3px solid #a24a2c;
     position: relative;
+    display: flex;
+    flex-direction: column;
 }
 
 .campaign-modal-overlay.active .campaign-modal {
@@ -241,6 +243,8 @@
 .modal-content {
     padding: 30px 40px 40px;
     position: relative;
+    overflow-y: auto;
+    max-height: calc(85vh - 220px); /* Subtract image height to ensure scrollable area */
 }
 
 .modal-title {
