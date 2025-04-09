@@ -47,10 +47,11 @@
 /* Class Grid Container */
 .class-grid-container {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 25px;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
     width: 100%;
-    padding: 20px;
+    padding: 0;
+    margin: 0;
   }
 
 /* Class Card */
@@ -61,7 +62,7 @@
     background-color: rgba(31, 31, 41, 0.7);
     border: 3px solid rgba(60, 60, 70, 0.6);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-    padding: 25px 20px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
