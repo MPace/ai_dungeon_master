@@ -12,18 +12,18 @@ image: /images/worlds/forgotten_realms.jpg
 # stored in data/<type>/common/ directories.
 
 allowed_classes:
-  - common_barbarian
-  - common_bard
-  - common_cleric
-  - common_druid
-  - common_fighter
-  - common_monk
-  - common_paladin
-  - common_ranger
-  - common_rogue
-  - common_sorcerer
-  - common_warlock
-  - common_wizard
+  - barbarian
+  - bard
+  - cleric
+  - druid
+  - fighter
+  - monk
+  - paladin
+  - ranger
+  - rogue
+  - sorcerer
+  - warlock
+  - wizard
 
 allowed_races:
   - common_human
