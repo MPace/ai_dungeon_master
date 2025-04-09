@@ -32,6 +32,8 @@ function Step3_ClassSelector({ characterData, updateCharacterData, nextStep, pre
             })
             .then(data => {
                 if (data.success && data.data && Array.isArray(data.data.classes)) {
+                    // Log the classes we received to help debug the paladin issue
+                    console.log("Classes received:", data.data.classes.map(c => c.id));
                     setClasses(data.data.classes);
                     setIsLoading(false);
                 } else {
@@ -138,6 +140,9 @@ function Step3_ClassSelector({ characterData, updateCharacterData, nextStep, pre
                         return null;
                     }
 
+                    // Log each class to debug paladin issue
+                    console.log(`Rendering class card: ${classData.id} - ${classData.name}`);
+
                     return (
                         <div
                             key={classData.id}
@@ -152,18 +157,6 @@ function Step3_ClassSelector({ characterData, updateCharacterData, nextStep, pre
                             {/* Class name and brief description */}
                             <h3 className="class-name">{classData.name}</h3>
                             <div className="class-description">{classData.shortDescription}</div>
-                            
-                            {/* Primary ability */}
-                            <div className="class-primary-ability">
-                                <span className="ability-label">Primary: </span>
-                                <span className="ability-value">{classData.primaryAbility}</span>
-                            </div>
-                            
-                            {/* Hit Die indicator */}
-                            <div className="class-hit-die">
-                                <span className="hit-die-label">Hit Die: </span>
-                                <span className="hit-die-value">{classData.hitDie}</span>
-                            </div>
                         </div>
                     );
                 })}
