@@ -2,16 +2,19 @@
 
 /* Overall container */
 .step3-outer-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: calc(100vh - 150px);
-    position: relative;
-    padding: 40px 20px;
+    width: 100%;
     max-width: 100%;
-    margin: 0 auto;
-}
+  }
 
+  .step3-outer-container .character-card {
+    max-width: 1400px !important;
+    margin: 0 auto;
+  }
+
+/* Adjust the card body to properly contain our class grid */
+.step3-outer-container .card-body {
+    padding: 20px;
+  }  
 /* Title Style */
 .step3-title {
     text-align: center;
@@ -37,19 +40,16 @@
 /* Class Grid Container */
 .class-grid-container {
     display: grid;
-    grid-template-columns: repeat(4, 1fr); /* Force 4 columns */
-    gap: 25px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
     width: 100%;
-    max-width: 1400px;
-    padding: 20px;
-    position: relative;
-    justify-items: center;
-}
+    margin: 0 auto;
+  }
 
 /* Class Card */
 .class-card {
-    width: 260px;
-    height: 260px; /* Reduced height since we're removing elements */
+    width: 100%;
+    height: 280px;
     position: relative;
     border-radius: 12px;
     background-color: rgba(31, 31, 41, 0.7);
@@ -62,7 +62,7 @@
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     overflow: hidden;
-}
+  }
 
 .class-card:hover {
     transform: translateY(-15px) scale(1.03);
@@ -78,16 +78,16 @@
 
 /* Class Icon */
 .class-icon {
-    font-size: 3rem; /* Larger icon since we have more space */
+    font-size: 3.5rem;
     color: #a24a2c;
     margin-bottom: 20px;
     transition: all 0.3s ease;
-}
+  }
 
-.class-card:hover .class-icon {
+  .class-card:hover .class-icon {
     transform: scale(1.2);
     color: #ff6400;
-}
+  }
 
 /* Class Name */
 .class-name {
@@ -97,11 +97,11 @@
     margin-bottom: 15px;
     text-align: center;
     transition: all 0.3s ease;
-}
+  }
 
-.class-card:hover .class-name {
+  .class-card:hover .class-name {
     color: #a24a2c;
-}
+  }
 
 /* Class Description */
 .class-description {
@@ -614,10 +614,11 @@
 .class-card:nth-child(12) { animation-delay: 0.6s; }
 
 /* Responsive adjustments */
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
     .class-grid-container {
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-template-columns: repeat(3, 1fr); /* 3 columns on large screens */
     }
+
     
     .class-card {
         width: 240px;
@@ -633,14 +634,13 @@
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
     .step3-title {
         font-size: 2.2rem;
     }
     
     .class-grid-container {
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 15px;
+        grid-template-columns: repeat(2, 1fr);
     }
     
     .class-card {
@@ -684,7 +684,7 @@
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 576px) {
     .step3-title {
         font-size: 2rem;
     }
