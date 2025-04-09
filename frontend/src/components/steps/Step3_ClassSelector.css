@@ -1,16 +1,12 @@
 /* File: frontend/src/components/steps/Step3_ClassSelector.css */
 
 
-.character-creator-container .row .col-md-10.col-lg-8 {
-    width: 100% !important;
-    max-width: 90% !important;
-    flex: 0 0 90% !important;
-  }
-
 /* Overall container */
 .step3-outer-container {
-    width: 1400px;
-    max-width: 100%;
+    width: 100%;
+    max-width: 1600px; /* Control maximum width */
+    margin-left: auto;
+    margin-right: auto;
     padding: 0 30px; /* Add horizontal padding */
   }
 

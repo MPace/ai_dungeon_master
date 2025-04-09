@@ -16,7 +16,7 @@
   
   /* For steps 2+ with normal layout */
   .character-creator-container .row {
-    padding: 20px;
+
     min-height: calc(100vh - 200px);
   }
 
