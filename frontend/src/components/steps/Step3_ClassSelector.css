@@ -1,5 +1,12 @@
 /* File: frontend/src/components/steps/Step3_ClassSelector.css */
 
+
+.character-creator-container .row .col-md-10.col-lg-8 {
+    width: 100% !important;
+    max-width: 90% !important;
+    flex: 0 0 90% !important;
+  }
+
 /* Overall container */
 .step3-outer-container {
     width: 100%;
@@ -7,7 +14,7 @@
   }
 
   .step3-outer-container .character-card {
-    max-width: 1400px !important;
+    max-width: 100% !important;
     margin: 0 auto;
   }
 
@@ -41,16 +48,15 @@
 .class-grid-container {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    gap: 25px;
     width: 100%;
-    margin: 0 auto;
+    padding: 20px;
   }
 
 /* Class Card */
 .class-card {
     width: 100%;
     height: 280px;
-    position: relative;
     border-radius: 12px;
     background-color: rgba(31, 31, 41, 0.7);
     border: 3px solid rgba(60, 60, 70, 0.6);
