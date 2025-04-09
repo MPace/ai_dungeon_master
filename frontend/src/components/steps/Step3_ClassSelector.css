@@ -9,15 +9,11 @@
 
 /* Overall container */
 .step3-outer-container {
-    width: 100%;
+    width: 1400px;
     max-width: 100%;
     padding: 0 30px; /* Add horizontal padding */
   }
 
-  .step3-outer-container .character-card {
-    max-width: 100% !important;
-    margin: 0 auto;
-  }
 
 /* Adjust the card body to properly contain our class grid */
 .step3-outer-container .card-body {
