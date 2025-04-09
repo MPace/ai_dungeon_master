@@ -134,32 +134,32 @@ function Step3_ClassSelector({ characterData, updateCharacterData, nextStep, pre
             {/* Grid of Class Cards */}
             <div className="class-grid-container">
                 {classes.map((classData) => {
-                    // Skip if class data is invalid
-                    if (!classData) {
-                        console.warn("Received null or undefined class in data");
-                        return null;
-                    }
-
-                    // Log each class to debug paladin issue
-                    console.log(`Rendering class card: ${classData.id} - ${classData.name}`);
-
-                    return (
-                        <div
-                            key={classData.id}
-                            className={`class-card ${selectedClassDetails?.id === classData.id ? 'selected' : ''}`}
-                            onClick={() => handleClassSelect(classData)}
-                        >
-                            {/* Class icon or symbol */}
-                            <div className="class-icon">
-                                <i className={`bi bi-${classData.icon || 'shield'}`}></i>
+                        // Skip if class data is invalid
+                        if (!classData) {
+                            console.warn("Received null or undefined class in data");
+                            return null;
+                        }
+                    
+                        // Debug log each class to ensure all are being processed
+                        console.log(`Rendering class card: ${classData.id}`);
+                    
+                        return (
+                            <div
+                                key={classData.id}
+                                className={`class-card ${selectedClassDetails?.id === classData.id ? 'selected' : ''}`}
+                                onClick={() => handleClassSelect(classData)}
+                            >
+                                {/* Class icon or symbol */}
+                                <div className="class-icon">
+                                    <i className={`bi bi-${classData.icon || 'shield'}`}></i>
+                                </div>
+                                
+                                {/* Class name and brief description */}
+                                <h3 className="class-name">{classData.name}</h3>
+                                <div className="class-description">{classData.shortDescription}</div>
                             </div>
-                            
-                            {/* Class name and brief description */}
-                            <h3 className="class-name">{classData.name}</h3>
-                            <div className="class-description">{classData.shortDescription}</div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
             </div>
 
             {/* Class Details Modal - Conditionally Rendered */}
