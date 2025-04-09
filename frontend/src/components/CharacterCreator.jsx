@@ -128,16 +128,16 @@ function CharacterCreator() {
                 <header className='text-center mb-4'>
                 </header>
             )}
-
+    
             {/* Loading and error display */}
             {isLoading && <div className="text-center text-light">Loading...</div>}
             {error && <div className="alert alert-danger" role="alert">{error}</div>}
-
+    
             {!isLoading && !error && (
                 useCardWrapper ? (
                     // Steps 3+ get the card wrapper (for forms, etc.)
                     <div className="row justify-content-center">
-                        <div className="col-md-10 col-lg-8">
+                        <div className={`${currentStep === 3 ? 'col-md-12' : 'col-md-10 col-lg-8'}`}>
                             <div className="card character-card">
                                 <div className="card-body">
                                     {renderCurrentStep()}
