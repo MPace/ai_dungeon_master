@@ -81,7 +81,7 @@ function Step3_ClassSelector({ characterData, updateCharacterData, nextStep, pre
 
         // Check if the iconData looks like a file path (ends with .svg)
         if (typeof iconData === 'string' && iconData.endsWith('.svg')) {
-            return <img src={iconData} alt="class icon" className="custom-svg-icon" />;
+            return <img src={iconData} alt="class icon" className="class-svg-icon" />;
         } else {
             return <i className={'bi bi-${iconData}'}> </i>;
         }
