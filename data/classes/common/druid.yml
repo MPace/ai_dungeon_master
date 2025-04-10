@@ -1,7 +1,7 @@
 # Basic Class Information
 id: druid
 name: Druid
-icon: leaf  # Bootstrap icon name
+icon: none  # Bootstrap icon name
 image: /images/classes/druid.jpg  # Path to class artwork
 
 # Short description for selection screen
