@@ -122,7 +122,7 @@ features:
             Paladins who swear this oath seek to punish the wicked. They are relentless avengers, striking 
             swiftly and mercilessly.
           features:
-            - name: Channel Divinity: Vow of Enmity
+            - name: "Channel Divinity: Vow of Enmity"
               type: active
               description: |
                 As a bonus action, choose one creature you can see within 10 feet. You gain advantage on 
