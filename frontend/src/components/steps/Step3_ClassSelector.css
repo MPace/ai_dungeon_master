@@ -84,6 +84,14 @@
     transition: all 0.3s ease;
   }
 
+.class-svg-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    object-fit: contain;
+    display: block;
+}
+
+
   .class-card:hover .class-icon {
     transform: scale(1.2);
     color: #ff6400;
