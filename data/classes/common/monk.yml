@@ -1,7 +1,7 @@
 # Basic Class Information
 id: monk
 name: Monk
-icon: kanban  # Bootstrap icon name (use something Zen or minimal)
+icon: yin-yang  # Bootstrap icon name (use something Zen or minimal)
 image: /images/classes/monk.jpg  # Path to class artwork
 
 # Short description for selection screen

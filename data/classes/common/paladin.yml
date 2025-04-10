@@ -1,7 +1,7 @@
 # Basic Class Information
 id: paladin
 name: Paladin
-icon: shield-lock  # Bootstrap icon name
+icon: shield-shaded  # Bootstrap icon name
 image: /images/classes/paladin.jpg  # Path to class artwork
 
 # Short description for selection screen
