@@ -1,0 +1,83 @@
+# Basic Race Information
+id: halfling
+name: Halfling
+image: /images/races/halfling.jpg  # Path to race artwork
+
+# Short description for selection screen
+shortDescription: Cheerful and nimble, halflings are known for luck, courage, and stealth.
+
+# Full description for details modal
+description: |
+  The comforts of home, good meals, and warm laughter are at the heart of halfling culture. Despite their 
+  small size, halflings are surprisingly brave and resourceful, finding joy in the simple things and 
+  fearlessly defending their communities.
+
+  Halflings make loyal friends and cunning adventurers, often overlooked by larger folk—sometimes to their 
+  enemies’ regret. Whether walking unseen or charging with quiet resolve, halflings always seem to have 
+  luck on their side.
+
+# Ability score adjustments
+abilityScoreAdjustments:
+  dexterity: 2
+
+# Core race traits
+traits:
+  - name: Ability Score Increase
+    description: Your Dexterity score increases by 2.
+
+  - name: Age
+    description: Halflings mature at the same rate as humans and live to be around 150 years.
+
+  - name: Size
+    description: Halflings average about 3 feet tall and weigh around 40 pounds. Your size is Small.
+
+  - name: Speed
+    description: Your base walking speed is 25 feet.
+
+  - name: Lucky
+    description: When you roll a 1 on the d20 for an attack roll, ability check, or saving throw, you can reroll the die and must use the new roll.
+
+  - name: Brave
+    description: You have advantage on saving throws against being frightened.
+
+  - name: Halfling Nimbleness
+    description: You can move through the space of any creature that is of a size larger than yours.
+
+  - name: Languages
+    description: You can speak, read, and write Common and Halfling.
+
+# Typical alignments
+alignmentTendency: Halflings tend to be lawful good, cherishing community, kindness, and comfort.
+
+# Typical height and weight ranges
+heightRange: 
+  imperial: 2'7" - 3'3"
+  metric: 79 - 99 cm
+
+weightRange:
+  imperial: 35 - 45 lb
+  metric: 16 - 20 kg
+
+# Subraces - Halflings include Lightfoot and Stout types
+hasSubraces: true
+subraces:
+  - id: lightfoot_halfling
+    name: Lightfoot Halfling
+    description: Lightfoot halflings are more prone to wanderlust and excel at staying out of sight.
+    abilityScoreAdjustments:
+      charisma: 1
+    traits:
+      - name: Naturally Stealthy
+        description: You can attempt to hide even when you are obscured only by a creature that is at least one size larger than you.
+
+  - id: stout_halfling
+    name: Stout Halfling
+    description: Stout halflings are hardier and more resistant to toxins.
+    abilityScoreAdjustments:
+      constitution: 1
+    traits:
+      - name: Stout Resilience
+        description: You have advantage on saving throws against poison, and you have resistance against poison damage.
+
+# Categorization tags
+tags: [Lucky, Small, Agile, Community-oriented, Underrated]

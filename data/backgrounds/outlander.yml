@@ -1,0 +1,66 @@
+# Basic Background Information
+id: outlander
+name: Outlander
+image: /images/backgrounds/outlander.jpg  # Path to background artwork
+
+# Short description for selection screen
+shortDescription: You grew up in the wilds, far from civilization, and are a skilled survivor and tracker.
+
+# Full description for details modal
+description: |
+  You grew up in the wilds, far from civilization and the comforts of town and technology. You've 
+  witnessed the raw majesty of nature and survived in places most people would never dare to explore. 
+  Whether hunter, nomad, guide, exile, or explorer, you are at home in the wilderness and have learned 
+  to provide for yourself and others.
+
+# Skill proficiencies
+skillProficiencies:
+  - Athletics
+  - Survival
+
+# Languages
+languages:
+  total: 1
+  description: One of your choice
+
+# Starting equipment
+startingEquipment:
+  - A staff
+  - A hunting trap
+  - A trophy from an animal you killed
+  - A set of traveler’s clothes
+  - A pouch containing 10 gp
+
+# Feature
+feature:
+  name: Wanderer
+  description: |
+    You have an excellent memory for maps and geography, and you can always recall the general layout 
+    of terrain, settlements, and other features around you. In addition, you can find food and fresh 
+    water for yourself and up to five other people each day, provided that the land offers such resources.
+
+# Suggested characteristics
+suggestedCharacteristics:
+  personalityTraits:
+    - I’m driven by a wanderlust that led me away from home.
+    - I watch over my friends as if they were a litter of newborn pups.
+    - I place no stock in wealthy or well-mannered folk. Money and manners won’t save you from a hungry owlbear.
+    - I feel far more comfortable around animals than people.
+  ideals:
+    - Change. Life is like the seasons, in constant change, and we must change with it. (Chaotic)
+    - Greater Good. It is each person’s responsibility to make the most happiness for the whole tribe. (Good)
+    - Glory. I must earn glory in battle, for myself and my clan. (Any)
+    - Nature. The natural world is more important than all the constructs of civilization. (Neutral)
+  bonds:
+    - My family, clan, or tribe is the most important thing in my life, even when they are far from me.
+    - An injury to the unspoiled wilderness of my home is an injury to me.
+    - I will bring terrible wrath down on the evildoers who destroyed my homeland.
+    - I am the last of my tribe, and it is up to me to ensure their names enter legend.
+  flaws:
+    - I am too enamored of ale, wine, and other intoxicants.
+    - There’s no room for caution in a life lived to the fullest.
+    - I remember every insult I’ve received and nurse a silent resentment toward anyone who’s ever wronged me.
+    - I am slow to trust members of other races, tribes, and societies.
+
+# Categorization tags
+tags: [Wilderness, Self-Reliant, Survivalist, Nomadic]

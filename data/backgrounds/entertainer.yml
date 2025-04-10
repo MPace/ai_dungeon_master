@@ -1,0 +1,67 @@
+# Basic Background Information
+id: entertainer
+name: Entertainer
+image: /images/backgrounds/entertainer.jpg  # Path to background artwork
+
+# Short description for selection screen
+shortDescription: You thrive in front of an audience, using music, drama, or performance to inspire.
+
+# Full description for details modal
+description: |
+  You thrive in front of an audience. You know how to entrance, inspire, and even manipulate with your 
+  performances. Your poetics can stir the hearts of those who hear you, awakening grief or joy, laughter 
+  or anger. Your talents are in great demand in times of war and peace alike.
+
+# Skill proficiencies
+skillProficiencies:
+  - Acrobatics
+  - Performance
+
+# Languages
+languages:
+  total: 0
+  description: None
+
+# Starting equipment
+startingEquipment:
+  - A musical instrument (one of your choice)
+  - The favor of an admirer (love letter, lock of hair, or trinket)
+  - A costume
+  - A set of common clothes
+  - A pouch containing 15 gp
+
+# Feature
+feature:
+  name: By Popular Demand
+  description: |
+    You can always find a place to perform, usually in an inn or tavern but possibly with a circus, at a 
+    theater, or even in a noble’s court. At such a place, you receive free lodging and food of a modest or 
+    comfortable standard (depending on the quality of the establishment), as long as you perform each night. 
+    In addition, your performance makes you something of a local figure. Strangers may recognize you in a 
+    town where you have performed.
+
+# Suggested characteristics
+suggestedCharacteristics:
+  personalityTraits:
+    - I know a story relevant to almost every situation.
+    - Whenever I come to a new place, I collect local rumors and spread gossip.
+    - I’m a hopeless romantic, always searching for “that special someone.”
+    - Nobody stays angry at me or around me for long, since I can defuse any amount of tension.
+  ideals:
+    - Beauty. When I perform, I make the world better than it was. (Good)
+    - Tradition. The stories, legends, and songs of the past must never be forgotten. (Lawful)
+    - Creativity. The world is in need of new ideas and bold action. (Chaotic)
+    - Honesty. Art should reflect the soul; it should come from within and reveal who we really are. (Neutral)
+  bonds:
+    - My instrument is my most treasured possession, and it reminds me of someone I love.
+    - Someone stole my precious instrument, and someday I’ll get it back.
+    - I want to be famous, whatever it takes.
+    - I idolize a hero of the old tales and measure my deeds against theirs.
+  flaws:
+    - I’ll do anything to win fame and renown.
+    - I’m a sucker for a pretty face.
+    - A scandal prevents me from ever going home again. That kind of trouble seems to follow me around.
+    - I once satirized a noble who still wants my head. It was a mistake that I will likely repeat.
+
+# Categorization tags
+tags: [Performer, Charismatic, Artistic]

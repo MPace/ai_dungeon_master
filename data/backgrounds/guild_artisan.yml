@@ -1,0 +1,66 @@
+# Basic Background Information
+id: guild_artisan
+name: Guild Artisan
+image: /images/backgrounds/guild_artisan.jpg  # Path to background artwork
+
+# Short description for selection screen
+shortDescription: You are a member of a guild of craftspeople, well-respected for your trade.
+
+# Full description for details modal
+description: |
+  You are a member of an artisan’s guild, skilled in a particular field and closely associated with other 
+  artisans. You learned your craft as an apprentice to a master artisan under the sponsorship of your guild, 
+  and you are well established in the world of merchants and commerce.
+
+# Skill proficiencies
+skillProficiencies:
+  - Insight
+  - Persuasion
+
+# Languages
+languages:
+  total: 1
+  description: One of your choice
+
+# Starting equipment
+startingEquipment:
+  - A set of artisan’s tools (one of your choice)
+  - A letter of introduction from your guild
+  - A set of traveler’s clothes
+  - A pouch containing 15 gp
+
+# Feature
+feature:
+  name: Guild Membership
+  description: |
+    As an established and respected member of a guild, you can rely on certain benefits that membership 
+    provides. Your fellow guild members will provide you with lodging and food if necessary, and pay for 
+    your funeral if needed. In some cities and towns, a guildhall offers a central place to meet other 
+    members of your profession, which can be a good place to meet contacts or patrons. You must pay 
+    5 gp per month in dues to the guild. If you miss payments, you must make up back dues to remain in good standing.
+
+# Suggested characteristics
+suggestedCharacteristics:
+  personalityTraits:
+    - I believe that anything worth doing is worth doing right. I can’t help it—I'm a perfectionist.
+    - I always want to know how things work and what makes people tick.
+    - I’m rude to people who lack my commitment to hard work and fair play.
+    - I like to talk at length about my profession.
+  ideals:
+    - Community. It is the duty of all civilized people to strengthen the bonds of community and the security of civilization. (Lawful)
+    - Generosity. My talents were given to me so that I could use them to benefit the world. (Good)
+    - Freedom. Everyone should be free to pursue their own livelihood. (Chaotic)
+    - Aspiration. I work hard to be the best there is at my craft. (Any)
+  bonds:
+    - The workshop where I learned my trade is the most important place in the world to me.
+    - I created something that someone else took credit for, and I want to reclaim it.
+    - I owe my guild a great debt for forging me into the person I am today.
+    - One day I will return to my guild and prove that I am the greatest artisan of them all.
+  flaws:
+    - I’ll do anything to get ahead in my guild.
+    - I’m horribly jealous of anyone who can outshine my handiwork. Everywhere I go, I’m surrounded by rivals.
+    - I’m quick to assume that someone is trying to cheat me.
+    - No one must ever learn that I once stole money from guild coffers.
+
+# Categorization tags
+tags: [Craftsman, Merchant, Professional, Social]

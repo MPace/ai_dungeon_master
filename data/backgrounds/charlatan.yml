@@ -1,0 +1,64 @@
+# Basic Background Information
+id: charlatan
+name: Charlatan
+image: /images/backgrounds/charlatan.jpg  # Path to background artwork
+
+# Short description for selection screen
+shortDescription: You have always had a way with people and know how to manipulate them for fun or profit.
+
+# Full description for details modal
+description: |
+  You have always had a way with people. You know what makes them tick, you can tease out their secrets, 
+  and you turn them against themselves and into your advantage. You know every trick of the trade, and you 
+  get by on your charm, your lies, and your confidence.
+
+# Skill proficiencies
+skillProficiencies:
+  - Deception
+  - Sleight of Hand
+
+# Languages
+languages:
+  total: 0
+  description: None
+
+# Starting equipment
+startingEquipment:
+  - A set of fine clothes
+  - A disguise kit
+  - Tools of the con (e.g., weighted dice, marked cards, or a signet ring of an imaginary duke)
+  - A pouch containing 15 gp
+
+# Feature
+feature:
+  name: False Identity
+  description: |
+    You have created a second identity that includes documentation, established acquaintances, and disguises 
+    that allow you to assume that persona. Additionally, you can forge documents including official papers 
+    and personal letters, as long as you have seen an example of the kind of document or the handwriting you are trying to copy.
+
+# Suggested characteristics
+suggestedCharacteristics:
+  personalityTraits:
+    - I fall in and out of love easily, and am always pursuing someone.
+    - I have a joke for every occasion, especially occasions where humor is inappropriate.
+    - I lie about almost everything, even when there’s no good reason to.
+    - I keep multiple holy symbols on me and invoke whatever deity might come in useful at any given moment.
+  ideals:
+    - Independence. I am a free spirit—no one tells me what to do. (Chaotic)
+    - Fairness. I never target people who can’t afford to lose a few coins. (Lawful)
+    - Charity. I distribute the money I acquire to the people who really need it. (Good)
+    - Creativity. I never run the same con twice. (Chaotic)
+  bonds:
+    - I fleeced the wrong person and must work to ensure that this individual never crosses paths with me again.
+    - I owe everything to my mentor—a horrible person who’s probably rotting in jail somewhere.
+    - Somewhere out there, I have a child who doesn’t know me. I’m making the world better for them.
+    - I come from a noble family, and one day I’ll reclaim my lands and title from those who stole them from me.
+  flaws:
+    - I can’t resist swindling people who are more powerful than me.
+    - I’m always in debt. I spend my ill-gotten gains on decadent luxuries faster than I bring them in.
+    - I’m convinced that no one could ever fool me the way I fool others.
+    - I can’t resist a pretty face.
+
+# Categorization tags
+tags: [Deceptive, Social, Trickster]

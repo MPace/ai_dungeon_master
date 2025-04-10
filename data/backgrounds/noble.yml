@@ -1,0 +1,68 @@
+# Basic Background Information
+id: noble
+name: Noble
+image: /images/backgrounds/noble.jpg  # Path to background artwork
+
+# Short description for selection screen
+shortDescription: You were born into a noble family and carry a title and the privileges of your rank.
+
+# Full description for details modal
+description: |
+  You understand wealth, power, and privilege. You carry a noble title, and your family owns land, collects 
+  taxes, and wields significant political influence. You might be a pampered aristocrat or a displaced heir 
+  working to reclaim your birthright—or anything in between.
+
+  Even though you might not wield personal power, your noble birth opens doors and demands respect in 
+  high society.
+
+# Skill proficiencies
+skillProficiencies:
+  - History
+  - Persuasion
+
+# Languages
+languages:
+  total: 1
+  description: One of your choice
+
+# Starting equipment
+startingEquipment:
+  - A set of fine clothes
+  - A signet ring
+  - A scroll of pedigree
+  - A purse containing 25 gp
+
+# Feature
+feature:
+  name: Position of Privilege
+  description: |
+    Thanks to your noble birth, people are inclined to think the best of you. You are welcome in high society, 
+    and people assume you have the right to be wherever you are. The common folk make every effort to 
+    accommodate you and avoid your displeasure, and other people of high birth treat you as a member of the 
+    same social sphere. You can secure an audience with a local noble if you need to.
+
+# Suggested characteristics
+suggestedCharacteristics:
+  personalityTraits:
+    - My eloquent flattery makes everyone I talk to feel like the most wonderful and important person in the world.
+    - The common folk love me for my kindness and generosity.
+    - I take great pains to always look my best and follow the latest fashions.
+    - I don’t like to get my hands dirty, and I won’t be caught dead in unsuitable accommodations.
+  ideals:
+    - Respect. Respect is due to me because of my position, but all people regardless of station deserve to be treated with dignity. (Good)
+    - Responsibility. It is my duty to respect the authority of those above me, just as those below must respect mine. (Lawful)
+    - Independence. I must prove that I can handle myself without coddling from my family. (Chaotic)
+    - Power. If I can attain more power, no one will tell me what to do. (Evil)
+  bonds:
+    - I will face any challenge to win the approval of my family.
+    - My house’s alliance with another noble family must be sustained at all costs.
+    - Nothing is more important than the other members of my family.
+    - I am in love with the heir of a family that my family despises.
+  flaws:
+    - I secretly believe that everyone is beneath me.
+    - I hide a truly scandalous secret that could ruin my family forever.
+    - I too often hear veiled insults and threats in every word addressed to me, and I’m quick to anger.
+    - I have an insatiable desire for carnal pleasures.
+
+# Categorization tags
+tags: [Aristocratic, Influential, Well-Educated, High Status]

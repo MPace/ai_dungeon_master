@@ -1,0 +1,67 @@
+# Basic Race Information
+id: dragonborn
+name: Dragonborn
+image: /images/races/dragonborn.jpg  # Path to race artwork
+
+# Short description for selection screen
+shortDescription: Proud draconic humanoids with elemental breath and ancient heritage.
+
+# Full description for details modal
+description: |
+  Born of dragons, as their name proclaims, the Dragonborn walk proudly through a world that greets 
+  them with awe and fear. Shaped by draconic heritage and noble traditions, they strive to be worthy 
+  of the legacy passed down from their ancestors.
+
+  Though they do not possess wings or a tail, Dragonborn exude the presence of their mighty bloodline. 
+  Whether devoted to honor or driven by ambition, they are powerful warriors capable of unleashing 
+  elemental destruction with a single breath.
+
+# Ability score adjustments
+abilityScoreAdjustments:
+  strength: 2
+  charisma: 1
+
+# Core race traits
+traits:
+  - name: Ability Score Increase
+    description: Your Strength score increases by 2, and your Charisma score increases by 1.
+
+  - name: Age
+    description: Young Dragonborn grow quickly. They walk hours after hatching, reach adulthood by 15, and live to be around 80.
+
+  - name: Size
+    description: Dragonborn are tall and strongly built, standing around 6 to 7 feet tall. Your size is Medium.
+
+  - name: Speed
+    description: Your base walking speed is 30 feet.
+
+  - name: Draconic Ancestry
+    description: You have a dragon ancestor. Choose one type of dragon from the ancestry table; your breath weapon and damage resistance are determined by that dragon type.
+
+  - name: Breath Weapon
+    description: You can use your action to exhale destructive energy. The shape, saving throw, and damage type are based on your Draconic Ancestry. You can use this trait once per short or long rest.
+
+  - name: Damage Resistance
+    description: You have resistance to the damage type associated with your Draconic Ancestry.
+
+  - name: Languages
+    description: You can speak, read, and write Common and Draconic.
+
+# Typical alignments
+alignmentTendency: Dragonborn tend to be proud and honorable, leaning toward lawful alignments.
+
+# Typical height and weight ranges
+heightRange: 
+  imperial: 6'0" - 7'0"
+  metric: 183 - 213 cm
+
+weightRange:
+  imperial: 220 - 320 lb
+  metric: 100 - 145 kg
+
+# Subraces - Core Dragonborn use draconic ancestry, not subraces
+hasSubraces: false
+subraces: []
+
+# Categorization tags
+tags: [Draconic, Elemental, Proud, Powerful, Breath Weapon]

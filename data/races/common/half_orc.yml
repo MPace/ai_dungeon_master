@@ -1,0 +1,70 @@
+# Basic Race Information
+id: half_orc
+name: Half-Orc
+image: /images/races/half_orc.jpg  # Path to race artwork
+
+# Short description for selection screen
+shortDescription: Fierce and resilient, half-orcs are natural warriors born of two worlds.
+
+# Full description for details modal
+description: |
+  Half-orcs inherit the strength and ferocity of their orcish blood, tempered by human adaptability. 
+  Often seen as intimidating, they are powerful allies and formidable foes. Many half-orcs find their 
+  place in warrior societies, gladiatorial pits, or mercenary bands, but others seek redemption, 
+  respect, or their own path in a world that judges by appearances.
+
+  With sharpened instincts and unmatched endurance, half-orcs thrive in battle and rarely go down 
+  without a fight.
+
+# Ability score adjustments
+abilityScoreAdjustments:
+  strength: 2
+  constitution: 1
+
+# Core race traits
+traits:
+  - name: Ability Score Increase
+    description: Your Strength score increases by 2, and your Constitution score increases by 1.
+
+  - name: Age
+    description: Half-orcs mature a little faster than humans, reaching adulthood around age 14. They rarely live longer than 75 years.
+
+  - name: Size
+    description: Half-orcs are usually between 5 and 7 feet tall and weigh between 180 and 250 pounds. Your size is Medium.
+
+  - name: Speed
+    description: Your base walking speed is 30 feet.
+
+  - name: Darkvision
+    description: Thanks to your orc heritage, you can see in dim light within 60 feet as if it were bright light, and in darkness as if it were dim light.
+
+  - name: Menacing
+    description: You gain proficiency in the Intimidation skill.
+
+  - name: Relentless Endurance
+    description: When you are reduced to 0 hit points but not killed outright, you can drop to 1 hit point instead. You can use this feature once per long rest.
+
+  - name: Savage Attacks
+    description: When you score a critical hit with a melee weapon attack, you can roll one of the weapon’s damage dice one additional time and add it to the extra damage.
+
+  - name: Languages
+    description: You can speak, read, and write Common and Orc.
+
+# Typical alignments
+alignmentTendency: Half-orcs tend toward chaotic alignments and value strength, but their morality varies widely.
+
+# Typical height and weight ranges
+heightRange: 
+  imperial: 5'10" - 6'8"
+  metric: 178 - 203 cm
+
+weightRange:
+  imperial: 180 - 250 lb
+  metric: 82 - 113 kg
+
+# Subraces - Half-orcs do not have subraces
+hasSubraces: false
+subraces: []
+
+# Categorization tags
+tags: [Strong, Fierce, Resilient, Battle-ready]

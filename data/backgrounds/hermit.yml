@@ -1,0 +1,69 @@
+# Basic Background Information
+id: hermit
+name: Hermit
+image: /images/backgrounds/hermit.jpg  # Path to background artwork
+
+# Short description for selection screen
+shortDescription: You lived in seclusion—either in a sheltered community or alone—for a formative part of your life.
+
+# Full description for details modal
+description: |
+  You lived in seclusion—either in a sheltered community such as a monastery or entirely alone—for a 
+  formative part of your life. In your time apart from the clamor of society, you found quiet, solitude, 
+  and perhaps a great truth. This background suits a variety of hermits, from ascetics and prophets 
+  to researchers and spiritual seekers.
+
+# Skill proficiencies
+skillProficiencies:
+  - Medicine
+  - Religion
+
+# Languages
+languages:
+  total: 1
+  description: One of your choice
+
+# Starting equipment
+startingEquipment:
+  - A scroll case stuffed full of notes from your studies or prayers
+  - A winter blanket
+  - A set of common clothes
+  - An herbalism kit
+  - 5 gp
+
+# Feature
+feature:
+  name: Discovery
+  description: |
+    The quiet seclusion of your extended hermitage gave you access to a unique and powerful discovery. 
+    The exact nature of this revelation depends on the nature of your seclusion. It might be a great 
+    truth about the cosmos, the deities, the powerful beings of the outer planes, or the forces of nature. 
+    It could be a site that no one else has ever seen. You might have uncovered a fact that has long been 
+    forgotten, or unearthed some relic of the past that could rewrite history. It might be information 
+    that would be damaging to the people who or consort with the powerful.
+
+# Suggested characteristics
+suggestedCharacteristics:
+  personalityTraits:
+    - I’ve been isolated for so long that I rarely speak, preferring gestures and the occasional grunt.
+    - I am utterly serene, even in the face of disaster.
+    - I’m oblivious to etiquette and social expectations.
+    - I often get lost in my own thoughts and contemplation, becoming oblivious to my surroundings.
+  ideals:
+    - Greater Good. My gifts are meant to be shared with all, not used for my own benefit. (Good)
+    - Logic. Emotions must not cloud our sense of what is right and true, or our logical thinking. (Lawful)
+    - Free Thinking. Inquiry and curiosity are the pillars of progress. (Chaotic)
+    - Self-Knowledge. If you know yourself, there’s nothing left to know. (Any)
+  bonds:
+    - Nothing is more important than the other members of my hermitage, order, or association.
+    - I entered seclusion to hide from the ones who might still be hunting me. I must someday confront them.
+    - I’m still seeking the enlightenment I pursued in my seclusion, and it still eludes me.
+    - I created a great work for someone, and I want to find them and ensure it’s appreciated.
+  flaws:
+    - Now that I’ve returned to the world, I enjoy its delights a little too much.
+    - I harbor dark, bloodthirsty thoughts that my isolation and meditation failed to quell.
+    - I am dogmatic in my thoughts and philosophy.
+    - I let my need to win arguments overshadow friendships and harmony.
+
+# Categorization tags
+tags: [Reclusive, Mystical, Introspective, Spiritual]

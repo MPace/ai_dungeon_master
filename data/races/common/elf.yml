@@ -1,0 +1,93 @@
+# Basic Race Information
+id: elf
+name: Elf
+image: /images/races/elf.jpg  # Path to race artwork
+
+# Short description for selection screen
+shortDescription: Graceful and long-lived, elves are attuned to magic and nature.
+
+# Full description for details modal
+description: |
+  Elves are a magical people of otherworldly grace, living in the world but not entirely part of it. 
+  They live in places of ethereal beauty, in the midst of ancient forests or in silvery spires glittering 
+  with faerie light, where soft music drifts through the air and gentle fragrances waft on the breeze.
+
+  Elves love nature and magic, art and artistry, music and poetry, and the good things of the world. 
+  They are aloof but curious, long-lived but quick-footed, and bear an air of timeless mystery.
+
+# Ability score adjustments
+abilityScoreAdjustments:
+  dexterity: 2
+
+# Core race traits
+traits:
+  - name: Ability Score Increase
+    description: Your Dexterity score increases by 2.
+
+  - name: Age
+    description: Although elves reach physical maturity at the same age as humans, the elven understanding of adulthood goes beyond physical growth to encompass worldly experience. They typically claim adulthood and an adult name around the age of 100 and can live to be 750 years old.
+
+  - name: Size
+    description: Elves range from under 5 to over 6 feet tall and have slender builds. Your size is Medium.
+
+  - name: Speed
+    description: Your base walking speed is 30 feet.
+
+  - name: Darkvision
+    description: Accustomed to twilit forests and the night sky, you have superior vision in dark and dim conditions. You can see in dim light within 60 feet of you as if it were bright light, and in darkness as if it were dim light.
+
+  - name: Keen Senses
+    description: You have proficiency in the Perception skill.
+
+  - name: Fey Ancestry
+    description: You have advantage on saving throws against being charmed, and magic can’t put you to sleep.
+
+  - name: Trance
+    description: Elves don’t need to sleep. Instead, they meditate deeply, remaining semiconscious, for 4 hours a day.
+
+  - name: Languages
+    description: You can speak, read, and write Common and Elvish.
+
+# Typical alignments
+alignmentTendency: Elves love freedom, variety, and self-expression, so they lean strongly toward the gentler aspects of chaos.
+
+# Typical height and weight ranges
+heightRange: 
+  imperial: 5'0" - 6'2"
+  metric: 152 - 188 cm
+
+weightRange:
+  imperial: 100 - 170 lb
+  metric: 45 - 77 kg
+
+# Subraces - Elves have two primary subraces
+hasSubraces: true
+subraces:
+  - id: high_elf
+    name: High Elf
+    description: High elves are the most magical of elves, with a strong affinity for the arcane.
+    abilityScoreAdjustments:
+      intelligence: 1
+    traits:
+      - name: Elf Weapon Training
+        description: You have proficiency with the longsword, shortsword, shortbow, and longbow.
+      - name: Cantrip
+        description: You know one cantrip of your choice from the wizard spell list. Intelligence is your spellcasting ability for it.
+      - name: Extra Language
+        description: You can speak, read, and write one extra language of your choice.
+
+  - id: wood_elf
+    name: Wood Elf
+    description: Wood elves are reclusive and at home in the wilderness.
+    abilityScoreAdjustments:
+      wisdom: 1
+    traits:
+      - name: Elf Weapon Training
+        description: You have proficiency with the longsword, shortsword, shortbow, and longbow.
+      - name: Fleet of Foot
+        description: Your base walking speed increases to 35 feet.
+      - name: Mask of the Wild
+        description: You can attempt to hide even when you are only lightly obscured by foliage, heavy rain, falling snow, mist, and other natural phenomena.
+
+# Categorization tags
+tags: [Graceful, Magical, Long-lived, Agile]

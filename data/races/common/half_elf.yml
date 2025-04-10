@@ -1,0 +1,68 @@
+# Basic Race Information
+id: half_elf
+name: Half-Elf
+image: /images/races/half_elf.jpg  # Path to race artwork
+
+# Short description for selection screen
+shortDescription: Versatile and charismatic, half-elves bridge two worlds with grace and charm.
+
+# Full description for details modal
+description: |
+  Caught between two worlds, half-elves combine the best traits of their human and elven parents. 
+  They are known for their adaptability, charm, and open-mindedness, thriving in both cities and 
+  wild places.
+
+  Though often outsiders, half-elves are natural diplomats, able to relate to a wide range of cultures. 
+  With keen senses, resilience, and strong social skills, they make capable adventurers who walk between 
+  worlds with quiet confidence.
+
+# Ability score adjustments
+abilityScoreAdjustments:
+  charisma: 2
+  choice1: 1  # Player may assign to any ability
+  choice2: 1  # Player may assign to any ability
+
+# Core race traits
+traits:
+  - name: Ability Score Increase
+    description: Your Charisma score increases by 2, and two other ability scores of your choice increase by 1.
+
+  - name: Age
+    description: Half-elves mature at the same rate as humans and live around 180 years.
+
+  - name: Size
+    description: Half-elves are about the same size as humans, ranging from 5 to 6 feet tall. Your size is Medium.
+
+  - name: Speed
+    description: Your base walking speed is 30 feet.
+
+  - name: Darkvision
+    description: Thanks to your elf blood, you can see in dim light within 60 feet as if it were bright light, and in darkness as if it were dim light.
+
+  - name: Fey Ancestry
+    description: You have advantage on saving throws against being charmed, and magic can’t put you to sleep.
+
+  - name: Skill Versatility
+    description: You gain proficiency in two skills of your choice.
+
+  - name: Languages
+    description: You can speak, read, and write Common, Elvish, and one extra language of your choice.
+
+# Typical alignments
+alignmentTendency: Half-elves value both freedom and connection, tending toward chaotic good.
+
+# Typical height and weight ranges
+heightRange: 
+  imperial: 5'0" - 6'2"
+  metric: 152 - 188 cm
+
+weightRange:
+  imperial: 100 - 180 lb
+  metric: 45 - 82 kg
+
+# Subraces - Half-elves do not have official subraces
+hasSubraces: false
+subraces: []
+
+# Categorization tags
+tags: [Versatile, Charismatic, Diplomatic, Mixed Heritage]

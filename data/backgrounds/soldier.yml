@@ -1,0 +1,70 @@
+# Basic Background Information
+id: soldier
+name: Soldier
+image: /images/backgrounds/soldier.jpg  # Path to background artwork
+
+# Short description for selection screen
+shortDescription: You served in a military organization and are trained in warfare and discipline.
+
+# Full description for details modal
+description: |
+  War has been your life for as long as you can remember. You trained as a youth, studied the rules of battle, 
+  and fought on the front lines. Whether for a kingdom, a mercenary company, or a rebel cause, you’ve seen 
+  combat and learned how to survive it.
+
+  You might have risen through the ranks, or perhaps you fled your duties. Regardless, your experience in 
+  military life shapes your actions and your sense of order.
+
+# Skill proficiencies
+skillProficiencies:
+  - Athletics
+  - Intimidation
+
+# Languages
+languages:
+  total: 0
+  description: None
+
+# Starting equipment
+startingEquipment:
+  - An insignia of rank
+  - A trophy taken from a fallen enemy (a dagger, broken blade, or piece of a banner)
+  - A set of bone dice or deck of cards
+  - A set of common clothes
+  - A pouch containing 10 gp
+
+# Feature
+feature:
+  name: Military Rank
+  description: |
+    You have a military rank from your career as a soldier. Soldiers loyal to your former military 
+    organization still recognize your authority and influence, and they defer to you if they are of 
+    a lower rank. You can invoke your rank to exert influence over other soldiers and requisition 
+    simple equipment or horses for temporary use. You can also gain access to friendly military 
+    encampments and fortresses where your rank is recognized.
+
+# Suggested characteristics
+suggestedCharacteristics:
+  personalityTraits:
+    - I’m always polite and respectful.
+    - I’m haunted by memories of war. I can’t get the images of violence out of my mind.
+    - I’ve lost too many friends, and I’m slow to make new ones.
+    - I enjoy being strong and like breaking things.
+  ideals:
+    - Greater Good. Our lot is to lay down our lives in defense of others. (Good)
+    - Responsibility. I do what I must and obey just authority. (Lawful)
+    - Independence. When people follow orders blindly, they embrace a kind of tyranny. (Chaotic)
+    - Might. In life as in war, the stronger force wins. (Evil)
+  bonds:
+    - I would still lay down my life for the people I served with.
+    - Someone saved my life on the battlefield. To this day, I will never leave a friend behind.
+    - My honor is my life.
+    - I fight for those who cannot fight for themselves.
+  flaws:
+    - I obey the law, even if the law causes misery.
+    - I’d rather eat my armor than admit when I’m wrong.
+    - I have little respect for anyone who is not a proven warrior.
+    - I made a terrible mistake in battle that cost many lives—and I would do anything to keep that secret.
+
+# Categorization tags
+tags: [Martial, Disciplined, Veteran, Lawful]

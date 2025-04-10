@@ -1,0 +1,59 @@
+# Basic Race Information
+id: human  # Unique ID for the race
+name: Human
+image: /images/races/human.jpg  # Path to race artwork
+
+# Short description for selection screen
+shortDescription: Versatile and ambitious, humans are the most common race in most worlds.
+
+# Full description for details modal
+description: |
+  Humans are the most adaptable and ambitious people among the common races. They have widely varying 
+  tastes, morals, and customs in the many different lands where they have settled. When they settle, 
+  though, they stay. They build cities to last for the ages, and great kingdoms that can persist for 
+  centuries.
+
+# Ability score adjustments
+abilityScoreAdjustments:
+  strength: 1
+  dexterity: 1
+  constitution: 1
+  intelligence: 1
+  wisdom: 1
+  charisma: 1
+
+# Core race traits
+traits:
+  - name: Ability Score Increase
+    description: Your ability scores each increase by 1.
+    
+  - name: Age
+    description: Humans reach adulthood in their late teens and live less than a century.
+    
+  - name: Size
+    description: Humans vary widely in height and build, from barely 5 feet to well over 6 feet tall. Your size is Medium.
+    
+  - name: Speed
+    description: Your base walking speed is 30 feet.
+    
+  - name: Languages
+    description: You can speak, read, and write Common and one extra language of your choice.
+
+# Typical alignments
+alignmentTendency: Humans tend toward no particular alignment.
+
+# Typical height and weight ranges
+heightRange: 
+  imperial: 4'8" - 6'6"
+  metric: 142 - 198 cm
+    
+weightRange:
+  imperial: 110 - 280 lb
+  metric: 50 - 127 kg
+
+# Subraces - most races have subraces, humans are an exception
+hasSubraces: false
+subraces: []  # Empty for humans
+
+# Categorization tags
+tags: [Versatile, Adaptable, Widespread]

@@ -1,0 +1,67 @@
+# Basic Race Information
+id: tiefling
+name: Tiefling
+image: /images/races/tiefling.jpg  # Path to race artwork
+
+# Short description for selection screen
+shortDescription: Descended from infernal bloodlines, tieflings wield magic and inner fire.
+
+# Full description for details modal
+description: |
+  Tieflings bear the mark of their infernal heritage—horns, tails, glowing eyes, and skin in shades of 
+  red, purple, or even blue. Though the blood of devils flows through their veins, tieflings are mortal, 
+  with free will and complex identities.
+
+  Often judged by appearance alone, many tieflings struggle for acceptance or carve their own paths 
+  as rebels, outcasts, or champions of those who live in the margins. Their legacy grants them natural 
+  charisma, magical aptitude, and a fire that burns just beneath the surface.
+
+# Ability score adjustments
+abilityScoreAdjustments:
+  charisma: 2
+  intelligence: 1
+
+# Core race traits
+traits:
+  - name: Ability Score Increase
+    description: Your Charisma score increases by 2, and your Intelligence score increases by 1.
+
+  - name: Age
+    description: Tieflings mature at the same rate as humans but live a few years longer.
+
+  - name: Size
+    description: Tieflings are about the same size and build as humans. Your size is Medium.
+
+  - name: Speed
+    description: Your base walking speed is 30 feet.
+
+  - name: Darkvision
+    description: Thanks to your infernal heritage, you can see in dim light within 60 feet as if it were bright light, and in darkness as if it were dim light.
+
+  - name: Hellish Resistance
+    description: You have resistance to fire damage.
+
+  - name: Infernal Legacy
+    description: You know the *Thaumaturgy* cantrip. At 3rd level, you can cast *Hellish Rebuke* as a 2nd-level spell once per long rest. At 5th level, you can cast *Darkness* once per long rest. Charisma is your spellcasting ability.
+
+  - name: Languages
+    description: You can speak, read, and write Common and Infernal.
+
+# Typical alignments
+alignmentTendency: Tieflings tend toward chaotic alignments, shaped by a life on the fringes of society.
+
+# Typical height and weight ranges
+heightRange: 
+  imperial: 5'0" - 6'2"
+  metric: 152 - 188 cm
+
+weightRange:
+  imperial: 110 - 220 lb
+  metric: 50 - 100 kg
+
+# Subraces - None in core rules
+hasSubraces: false
+subraces: []
+
+# Categorization tags
+tags: [Infernal, Charismatic, Magical, Resilient, Outsider]

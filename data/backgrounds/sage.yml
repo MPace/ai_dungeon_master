@@ -1,0 +1,68 @@
+# Basic Background Information
+id: sage
+name: Sage
+image: /images/backgrounds/sage.jpg  # Path to background artwork
+
+# Short description for selection screen
+shortDescription: You spent years studying the lore of the multiverse in libraries or under masters.
+
+# Full description for details modal
+description: |
+  You spent years learning the lore of the multiverse. You scoured manuscripts, studied scrolls, and 
+  listened to the greatest experts on the subjects that interest you. Whether you were a student at a 
+  university, apprenticed to a master, or self-taught in a dusty library, you are defined by your knowledge 
+  and dedication to uncovering truth.
+
+# Skill proficiencies
+skillProficiencies:
+  - Arcana
+  - History
+
+# Languages
+languages:
+  total: 2
+  description: Two of your choice
+
+# Starting equipment
+startingEquipment:
+  - A bottle of black ink
+  - A quill
+  - A small knife
+  - A letter from a dead colleague posing a question you have not yet been able to answer
+  - A set of common clothes
+  - A pouch containing 10 gp
+
+# Feature
+feature:
+  name: Researcher
+  description: |
+    When you attempt to learn or recall a piece of lore, if you don’t know that information, you often 
+    know where and from whom you can obtain it. Usually, this information comes from a library, scriptorium, 
+    university, or a sage or other learned person or creature. Your DM might rule that the knowledge you seek 
+    is secreted away in an almost inaccessible place, or that it simply cannot be found.
+
+# Suggested characteristics
+suggestedCharacteristics:
+  personalityTraits:
+    - I use polysyllabic words that convey the impression of great erudition.
+    - I’ve read every book in the world’s greatest libraries—or I like to think I have.
+    - I’m convinced that people are always trying to steal my secrets.
+    - I’m willing to listen to every side of an argument before I make my own judgment.
+  ideals:
+    - Knowledge. The path to power and self-improvement is through knowledge. (Neutral)
+    - Beauty. What is beautiful points us beyond itself toward what is true. (Good)
+    - Logic. Emotions must not cloud our logical thinking. (Lawful)
+    - No Limits. Nothing should fetter the infinite possibility inherent in all existence. (Chaotic)
+  bonds:
+    - I’ve been searching my whole life for the answer to a certain question.
+    - I sold my soul for knowledge. I hope to do great deeds and win it back.
+    - One day I will return to my university and prove that I am the greatest mind of my generation.
+    - I work to preserve a library, university, scriptorium, or monastery.
+  flaws:
+    - I am easily distracted by the promise of information.
+    - Most people scream and run when they see a demon. I stop and take notes on its anatomy.
+    - Unlocking an ancient mystery is worth the price of a civilization.
+    - I overlook obvious solutions in favor of complicated ones.
+
+# Categorization tags
+tags: [Academic, Inquisitive, Scholarly, Bookish]

@@ -1,0 +1,73 @@
+# Basic Race Information
+id: gnome
+name: Gnome
+image: /images/races/gnome.jpg  # Path to race artwork
+
+# Short description for selection screen
+shortDescription: Clever and energetic, gnomes are natural inventors and illusionists.
+
+# Full description for details modal
+description: |
+  Gnomes are small, spirited, and incredibly curious. With a boundless love of learning and tinkering, 
+  they pursue invention, magic, and exploration with infectious enthusiasm. Whether hidden in forest 
+  enclaves or crafting devices in workshops, gnomes add color and cleverness to the world around them.
+
+  Though often underestimated due to their size, gnomes have big hearts, sharp minds, and an unshakable 
+  sense of joy. Their laughter is common, and their resilience legendary.
+
+# Ability score adjustments
+abilityScoreAdjustments:
+  intelligence: 2
+
+# Core race traits
+traits:
+  - name: Ability Score Increase
+    description: Your Intelligence score increases by 2.
+
+  - name: Age
+    description: Gnomes mature at the same rate as humans but are considered adults at age 40. They can live 350 to almost 500 years.
+
+  - name: Size
+    description: Gnomes are between 3 and 4 feet tall and average about 40 pounds. Your size is Small.
+
+  - name: Speed
+    description: Your base walking speed is 25 feet.
+
+  - name: Darkvision
+    description: Accustomed to life underground, you can see in dim light within 60 feet as if it were bright light, and in darkness as if it were dim light.
+
+  - name: Gnome Cunning
+    description: You have advantage on all Intelligence, Wisdom, and Charisma saving throws against magic.
+
+  - name: Languages
+    description: You can speak, read, and write Common and Gnomish.
+
+# Typical alignments
+alignmentTendency: Gnomes tend toward good and are often chaotic in nature, valuing creativity and freedom.
+
+# Typical height and weight ranges
+heightRange: 
+  imperial: 3'0" - 4'0"
+  metric: 91 - 122 cm
+
+weightRange:
+  imperial: 35 - 45 lb
+  metric: 16 - 20 kg
+
+# Subraces - SRD includes only the Rock Gnome
+hasSubraces: true
+subraces:
+  - id: rock_gnome
+    name: Rock Gnome
+    description: Rock gnomes are naturally curious and inventive, with a knack for clockwork and gadgets.
+    abilityScoreAdjustments:
+      constitution: 1
+    traits:
+      - name: Artificer’s Lore
+        description: Whenever you make an Intelligence (History) check related to magic items, alchemical objects, or technological devices, you can add twice your proficiency bonus.
+
+      - name: Tinker
+        description: You have proficiency with tinker’s tools. Using them, you can spend 1 hour and 10 gp worth of materials to construct a Tiny clockwork device (AC 5, 1 HP) such as a music box, toy, or fire starter.
+
+# Categorization tags
+tags: [Inventive, Magical, Small, Intelligent, Curious]
