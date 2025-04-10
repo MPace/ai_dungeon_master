@@ -498,6 +498,8 @@
     display: flex;
     justify-content: space-between;
     border-top: 1px solid rgba(80, 80, 90, 0.3);
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .back-button {
