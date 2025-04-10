@@ -1,7 +1,7 @@
 # Basic Class Information
 id: ranger
 name: Ranger
-icon: compass  # Bootstrap icon name
+icon: /images/icons/bow.svg  # Bootstrap icon name
 image: /images/classes/ranger.jpg  # Path to class artwork
 
 # Short description for selection screen

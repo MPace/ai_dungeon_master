@@ -1,7 +1,7 @@
 # Basic Class Information
 id: barbarian
 name: Barbarian
-icon:   # Bootstrap icon name
+icon: /images/icons/axe.svg # Bootstrap icon name
 image: /images/classes/barbarian.jpg  # Path to class artwork
 
 # Short description for selection screen

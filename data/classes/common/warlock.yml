@@ -1,7 +1,7 @@
 # Basic Class Information
 id: warlock
 name: Warlock
-icon: moon-stars  # Bootstrap icon name
+icon: fire  # Bootstrap icon name
 image: /images/classes/warlock.jpg  # Path to class artwork
 
 # Short description for selection screen

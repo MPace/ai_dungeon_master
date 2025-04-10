@@ -1,7 +1,7 @@
 # Basic Class Information
 id: fighter
 name: Fighter
-icon: none  # Bootstrap icon name
+icon: /images/icons/sword.svg  # Bootstrap icon name
 image: /images/classes/fighter.jpg  # Path to class artwork
 
 # Short description for selection screen

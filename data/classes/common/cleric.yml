@@ -1,7 +1,7 @@
 # Basic Class Information
 id: cleric
 name: Cleric
-icon: cross  # Bootstrap icon name
+icon: /images/icons/beacon.svg  # Bootstrap icon name
 image: /images/classes/cleric.jpg  # Path to class artwork
 
 # Short description for selection screen
