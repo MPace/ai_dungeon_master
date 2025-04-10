@@ -5,6 +5,7 @@ import './CharacterCreator.css';
 import Step1_WorldSelector from './steps/Step1_WorldSelector';
 import Step2_CampaignSelector from './steps/Step2_CampaignSelector';
 import Step3_ClassSelector from './steps/Step3_ClassSelector';
+import Step4_CharacterInfo from './steps/Step4_CharacterInfo';
 // Import other steps when ready
 
 const initialCharacterData = {
@@ -79,6 +80,15 @@ function CharacterCreator() {
             case 3:
                 return (
                     <Step3_ClassSelector
+                        characterData={characterData}
+                        updateCharacterData={updateCharacterData}
+                        nextStep={nextStep}
+                        prevStep={prevStep}
+                    />
+                )
+            case 4:
+                return (
+                    <Step4_CharacterInfo
                         characterData={characterData}
                         updateCharacterData={updateCharacterData}
                         nextStep={nextStep}
