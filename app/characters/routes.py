@@ -606,7 +606,10 @@ def get_world_data(world_id):
                     # Add image prefix if it's a relative path
                     if class_data.get('image') and not class_data['image'].startswith(('http://', 'https://')):
                         class_data['image'] = f"{VITE_BASE_URL}{class_data['image']}"
-                        
+
+                    if class_data.get('icon') and class_data['icon'].startswith('/images/'):
+                        class_data['icon'] = f"{VITE_BASE_URL}{class_data['icon']}" 
+
                     world_specific_data["classes"].append(class_data)
                     current_app.logger.debug(f"Added class: {class_data.get('name')}")
                 else:
@@ -681,6 +684,7 @@ def get_world_data(world_id):
             else:
                 current_app.logger.warning(f"Could not find background file for {bg_id}")
 
+             
         # --- TODO: Add similar loading logic for spells, equipment packs etc. ---
 
         return jsonify({"success": True, "data": world_specific_data})

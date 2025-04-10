@@ -152,9 +152,13 @@ function Step3_ClassSelector({ characterData, updateCharacterData, nextStep, pre
                             >
                                 {/* Class icon or symbol */}
                                 <div className="class-icon">
-                                    {classData.icon && classData.icon.startsWith('/') ? (
-                                        <img src={classData.icon} alt={'${classData.name} icon'} className="custom-class-icon" />
-                                    ) : (
+                                    {classData.icon && classData.icon.includes('/images/icons') ? (
+                                        <img
+                                            src={classData.icon}
+                                            alt={'${classData.name} icon'}
+                                            className="class-icon-image"
+                                        />
+                                    ) : (     
                                         <i className={`bi bi-${classData.icon || 'shield'}`}></i>
                                     )}
                                 </div>
@@ -176,8 +180,12 @@ function Step3_ClassSelector({ characterData, updateCharacterData, nextStep, pre
                         {/* Class header section */}
                         <div className="class-modal-header">
                             <div className="class-modal-icon">
-                                {selectedClassDetails.icon && selectedClassDetails.icon.startsWith('/') ? (
-                                    <img src={selectedClassDetails.icon} alt={`${selectedClassDetails.name} icon`} className="custom-class-icon" />
+                                {selectedClassDetails.icon && selectedClassDetails.icon.includes('/images/icons') ? (
+                                    <img
+                                        src={selectedClassDetails.icon}
+                                        alt={'${selectedClassDetails.name} icon'}
+                                        className="custom-icon-icon"
+                                    />
                                 ) : (
                                     <i className={`bi bi-${selectedClassDetails.icon || 'shield'}`}></i>
                                 )}
