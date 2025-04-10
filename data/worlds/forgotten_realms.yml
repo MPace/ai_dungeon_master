@@ -26,30 +26,28 @@ allowed_classes:
   - wizard
 
 allowed_races:
-  - common_human
-  - common_elf # Assumes subraces (high, wood, drow) are defined within common_elf.yaml
-  - common_dwarf # Assumes subraces (hill, mountain) are defined within common_dwarf.yaml
-  - common_halfling # Assumes subraces (lightfoot, stout) are defined within common_halfling.yaml
-  - common_dragonborn
-  - common_gnome # Assumes subraces (forest, rock) are defined within common_gnome.yaml
-  - common_half_elf
-  - common_half_orc
-  - common_tiefling
+  - human
+  - elf # Assumes subraces (high, wood, drow) are defined within common_elf.yaml
+  - dwarf # Assumes subraces (hill, mountain) are defined within common_dwarf.yaml
+  - halfling # Assumes subraces (lightfoot, stout) are defined within common_halfling.yaml
+  - dragonborn
+  - gnome # Assumes subraces (forest, rock) are defined within common_gnome.yaml
+  - half_elf
+  - half_orc
+  - tiefling
 
 allowed_backgrounds:
-  - common_acolyte
-  - common_charlatan
-  - common_criminal
-  - common_entertainer
-  - common_folk_hero
-  - common_guild_artisan
-  - common_hermit
-  - common_noble
-  - common_outlander
-  - common_sage
-  - common_sailor
-  - common_soldier
-  - common_urchin
+  - acolyte
+  - charlatan
+  - criminal
+  - entertainer
+  - folk_hero
+  - guild_artisan
+  - hermit
+  - noble
+  - outlander
+  - sage
+  - soldier
 
 # --- Optional World-Specific Rules/Lore ---
 # Add any specific flavor or rule adjustments for this world if needed
