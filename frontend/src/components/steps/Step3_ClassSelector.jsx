@@ -73,19 +73,7 @@ function Step3_ClassSelector({ characterData, updateCharacterData, nextStep, pre
             }
         }, 10);
     }, []);
-
-    // Helper function to render the correct icon type
-    const renderIcon = (iconValue) => {
-        const defaultIcon = 'shield';
-        const iconData = iconValue || defaultIcon;
-
-        // Check if the iconData looks like a file path (ends with .svg)
-        if (typeof iconData === 'string' && iconData.endsWith('.svg')) {
-            return <img src={iconData} alt="class icon" className="class-svg-icon" />;
-        } else {
-            return <i className={'bi bi-${iconData}'}> </i>;
-        }
-    };
+    
 
     // Handler to close the modal
     const closeModal = useCallback(() => {
@@ -164,7 +152,7 @@ function Step3_ClassSelector({ characterData, updateCharacterData, nextStep, pre
                             >
                                 {/* Class icon or symbol */}
                                 <div className="class-icon">
-                                    {renderIcon(classData.icon)}
+                                    <i className={`bi bi-${classData.icon || 'shield'}`}></i>
                                 </div>
                                 
                                 {/* Class name and brief description */}
