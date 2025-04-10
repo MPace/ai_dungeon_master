@@ -402,6 +402,7 @@ input[value="15"] {
   /* Make character cards more responsive */
   .character-card {
     margin: 0 auto;
+    max-width: 90%;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
     transition: all 0.3s ease;
   }
