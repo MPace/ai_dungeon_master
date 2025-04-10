@@ -110,7 +110,7 @@ features:
             Paladins who take the Oath of Devotion fight for honor and virtue, wielding radiant magic 
             to protect and purify.
           features:
-            - name: Channel Divinity: Sacred Weapon
+            - name: "Channel Divinity: Sacred Weapon"
               type: active
               description: |
                 As an action, you can imbue one weapon with positive energy. For 1 minute, you add your 
