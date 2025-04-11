@@ -698,6 +698,48 @@
   animation: pulse 2s infinite;
 }
 
+.racial-bonus-tag {
+    background-color: rgba(162, 74, 44, 0.2);
+    color: #a24a2c;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    margin-top: 10px;
+    display: inline-block;
+    border: 1px solid rgba(162, 74, 44, 0.3);
+  }
+  
+  .ability-card.has-racial-bonus {
+    border-color: rgba(162, 74, 44, 0.5);
+    box-shadow: 0 0 10px rgba(162, 74, 44, 0.2);
+  }
+  
+  .ability-card.has-racial-bonus:hover {
+    border-color: #a24a2c;
+    box-shadow: 0 0 15px rgba(162, 74, 44, 0.3);
+  }
+  
+  .racial-bonus-indicator {
+    position: absolute;
+    top: -15px;
+    right: -15px;
+    background-color: #a24a2c;
+    color: #fff;
+    font-size: 0.75rem;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(31, 31, 41, 0.7);
+  }
+  
+  .base-score {
+    position: relative;
+    z-index: 1;
+  }
+
 /* Responsive adjustments */
 @media (max-width: 992px) {
   .step5-title {

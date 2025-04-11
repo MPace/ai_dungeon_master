@@ -99,7 +99,10 @@ function CharacterCreator() {
             case 5:
                 return (
                     <Step5_AbilityScores
-                        characterData={characterData}
+                        characterData={{
+                            ...characterData,
+                            races: characterData.races || []
+                        }}
                         updateCharacterData={updateCharacterData}
                         nextStep={nextStep}
                         prevStep={prevStep}

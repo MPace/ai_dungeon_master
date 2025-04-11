@@ -84,31 +84,35 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
     
     if (characterData.raceId) {
       // Find the race in the data
-      if (characterData.races) {
-        const race = characterData.races.find(r => r.id === characterData.raceId);
+      const race = characterData.races?.find(r => r.id === characterData.raceId);
+      
+      if (race && race.abilityScoreAdjustments) {
+        // Add race bonuses
+        Object.entries(race.abilityScoreAdjustments).forEach(([ability, bonus]) => {
+          bonuses[ability] = (bonuses[ability] || 0) + bonus;
+        });
         
-        if (race && race.abilityScoreAdjustments) {
-          // Add race bonuses
-          Object.entries(race.abilityScoreAdjustments).forEach(([ability, bonus]) => {
+        console.log("Base racial bonuses:", bonuses);
+      }
+      
+      // Add subrace bonuses if applicable
+      if (characterData.subraceId && race?.subraces) {
+        const subrace = race.subraces.find(sr => sr.id === characterData.subraceId);
+        
+        if (subrace && subrace.abilityScoreAdjustments) {
+          Object.entries(subrace.abilityScoreAdjustments).forEach(([ability, bonus]) => {
             bonuses[ability] = (bonuses[ability] || 0) + bonus;
           });
-        }
-        
-        // Add subrace bonuses if applicable
-        if (characterData.subraceId && race.subraces) {
-          const subrace = race.subraces.find(sr => sr.id === characterData.subraceId);
           
-          if (subrace && subrace.abilityScoreAdjustments) {
-            Object.entries(subrace.abilityScoreAdjustments).forEach(([ability, bonus]) => {
-              bonuses[ability] = (bonuses[ability] || 0) + bonus;
-            });
-          }
+          console.log("With subrace bonuses:", bonuses);
         }
       }
     }
     
     setRacialBonuses(bonuses);
+    console.log("Final racial bonuses set:", bonuses);
   }, [characterData]);
+    
   
   // Calculate total ability scores including racial bonuses
   const calculateTotalScores = () => {
@@ -543,83 +547,90 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
   }, [selectedMethod, pointsRemaining, selectedRolls, usedArrayValues]);
   
   // Render ability card
-  const renderAbilityCard = (ability) => {
-    const abilityName = ability.charAt(0).toUpperCase() + ability.slice(1);
-    const score = abilityScores[ability];
-    const racialBonus = racialBonuses[ability] || 0;
-    const totalScore = score + racialBonus;
-    const modifierText = getModifierText(totalScore);
-    
-    return (
-      <div 
-        className="ability-card"
-        onDragOver={(e) => selectedMethod === 'standardArray' ? handleDragOver(e, ability) : null}
-        onDragLeave={(e) => selectedMethod === 'standardArray' ? handleDragLeave(e) : null}
-        onDrop={(e) => selectedMethod === 'standardArray' ? handleDrop(e, ability) : null}
-      >
-        <div className="ability-name">{abilityName}</div>
-        <div className="ability-description">{ABILITY_DESCRIPTIONS[ability]}</div>
+  // Update the renderAbilityCard function to better display racial bonuses
+    const renderAbilityCard = (ability) => {
+        const abilityName = ability.charAt(0).toUpperCase() + ability.slice(1);
+        const score = abilityScores[ability];
+        const racialBonus = racialBonuses[ability] || 0;
+        const totalScore = score + racialBonus;
+        const modifierText = getModifierText(totalScore);
         
-        <div className="ability-score-display">
-          <div className="ability-controls">
-            {selectedMethod === 'pointBuy' && (
-              <button 
-                type="button"
-                className="ability-btn"
-                onClick={() => handlePointBuy(ability, -1)}
-                disabled={score <= 8}
-              >
-                <i className="bi bi-dash"></i>
-              </button>
-            )}
+        return (
+        <div 
+            className={`ability-card ${racialBonus > 0 ? 'has-racial-bonus' : ''}`}
+            onDragOver={(e) => selectedMethod === 'standardArray' ? handleDragOver(e, ability) : null}
+            onDragLeave={(e) => selectedMethod === 'standardArray' ? handleDragLeave(e) : null}
+            onDrop={(e) => selectedMethod === 'standardArray' ? handleDrop(e, ability) : null}
+        >
+            <div className="ability-name">{abilityName}</div>
+            <div className="ability-description">{ABILITY_DESCRIPTIONS[ability]}</div>
             
-            <div className={`ability-score ${getScoreClass(totalScore)}`}>
-              {score}
-              <span className={`ability-modifier ${getModifierClass(totalScore)}`}>
-                {modifierText}
-              </span>
+            <div className="ability-score-display">
+            <div className="ability-controls">
+                {selectedMethod === 'pointBuy' && (
+                <button 
+                    type="button"
+                    className="ability-btn"
+                    onClick={() => handlePointBuy(ability, -1)}
+                    disabled={score <= 8}
+                >
+                    <i className="bi bi-dash"></i>
+                </button>
+                )}
+                
+                <div className={`ability-score ${getScoreClass(totalScore)}`}>
+                <span className="base-score">{score}</span>
+                {racialBonus > 0 && (
+                    <span className="racial-bonus-indicator">+{racialBonus}</span>
+                )}
+                <span className={`ability-modifier ${getModifierClass(totalScore)}`}>
+                    {modifierText}
+                </span>
+                </div>
+                
+                {selectedMethod === 'pointBuy' && (
+                <button 
+                    type="button"
+                    className="ability-btn"
+                    onClick={() => handlePointBuy(ability, 1)}
+                    disabled={score >= 15 || pointsRemaining < (score >= 13 ? 2 : 1)}
+                >
+                    <i className="bi bi-plus"></i>
+                </button>
+                )}
+            </div>
             </div>
             
-            {selectedMethod === 'pointBuy' && (
-              <button 
-                type="button"
-                className="ability-btn"
-                onClick={() => handlePointBuy(ability, 1)}
-                disabled={score >= 15 || pointsRemaining < (score >= 13 ? 2 : 1)}
-              >
-                <i className="bi bi-plus"></i>
-              </button>
+            {racialBonus > 0 && (
+            <div className="racial-bonus-tag">
+                +{racialBonus} from {characterData.raceName}
+                {characterData.subraceName && ` (${characterData.subraceName})`}
+            </div>
             )}
-          </div>
+            
+            {selectedMethod === 'diceRoll' && rollResults.length > 0 && (
+            <div className="die-selection">
+                <select 
+                className="die-select form-select bg-dark text-light mt-2"
+                onChange={(e) => handleSelectRoll(parseInt(e.target.value), ability)}
+                value=""
+                disabled={selectedRolls.includes(rollResults.indexOf(score))}
+                >
+                <option value="" disabled>{selectedRolls.includes(rollResults.indexOf(score)) ? 
+                    `Roll ${rollResults.indexOf(score) + 1}: ${score}` : 
+                    'Select a roll'}</option>
+                {rollResults.map((roll, idx) => (
+                    !selectedRolls.includes(idx) && 
+                    <option key={idx} value={idx}>
+                    Roll {idx + 1}: {roll}
+                    </option>
+                ))}
+                </select>
+            </div>
+            )}
         </div>
-        
-        {racialBonus > 0 && (
-          <div className="racial-bonus">+{racialBonus} Racial Bonus</div>
-        )}
-        
-        {selectedMethod === 'diceRoll' && rollResults.length > 0 && (
-          <div className="die-selection">
-            <select 
-              className="die-select form-select bg-dark text-light mt-2"
-              onChange={(e) => handleSelectRoll(parseInt(e.target.value), ability)}
-              value=""
-              disabled={selectedRolls.includes(rollResults.indexOf(score))}
-            >
-              <option value="" disabled>{selectedRolls.includes(rollResults.indexOf(score)) ? 
-                `Roll ${rollResults.indexOf(score) + 1}: ${score}` : 
-                'Select a roll'}</option>
-              {rollResults.map((roll, idx) => (
-                !selectedRolls.includes(idx) && 
-                <option key={idx} value={idx}>
-                  Roll {idx + 1}: {roll}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-    );
-  };
+        );
+    };
   
   return (
     <div className="step5-outer-container">
