@@ -43,6 +43,10 @@ const ABILITY_DESCRIPTIONS = {
   charisma: "Force of personality, persuasiveness, leadership, and confidence"
 };
 
+const [diceAnimations, setDiceAnimations] = useState([]);
+const [showDiceValues, setShowDiceValues] = useState(false);
+const diceAnimationRef = useRef(null);
+
 function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, prevStep }) {
   // State for the selected method
   const [selectedMethod, setSelectedMethod] = useState(null);
@@ -229,6 +233,12 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
     
     setIsRolling(true);
     clearError();
+    setShowDiceValues(false);
+    
+    // Stop any existing animation
+    if (diceAnimationRef.current) {
+      clearTimeout(diceAnimationRef.current);
+    }
     
     // Generate 6 sets of 4d6 rolls
     const newRolls = [];
@@ -241,8 +251,56 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
       newRolls.push(dice);
     }
     
-    // Animate rolls
-    animateDiceRolls(newRolls);
+    // Prepare animation sequence
+    const animationSteps = 15; // Number of frames in animation
+    const diceAnimationFrames = [];
+    
+    // Create random values for each animation frame
+    for (let step = 0; step < animationSteps; step++) {
+      const frameData = [];
+      
+      for (let i = 0; i < 6; i++) {
+        const diceSet = [];
+        for (let j = 0; j < 4; j++) {
+          // Gradually converge to final value
+          const convergenceFactor = step / animationSteps;
+          if (Math.random() > convergenceFactor) {
+            diceSet.push(Math.floor(Math.random() * 6) + 1);
+          } else {
+            diceSet.push(newRolls[i][j]);
+          }
+        }
+        frameData.push(diceSet);
+      }
+      
+      diceAnimationFrames.push(frameData);
+    }
+    
+    // Add the final values
+    diceAnimationFrames.push([...newRolls]);
+    
+    // Set initial animation frame
+    setDiceRolls(diceAnimationFrames[0]);
+    setDiceAnimations(diceAnimationFrames);
+    
+    // Start animation
+    let currentFrame = 0;
+    const animationInterval = 80; // ms between frames
+    
+    const runAnimation = () => {
+      currentFrame++;
+      
+      if (currentFrame < diceAnimationFrames.length) {
+        setDiceRolls(diceAnimationFrames[currentFrame]);
+        diceAnimationRef.current = setTimeout(runAnimation, animationInterval);
+      } else {
+        // Animation complete
+        finishRolling(newRolls);
+      }
+    };
+    
+    // Start the animation
+    diceAnimationRef.current = setTimeout(runAnimation, animationInterval);
   };
   
   // Animate dice rolls visually
@@ -289,6 +347,35 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
       }
     }, interval);
   };
+
+  const finishRolling = (finalRolls) => {
+    // Calculate results (drop lowest die from each set)
+    const results = finalRolls.map(diceSet => {
+      const sorted = [...diceSet].sort((a, b) => a - b);
+      const sum = sorted.slice(1).reduce((a, b) => a + b, 0);
+      return sum;
+    });
+    
+    setDiceRolls(finalRolls);
+    setRollResults(results);
+    setSelectedRolls([]);
+    setIsRolling(false);
+    setShowDiceValues(true);
+    
+    // Clear animation reference
+    diceAnimationRef.current = null;
+  };
+  
+  // Add cleanup effect for animations
+  useEffect(() => {
+    return () => {
+      // Clear any ongoing animations when component unmounts
+      if (diceAnimationRef.current) {
+        clearTimeout(diceAnimationRef.current);
+      }
+    };
+  }, []);
+  
   
   // Handler for selecting a roll and assigning to ability
   const handleSelectRoll = (rollIndex, ability) => {
@@ -297,16 +384,24 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
       return;
     }
     
-    // Update ability score
-    setAbilityScores(prev => ({
-      ...prev,
-      [ability]: rollResults[rollIndex]
-    }));
+    // Create a flashy animation for the selected roll
+    const diceResultElement = document.querySelector(`.dice-set:nth-child(${rollIndex + 1}) .dice-result`);
+    if (diceResultElement) {
+      diceResultElement.classList.add('highlighted');
+    }
     
-    // Mark roll as used
-    setSelectedRolls(prev => [...prev, rollIndex]);
-    
-    clearError();
+    // Update ability score with a slight delay to make it feel responsive
+    setTimeout(() => {
+      setAbilityScores(prev => ({
+        ...prev,
+        [ability]: rollResults[rollIndex]
+      }));
+      
+      // Mark roll as used
+      setSelectedRolls(prev => [...prev, rollIndex]);
+      
+      clearError();
+    }, 200);
   };
   
   // Handlers for standard array drag-and-drop
@@ -736,31 +831,57 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
           
           {selectedMethod === 'diceRoll' && !rollResults.length && (
             <div className="roll-button-container">
-              <button className="roll-button" onClick={rollDice} disabled={isRolling}>
+                <button className="roll-button" onClick={rollDice} disabled={isRolling}>
                 <i className="bi bi-dice-6"></i> Roll 4d6 (drop lowest) × 6
-              </button>
+                </button>
             </div>
-          )}
+            )}
           
-          {selectedMethod === 'diceRoll' && rollResults.length > 0 && (
-            <div className="die-display">
-              {diceRolls.map((diceSet, idx) => (
-                <div 
-                  key={idx} 
-                  className={`die ${selectedRolls.includes(idx) ? 'selected' : ''}`}
-                  title={`Roll ${idx + 1}: ${diceSet.join(', ')} (drop lowest: ${diceSet.sort((a, b) => a - b)[0]})`}
-                >
-                  {rollResults[idx]}
+          {selectedMethod === 'diceRoll' && (diceRolls.length > 0 || isRolling) && (
+            <div className="dice-container">
+                {diceRolls.map((diceSet, setIndex) => (
+                <div key={setIndex} className="dice-set">
+                    <div className="dice-row">
+                    {diceSet.map((value, dieIndex) => (
+                        <div 
+                        key={`${setIndex}-${dieIndex}`} 
+                        className={`die ${isRolling ? 'rolling' : ''} ${selectedRolls.includes(setIndex) ? 'selected' : ''}`}
+                        >
+                        <div className="die-inner">
+                            <div className="die-face">
+                            {showDiceValues ? (
+                                value
+                            ) : (
+                                <div className="rolling-dots">
+                                {Array.from({ length: value }).map((_, i) => (
+                                    <div key={i} className="die-dot"></div>
+                                ))}
+                                </div>
+                            )}
+                            </div>
+                        </div>
+                        </div>
+                    ))}
+                    </div>
+                    {rollResults.length > 0 && (
+                    <div className={`dice-result ${selectedRolls.includes(setIndex) ? 'highlighted' : ''}`}>
+                        Total: {rollResults[setIndex]}
+                    </div>
+                    )}
                 </div>
-              ))}
+                ))}
             </div>
-          )}
+            )}
           
           {selectedMethod === 'diceRoll' && rollResults.length > 0 && (
             <div className="roll-instruction">
-              Select a roll for each ability using the dropdowns below.
+                {selectedRolls.length < 6 ? (
+                "Assign each result to an ability using the dropdowns below."
+                ) : (
+                "All rolls have been assigned to abilities."
+                )}
             </div>
-          )}
+            )}
           
           {selectedMethod === 'standardArray' && (
             <div className="array-values-container">
