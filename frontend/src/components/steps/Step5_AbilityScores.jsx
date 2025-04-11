@@ -1,6 +1,6 @@
 // File: frontend/src/components/steps/Step5_AbilityScores.jsx
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Step5_AbilityScores.css';
 
 // Helper function to calculate ability modifier
@@ -43,10 +43,6 @@ const ABILITY_DESCRIPTIONS = {
   charisma: "Force of personality, persuasiveness, leadership, and confidence"
 };
 
-const [diceAnimations, setDiceAnimations] = useState([]);
-const [showDiceValues, setShowDiceValues] = useState(false);
-const diceAnimationRef = useRef(null);
-
 function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, prevStep }) {
   // State for the selected method
   const [selectedMethod, setSelectedMethod] = useState(null);
@@ -65,7 +61,7 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
   const [pointsRemaining, setPointsRemaining] = useState(27);
   
   // State for dice rolls
-  const [diceRolls, setDiceRolls] = useState(Array(6).fill([]).map(() => Array(4).fill(0)));
+  const [diceRolls, setDiceRolls] = useState([]);
   const [rollResults, setRollResults] = useState([]);
   const [selectedRolls, setSelectedRolls] = useState([]);
   const [isRolling, setIsRolling] = useState(false);
@@ -79,40 +75,39 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
   const [validationError, setValidationError] = useState('');
   const [canContinue, setCanContinue] = useState(false);
   
-  // Refs
-  const validationAlertRef = useRef(null);
-  
   // Racial bonuses from characterData
-  const racialBonuses = useRef({});
+  const [racialBonuses, setRacialBonuses] = useState({});
   
   // Effect to extract racial bonuses from character data
   useEffect(() => {
     const bonuses = {};
     
-    if (characterData.raceId && characterData.races) {
+    if (characterData.raceId) {
       // Find the race in the data
-      const race = characterData.races.find(r => r.id === characterData.raceId);
-      
-      if (race && race.abilityScoreAdjustments) {
-        // Add race bonuses
-        Object.entries(race.abilityScoreAdjustments).forEach(([ability, bonus]) => {
-          bonuses[ability] = (bonuses[ability] || 0) + bonus;
-        });
-      }
-      
-      // Add subrace bonuses if applicable
-      if (characterData.subraceId && race.subraces) {
-        const subrace = race.subraces.find(sr => sr.id === characterData.subraceId);
+      if (characterData.races) {
+        const race = characterData.races.find(r => r.id === characterData.raceId);
         
-        if (subrace && subrace.abilityScoreAdjustments) {
-          Object.entries(subrace.abilityScoreAdjustments).forEach(([ability, bonus]) => {
+        if (race && race.abilityScoreAdjustments) {
+          // Add race bonuses
+          Object.entries(race.abilityScoreAdjustments).forEach(([ability, bonus]) => {
             bonuses[ability] = (bonuses[ability] || 0) + bonus;
           });
+        }
+        
+        // Add subrace bonuses if applicable
+        if (characterData.subraceId && race.subraces) {
+          const subrace = race.subraces.find(sr => sr.id === characterData.subraceId);
+          
+          if (subrace && subrace.abilityScoreAdjustments) {
+            Object.entries(subrace.abilityScoreAdjustments).forEach(([ability, bonus]) => {
+              bonuses[ability] = (bonuses[ability] || 0) + bonus;
+            });
+          }
         }
       }
     }
     
-    racialBonuses.current = bonuses;
+    setRacialBonuses(bonuses);
   }, [characterData]);
   
   // Calculate total ability scores including racial bonuses
@@ -120,7 +115,7 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
     const totalScores = {};
     
     Object.entries(abilityScores).forEach(([ability, score]) => {
-      const racialBonus = racialBonuses.current[ability] || 0;
+      const racialBonus = racialBonuses[ability] || 0;
       totalScores[ability] = score + racialBonus;
     });
     
@@ -130,25 +125,11 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
   // Set validation error with animation
   const setError = (message) => {
     setValidationError(message);
-    
-    if (validationAlertRef.current) {
-      validationAlertRef.current.classList.add('visible');
-      validationAlertRef.current.classList.add('shake');
-      
-      setTimeout(() => {
-        if (validationAlertRef.current) {
-          validationAlertRef.current.classList.remove('shake');
-        }
-      }, 500);
-    }
   };
   
   // Clear validation error
   const clearError = () => {
     setValidationError('');
-    if (validationAlertRef.current) {
-      validationAlertRef.current.classList.remove('visible');
-    }
   };
   
   // Handler for method selection
@@ -170,7 +151,7 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
     if (method === 'pointBuy') {
       setPointsRemaining(27);
     } else if (method === 'diceRoll') {
-      setDiceRolls(Array(6).fill([]).map(() => Array(4).fill(0)));
+      setDiceRolls([]);
       setRollResults([]);
       setSelectedRolls([]);
     } else if (method === 'standardArray') {
@@ -227,155 +208,57 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
     clearError();
   };
   
-  // Dice rolling
+  // Dice rolling with animation
   const rollDice = () => {
     if (isRolling) return;
-    
     setIsRolling(true);
     clearError();
-    setShowDiceValues(false);
-    
-    // Stop any existing animation
-    if (diceAnimationRef.current) {
-      clearTimeout(diceAnimationRef.current);
-    }
     
     // Generate 6 sets of 4d6 rolls
-    const newRolls = [];
+    const newDiceRolls = [];
+    const newRollResults = [];
     
     for (let i = 0; i < 6; i++) {
-      const dice = [];
+      const diceSet = [];
       for (let j = 0; j < 4; j++) {
-        dice.push(Math.floor(Math.random() * 6) + 1); // 1-6
+        diceSet.push(Math.floor(Math.random() * 6) + 1); // Roll 1-6
       }
-      newRolls.push(dice);
+      
+      // Calculate result (sum of highest 3 dice)
+      const sortedDice = [...diceSet].sort((a, b) => a - b);
+      const result = sortedDice.slice(1).reduce((sum, die) => sum + die, 0);
+      
+      newDiceRolls.push(diceSet);
+      newRollResults.push(result);
     }
     
-    // Prepare animation sequence
-    const animationSteps = 15; // Number of frames in animation
-    const diceAnimationFrames = [];
-    
-    // Create random values for each animation frame
-    for (let step = 0; step < animationSteps; step++) {
-      const frameData = [];
+    // Animate the dice rolls
+    let animationStep = 0;
+    const totalSteps = 10; // Number of animation frames
+    const animationInterval = setInterval(() => {
+      animationStep++;
       
-      for (let i = 0; i < 6; i++) {
-        const diceSet = [];
-        for (let j = 0; j < 4; j++) {
-          // Gradually converge to final value
-          const convergenceFactor = step / animationSteps;
-          if (Math.random() > convergenceFactor) {
-            diceSet.push(Math.floor(Math.random() * 6) + 1);
-          } else {
-            diceSet.push(newRolls[i][j]);
-          }
-        }
-        frameData.push(diceSet);
-      }
-      
-      diceAnimationFrames.push(frameData);
-    }
-    
-    // Add the final values
-    diceAnimationFrames.push([...newRolls]);
-    
-    // Set initial animation frame
-    setDiceRolls(diceAnimationFrames[0]);
-    setDiceAnimations(diceAnimationFrames);
-    
-    // Start animation
-    let currentFrame = 0;
-    const animationInterval = 80; // ms between frames
-    
-    const runAnimation = () => {
-      currentFrame++;
-      
-      if (currentFrame < diceAnimationFrames.length) {
-        setDiceRolls(diceAnimationFrames[currentFrame]);
-        diceAnimationRef.current = setTimeout(runAnimation, animationInterval);
-      } else {
-        // Animation complete
-        finishRolling(newRolls);
-      }
-    };
-    
-    // Start the animation
-    diceAnimationRef.current = setTimeout(runAnimation, animationInterval);
-  };
-  
-  // Animate dice rolls visually
-  const animateDiceRolls = (finalRolls) => {
-    // Start with random values
-    setDiceRolls(Array(6).fill([]).map(() => Array(4).fill(0).map(() => Math.floor(Math.random() * 6) + 1)));
-    
-    // Animate changing values
-    let iterations = 0;
-    const maxIterations = 10;
-    const interval = 100; // ms
-    
-    const animation = setInterval(() => {
-      iterations++;
-      
-      if (iterations < maxIterations) {
-        // Still animating - show random values
-        setDiceRolls(prev => prev.map((set, i) => 
-          set.map((_, j) => {
-            // Gradually converge to final value
-            const convergence = iterations / maxIterations;
-            if (Math.random() > convergence) {
-              return Math.floor(Math.random() * 6) + 1;
-            } else {
-              return finalRolls[i][j];
-            }
+      if (animationStep < totalSteps) {
+        // During animation, show random values
+        const animatedRolls = newDiceRolls.map(diceSet => 
+          diceSet.map(finalValue => {
+            // As animation progresses, increase chance of showing final value
+            return Math.random() > animationStep/totalSteps 
+              ? Math.floor(Math.random() * 6) + 1 
+              : finalValue;
           })
-        ));
+        );
+        
+        setDiceRolls(animatedRolls);
       } else {
         // Animation complete
-        clearInterval(animation);
-        setDiceRolls(finalRolls);
-        
-        // Calculate results (drop lowest die from each set)
-        const results = finalRolls.map(diceSet => {
-          const sorted = [...diceSet].sort((a, b) => a - b);
-          const sum = sorted.slice(1).reduce((a, b) => a + b, 0);
-          return sum;
-        });
-        
-        setRollResults(results);
-        setSelectedRolls([]);
+        clearInterval(animationInterval);
+        setDiceRolls(newDiceRolls);
+        setRollResults(newRollResults);
         setIsRolling(false);
       }
-    }, interval);
+    }, 100);
   };
-
-  const finishRolling = (finalRolls) => {
-    // Calculate results (drop lowest die from each set)
-    const results = finalRolls.map(diceSet => {
-      const sorted = [...diceSet].sort((a, b) => a - b);
-      const sum = sorted.slice(1).reduce((a, b) => a + b, 0);
-      return sum;
-    });
-    
-    setDiceRolls(finalRolls);
-    setRollResults(results);
-    setSelectedRolls([]);
-    setIsRolling(false);
-    setShowDiceValues(true);
-    
-    // Clear animation reference
-    diceAnimationRef.current = null;
-  };
-  
-  // Add cleanup effect for animations
-  useEffect(() => {
-    return () => {
-      // Clear any ongoing animations when component unmounts
-      if (diceAnimationRef.current) {
-        clearTimeout(diceAnimationRef.current);
-      }
-    };
-  }, []);
-  
   
   // Handler for selecting a roll and assigning to ability
   const handleSelectRoll = (rollIndex, ability) => {
@@ -384,28 +267,20 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
       return;
     }
     
-    // Create a flashy animation for the selected roll
-    const diceResultElement = document.querySelector(`.dice-set:nth-child(${rollIndex + 1}) .dice-result`);
-    if (diceResultElement) {
-      diceResultElement.classList.add('highlighted');
-    }
+    // Update ability score
+    setAbilityScores(prev => ({
+      ...prev,
+      [ability]: rollResults[rollIndex]
+    }));
     
-    // Update ability score with a slight delay to make it feel responsive
-    setTimeout(() => {
-      setAbilityScores(prev => ({
-        ...prev,
-        [ability]: rollResults[rollIndex]
-      }));
-      
-      // Mark roll as used
-      setSelectedRolls(prev => [...prev, rollIndex]);
-      
-      clearError();
-    }, 200);
+    // Mark roll as used
+    setSelectedRolls(prev => [...prev, rollIndex]);
+    
+    clearError();
   };
   
   // Handlers for standard array drag-and-drop
-  const handleDragStart = (value) => {
+  const handleDragStart = (e, value) => {
     // Check if value is already used
     if (usedArrayValues.includes(value)) {
       return;
@@ -671,17 +546,16 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
   const renderAbilityCard = (ability) => {
     const abilityName = ability.charAt(0).toUpperCase() + ability.slice(1);
     const score = abilityScores[ability];
-    const racialBonus = racialBonuses.current[ability] || 0;
+    const racialBonus = racialBonuses[ability] || 0;
     const totalScore = score + racialBonus;
-    const modifier = calculateModifier(totalScore);
     const modifierText = getModifierText(totalScore);
     
     return (
       <div 
         className="ability-card"
-        onDragOver={selectedMethod === 'standardArray' ? (e) => handleDragOver(e, ability) : null}
-        onDragLeave={selectedMethod === 'standardArray' ? handleDragLeave : null}
-        onDrop={selectedMethod === 'standardArray' ? (e) => handleDrop(e, ability) : null}
+        onDragOver={(e) => selectedMethod === 'standardArray' ? handleDragOver(e, ability) : null}
+        onDragLeave={(e) => selectedMethod === 'standardArray' ? handleDragLeave(e) : null}
+        onDrop={(e) => selectedMethod === 'standardArray' ? handleDrop(e, ability) : null}
       >
         <div className="ability-name">{abilityName}</div>
         <div className="ability-description">{ABILITY_DESCRIPTIONS[ability]}</div>
@@ -690,6 +564,7 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
           <div className="ability-controls">
             {selectedMethod === 'pointBuy' && (
               <button 
+                type="button"
                 className="ability-btn"
                 onClick={() => handlePointBuy(ability, -1)}
                 disabled={score <= 8}
@@ -707,6 +582,7 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
             
             {selectedMethod === 'pointBuy' && (
               <button 
+                type="button"
                 className="ability-btn"
                 onClick={() => handlePointBuy(ability, 1)}
                 disabled={score >= 15 || pointsRemaining < (score >= 13 ? 2 : 1)}
@@ -727,8 +603,11 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
               className="die-select form-select bg-dark text-light mt-2"
               onChange={(e) => handleSelectRoll(parseInt(e.target.value), ability)}
               value=""
+              disabled={selectedRolls.includes(rollResults.indexOf(score))}
             >
-              <option value="" disabled>Select a roll</option>
+              <option value="" disabled>{selectedRolls.includes(rollResults.indexOf(score)) ? 
+                `Roll ${rollResults.indexOf(score) + 1}: ${score}` : 
+                'Select a roll'}</option>
               {rollResults.map((roll, idx) => (
                 !selectedRolls.includes(idx) && 
                 <option key={idx} value={idx}>
@@ -748,10 +627,7 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
       <h2 className="step5-title">Ability Scores</h2>
       
       {/* Validation alert */}
-      <div 
-        ref={validationAlertRef}
-        className={`validation-alert ${validationError ? 'visible' : ''}`}
-      >
+      <div className={`validation-alert ${validationError ? 'visible' : ''}`}>
         {validationError}
       </div>
       
@@ -814,6 +690,7 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
             {/* Recommendation button */}
             <div className="recommendation-container">
               <button 
+                type="button"
                 className="recommend-btn"
                 onClick={applyRecommendedScores}
               >
@@ -831,57 +708,54 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
           
           {selectedMethod === 'diceRoll' && !rollResults.length && (
             <div className="roll-button-container">
-                <button className="roll-button" onClick={rollDice} disabled={isRolling}>
+              <button 
+                type="button"
+                className="roll-button" 
+                onClick={rollDice} 
+                disabled={isRolling}
+              >
                 <i className="bi bi-dice-6"></i> Roll 4d6 (drop lowest) × 6
-                </button>
+              </button>
             </div>
-            )}
+          )}
           
-          {selectedMethod === 'diceRoll' && (diceRolls.length > 0 || isRolling) && (
+          {selectedMethod === 'diceRoll' && diceRolls.length > 0 && (
             <div className="dice-container">
-                {diceRolls.map((diceSet, setIndex) => (
+              {diceRolls.map((diceSet, setIndex) => (
                 <div key={setIndex} className="dice-set">
-                    <div className="dice-row">
+                  <div className="dice-row">
                     {diceSet.map((value, dieIndex) => (
-                        <div 
+                      <div 
                         key={`${setIndex}-${dieIndex}`} 
                         className={`die ${isRolling ? 'rolling' : ''} ${selectedRolls.includes(setIndex) ? 'selected' : ''}`}
-                        >
-                        <div className="die-inner">
-                            <div className="die-face">
-                            {showDiceValues ? (
-                                value
-                            ) : (
-                                <div className="rolling-dots">
-                                {Array.from({ length: value }).map((_, i) => (
-                                    <div key={i} className="die-dot"></div>
-                                ))}
-                                </div>
-                            )}
-                            </div>
-                        </div>
-                        </div>
+                      >
+                        {isRolling ? (
+                          <div className="die-rolling">{value}</div>
+                        ) : (
+                          <div className="die-value">{value}</div>
+                        )}
+                      </div>
                     ))}
-                    </div>
-                    {rollResults.length > 0 && (
+                  </div>
+                  {rollResults.length > 0 && !isRolling && (
                     <div className={`dice-result ${selectedRolls.includes(setIndex) ? 'highlighted' : ''}`}>
-                        Total: {rollResults[setIndex]}
+                      Total: {rollResults[setIndex]}
                     </div>
-                    )}
+                  )}
                 </div>
-                ))}
+              ))}
             </div>
-            )}
+          )}
           
-          {selectedMethod === 'diceRoll' && rollResults.length > 0 && (
+          {selectedMethod === 'diceRoll' && rollResults.length > 0 && !isRolling && (
             <div className="roll-instruction">
-                {selectedRolls.length < 6 ? (
+              {selectedRolls.length < 6 ? (
                 "Assign each result to an ability using the dropdowns below."
-                ) : (
+              ) : (
                 "All rolls have been assigned to abilities."
-                )}
+              )}
             </div>
-            )}
+          )}
           
           {selectedMethod === 'standardArray' && (
             <div className="array-values-container">
@@ -890,7 +764,7 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
                   key={idx}
                   className={`array-value ${usedArrayValues.includes(value) ? 'used' : ''}`}
                   draggable={!usedArrayValues.includes(value)}
-                  onDragStart={() => handleDragStart(value)}
+                  onDragStart={(e) => handleDragStart(e, value)}
                 >
                   {value}
                 </div>
@@ -918,11 +792,16 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
       
       {/* Navigation Buttons */}
       <div className="step5-navigation">
-        <button className="back-button" onClick={prevStep}>
+        <button 
+          type="button"
+          className="back-button" 
+          onClick={prevStep}
+        >
           <i className="bi bi-arrow-left"></i> Back to Character Info
         </button>
         
         <button 
+          type="button"
           className={`continue-button ${canContinue ? 'active' : ''}`}
           onClick={handleContinue}
           disabled={!canContinue}
