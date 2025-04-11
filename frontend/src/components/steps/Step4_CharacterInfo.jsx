@@ -209,6 +209,8 @@ function Step4_CharacterInfo({ characterData, updateCharacterData, nextStep, pre
         
         console.log("Character info confirmed");
         
+        const completeRaceData = selectedRace;
+
         // Update character data
         updateCharacterData({
             characterName: name,
@@ -219,7 +221,8 @@ function Step4_CharacterInfo({ characterData, updateCharacterData, nextStep, pre
             subraceName: selectedSubraceId ? 
                 selectedRace?.subraces?.find(sr => sr.id === selectedSubraceId)?.name || '' : '',
             backgroundId: selectedBackgroundId,
-            backgroundName: selectedBackground?.name || ''
+            backgroundName: selectedBackground?.name || '',
+            raceData: completeRaceData
         });
         
         // Move to next step
