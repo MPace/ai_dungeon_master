@@ -1,4 +1,4 @@
-// File: frontend/src/components/steps/Step4_CharacterInfo.jsx
+// File: frontend/src/components/steps/Step4_CharacterInfo.jsx - Updated with horizontal scrolling
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './Step4_CharacterInfo.css';
@@ -21,6 +21,9 @@ function Step4_CharacterInfo({ characterData, updateCharacterData, nextStep, pre
     // Refs for modals
     const raceModalRef = useRef(null);
     const backgroundModalRef = useRef(null);
+    // New refs for horizontal scrolling
+    const raceGridRef = useRef(null);
+    const backgroundGridRef = useRef(null);
 
     // Fetch data for the selected world
     useEffect(() => {
@@ -88,6 +91,26 @@ function Step4_CharacterInfo({ characterData, updateCharacterData, nextStep, pre
         // Handle relative paths by adding the static prefix
         return `/static/build/${imagePath.startsWith('/') ? imagePath.substring(1) : imagePath}`;
     }, []);
+
+    // Handler for horizontal scrolling
+    const handleScroll = (direction, containerRef) => {
+        if (!containerRef.current) return;
+        
+        const scrollAmount = 300; // Adjust as needed
+        const currentScroll = containerRef.current.scrollLeft;
+        
+        if (direction === 'left') {
+            containerRef.current.scrollTo({
+                left: currentScroll - scrollAmount,
+                behavior: 'smooth'
+            });
+        } else {
+            containerRef.current.scrollTo({
+                left: currentScroll + scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+    };
 
     // Handler when a race card is clicked
     const handleRaceSelect = useCallback((race) => {
@@ -293,28 +316,46 @@ function Step4_CharacterInfo({ characterData, updateCharacterData, nextStep, pre
                             </div>
                         </div>
                     ) : (
-                        <div className="race-grid">
-                            {races.map((race) => (
-                                <div 
-                                    key={race.id} 
-                                    className="race-card" 
-                                    onClick={() => handleRaceSelect(race)}
+                        <div>
+                            <div className="race-grid" ref={raceGridRef}>
+                                {races.map((race) => (
+                                    <div 
+                                        key={race.id} 
+                                        className="race-card" 
+                                        onClick={() => handleRaceSelect(race)}
+                                    >
+                                        <div className="race-image-container">
+                                            {race.image ? (
+                                                <img src={getImageUrl(race.image)} alt={race.name} className="race-image" />
+                                            ) : (
+                                                <div className="placeholder-image">
+                                                    <i className="bi bi-person"></i>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="race-card-content">
+                                            <h4 className="race-name">{race.name}</h4>
+                                            <p className="race-description">{race.shortDescription}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="scroll-nav-buttons">
+                                <button 
+                                    className="scroll-button" 
+                                    onClick={() => handleScroll('left', raceGridRef)}
+                                    aria-label="Scroll left"
                                 >
-                                    <div className="race-image-container">
-                                        {race.image ? (
-                                            <img src={getImageUrl(race.image)} alt={race.name} className="race-image" />
-                                        ) : (
-                                            <div className="placeholder-image">
-                                                <i className="bi bi-person"></i>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="race-card-content">
-                                        <h4 className="race-name">{race.name}</h4>
-                                        <p className="race-description">{race.shortDescription}</p>
-                                    </div>
-                                </div>
-                            ))}
+                                    <i className="bi bi-chevron-left"></i>
+                                </button>
+                                <button 
+                                    className="scroll-button" 
+                                    onClick={() => handleScroll('right', raceGridRef)}
+                                    aria-label="Scroll right"
+                                >
+                                    <i className="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -345,28 +386,46 @@ function Step4_CharacterInfo({ characterData, updateCharacterData, nextStep, pre
                             </div>
                         </div>
                     ) : (
-                        <div className="background-grid">
-                            {backgrounds.map((background) => (
-                                <div 
-                                    key={background.id} 
-                                    className="background-card" 
-                                    onClick={() => handleBackgroundSelect(background)}
+                        <div>
+                            <div className="background-grid" ref={backgroundGridRef}>
+                                {backgrounds.map((background) => (
+                                    <div 
+                                        key={background.id} 
+                                        className="background-card" 
+                                        onClick={() => handleBackgroundSelect(background)}
+                                    >
+                                        <div className="background-image-container">
+                                            {background.image ? (
+                                                <img src={getImageUrl(background.image)} alt={background.name} className="background-image" />
+                                            ) : (
+                                                <div className="placeholder-image">
+                                                    <i className="bi bi-book"></i>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="background-card-content">
+                                            <h4 className="background-name">{background.name}</h4>
+                                            <p className="background-description">{background.shortDescription}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="scroll-nav-buttons">
+                                <button 
+                                    className="scroll-button" 
+                                    onClick={() => handleScroll('left', backgroundGridRef)}
+                                    aria-label="Scroll left"
                                 >
-                                    <div className="background-image-container">
-                                        {background.image ? (
-                                            <img src={getImageUrl(background.image)} alt={background.name} className="background-image" />
-                                        ) : (
-                                            <div className="placeholder-image">
-                                                <i className="bi bi-book"></i>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="background-card-content">
-                                        <h4 className="background-name">{background.name}</h4>
-                                        <p className="background-description">{background.shortDescription}</p>
-                                    </div>
-                                </div>
-                            ))}
+                                    <i className="bi bi-chevron-left"></i>
+                                </button>
+                                <button 
+                                    className="scroll-button" 
+                                    onClick={() => handleScroll('right', backgroundGridRef)}
+                                    aria-label="Scroll right"
+                                >
+                                    <i className="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
