@@ -79,40 +79,62 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
   const [racialBonuses, setRacialBonuses] = useState({});
   
   // Effect to extract racial bonuses from character data
-  useEffect(() => {
-    const bonuses = {};
-    
-    if (characterData.raceId) {
-      // Find the race in the data
-      const race = characterData.races?.find(r => r.id === characterData.raceId);
-      
-      if (race && race.abilityScoreAdjustments) {
-        // Add race bonuses
-        Object.entries(race.abilityScoreAdjustments).forEach(([ability, bonus]) => {
-          bonuses[ability] = (bonuses[ability] || 0) + bonus;
-        });
+    useEffect(() => {
+        const bonuses = {};
         
-        console.log("Base racial bonuses:", bonuses);
-      }
-      
-      // Add subrace bonuses if applicable
-      if (characterData.subraceId && race?.subraces) {
-        const subrace = race.subraces.find(sr => sr.id === characterData.subraceId);
+        // Check how race data is passed to the component
+        console.log("Character data received:", characterData);
         
-        if (subrace && subrace.abilityScoreAdjustments) {
-          Object.entries(subrace.abilityScoreAdjustments).forEach(([ability, bonus]) => {
-            bonuses[ability] = (bonuses[ability] || 0) + bonus;
-          });
-          
-          console.log("With subrace bonuses:", bonuses);
+                if (characterData.racialBonuses) {
+        setRacialBonuses(characterData.racialBonuses);
+        console.log("Using racial bonuses directly from characterData:", characterData.racialBonuses);
+        return;
         }
-      }
-    }
-    
-    setRacialBonuses(bonuses);
-    console.log("Final racial bonuses set:", bonuses);
-  }, [characterData]);
-    
+        
+        if (characterData.raceId) {
+        // Look for race in races array
+        const race = characterData.races?.find(r => r.id === characterData.raceId);
+        
+        if (race) {
+            // Try different property names for ability score adjustments
+            const adjustments = race.abilityScoreAdjustments || race.abilityScoreIncrease;
+            
+            if (adjustments) {
+            Object.entries(adjustments).forEach(([ability, bonus]) => {
+                bonuses[ability] = (bonuses[ability] || 0) + bonus;
+            });
+            
+            console.log("Racial ability bonuses found:", bonuses);
+            } else {
+            console.log("No ability score adjustments found for race:", race);
+            }
+            
+            // Check for subrace bonuses
+            if (characterData.subraceId && race.subraces) {
+            const subrace = race.subraces.find(sr => sr.id === characterData.subraceId);
+            
+            if (subrace) {
+                const subraceAdjustments = subrace.abilityScoreAdjustments || subrace.abilityScoreIncrease;
+                
+                if (subraceAdjustments) {
+                Object.entries(subraceAdjustments).forEach(([ability, bonus]) => {
+                    bonuses[ability] = (bonuses[ability] || 0) + bonus;
+                });
+                
+                console.log("With subrace bonuses:", bonuses);
+                } else {
+                console.log("No ability score adjustments found for subrace:", subrace);
+                }
+            }
+            }
+        } else {
+            console.log("Race not found in races array. Available races:", characterData.races);
+        }
+        }
+        
+        setRacialBonuses(bonuses);
+        console.log("Final racial bonuses set:", bonuses);
+    }, [characterData]);
   
   // Calculate total ability scores including racial bonuses
   const calculateTotalScores = () => {
