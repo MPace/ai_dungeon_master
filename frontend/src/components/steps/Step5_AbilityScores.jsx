@@ -79,43 +79,88 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
   const [racialBonuses, setRacialBonuses] = useState({});
   
   // Effect to extract racial bonuses from character data
-    useEffect(() => {
-        const bonuses = {};
-        
-        // Use the complete race data saved in characterData
-        if (characterData.raceData) {
+  useEffect(() => {
+    const bonuses = {};
+    
+    console.log("Character data in Step5:", characterData);
+    
+    // Use the complete race data saved in characterData
+    if (characterData.raceData) {
         const race = characterData.raceData;
         
-        console.log("Using complete race data:", race);
+        console.log("Race data structure:", race);
         
         // Check for ability score adjustments
         if (race.abilityScoreAdjustments) {
             Object.entries(race.abilityScoreAdjustments).forEach(([ability, bonus]) => {
-            bonuses[ability] = (bonuses[ability] || 0) + bonus;
+                // Convert ability to lowercase to ensure consistent keys
+                bonuses[ability.toLowerCase()] = (bonuses[ability.toLowerCase()] || 0) + bonus;
             });
             
             console.log("Base racial bonuses:", bonuses);
+        } 
+        // Fallback for different data structure (from traits)
+        else if (race.traits) {
+            // Try to extract ability score increases from traits
+            const abilityTrait = race.traits.find(trait => 
+                trait.name && trait.name.includes("Ability Score Increase"));
+            
+            if (abilityTrait && abilityTrait.description) {
+                // Parse the description to extract bonuses (this is a simplified approach)
+                // For example: "Your Dexterity score increases by 2"
+                const desc = abilityTrait.description.toLowerCase();
+                
+                if (desc.includes("strength")) bonuses.strength = 2;
+                if (desc.includes("dexterity")) bonuses.dexterity = 2;
+                if (desc.includes("constitution")) bonuses.constitution = 2;
+                if (desc.includes("intelligence")) bonuses.intelligence = 2;
+                if (desc.includes("wisdom")) bonuses.wisdom = 2;
+                if (desc.includes("charisma")) bonuses.charisma = 2;
+                
+                console.log("Parsed racial bonuses from traits:", bonuses);
+            }
         }
         
         // Add subrace bonuses if applicable
         if (characterData.subraceId && race.subraces) {
             const subrace = race.subraces.find(sr => sr.id === characterData.subraceId);
             
-            if (subrace && subrace.abilityScoreAdjustments) {
-            Object.entries(subrace.abilityScoreAdjustments).forEach(([ability, bonus]) => {
-                bonuses[ability] = (bonuses[ability] || 0) + bonus;
-            });
-            
-            console.log("With subrace bonuses:", bonuses);
+            if (subrace) {
+                // Check if subrace has ability score adjustments directly
+                if (subrace.abilityScoreAdjustments) {
+                    Object.entries(subrace.abilityScoreAdjustments).forEach(([ability, bonus]) => {
+                        bonuses[ability.toLowerCase()] = (bonuses[ability.toLowerCase()] || 0) + bonus;
+                    });
+                    
+                    console.log("With subrace bonuses:", bonuses);
+                }
+                // Try to parse from traits if direct adjustment not found
+                else if (subrace.traits) {
+                    const abilityTrait = subrace.traits.find(trait => 
+                        trait.name && trait.name.includes("Ability Score Increase"));
+                    
+                    if (abilityTrait && abilityTrait.description) {
+                        const desc = abilityTrait.description.toLowerCase();
+                        
+                        if (desc.includes("strength")) bonuses.strength = (bonuses.strength || 0) + 1;
+                        if (desc.includes("dexterity")) bonuses.dexterity = (bonuses.dexterity || 0) + 1;
+                        if (desc.includes("constitution")) bonuses.constitution = (bonuses.constitution || 0) + 1;
+                        if (desc.includes("intelligence")) bonuses.intelligence = (bonuses.intelligence || 0) + 1;
+                        if (desc.includes("wisdom")) bonuses.wisdom = (bonuses.wisdom || 0) + 1;
+                        if (desc.includes("charisma")) bonuses.charisma = (bonuses.charisma || 0) + 1;
+                        
+                        console.log("Parsed subrace bonuses from traits:", bonuses);
+                    }
+                }
             }
         }
-        } else {
+    } else {
         console.log("No complete race data found in characterData");
-        }
-        
-        setRacialBonuses(bonuses);
-        console.log("Final racial bonuses set:", bonuses);
-    }, [characterData]);
+    }
+    
+    setRacialBonuses(bonuses);
+    console.log("Final racial bonuses set:", bonuses);
+}, [characterData]);
   
   // Calculate total ability scores including racial bonuses
   const calculateTotalScores = () => {

@@ -222,7 +222,7 @@ function Step4_CharacterInfo({ characterData, updateCharacterData, nextStep, pre
                 selectedRace?.subraces?.find(sr => sr.id === selectedSubraceId)?.name || '' : '',
             backgroundId: selectedBackgroundId,
             backgroundName: selectedBackground?.name || '',
-            raceData: completeRaceData
+            raceData: selectedRace
         });
         
         // Move to next step

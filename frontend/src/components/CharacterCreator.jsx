@@ -101,7 +101,8 @@ function CharacterCreator() {
                     <Step5_AbilityScores
                         characterData={{
                             ...characterData,
-                            races: characterData.races || []
+                            races: characterData.races || [],
+                            raceData: characterData.raceData
                         }}
                         updateCharacterData={updateCharacterData}
                         nextStep={nextStep}
