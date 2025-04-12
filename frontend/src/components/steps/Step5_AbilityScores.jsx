@@ -796,9 +796,11 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
           
           {/* Ability cards grid */}
           <div className="abilities-grid">
+            {/* First row: STR, DEX, CON */}
             {renderAbilityCard('strength')}
             {renderAbilityCard('dexterity')}
             {renderAbilityCard('constitution')}
+            {/* Second row: INT, WIS, CHA */}
             {renderAbilityCard('intelligence')}
             {renderAbilityCard('wisdom')}
             {renderAbilityCard('charisma')}
