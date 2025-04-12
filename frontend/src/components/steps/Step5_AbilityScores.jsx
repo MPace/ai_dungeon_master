@@ -47,8 +47,21 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
   // State for the selected method
   const [selectedMethod, setSelectedMethod] = useState(null);
   
-  // State for ability scores
-  const [abilityScores, setAbilityScores] = useState({
+  // State for racial bonuses
+  const [racialBonuses, setRacialBonuses] = useState({});
+  
+  // State for base ability scores (what the player assigns)
+  const [baseScores, setBaseScores] = useState({
+    strength: 8,
+    dexterity: 8,
+    constitution: 8,
+    intelligence: 8, 
+    wisdom: 8,
+    charisma: 8
+  });
+  
+  // State for total ability scores (base + racial)
+  const [totalScores, setTotalScores] = useState({
     strength: 8,
     dexterity: 8,
     constitution: 8,
@@ -75,104 +88,58 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
   const [validationError, setValidationError] = useState('');
   const [canContinue, setCanContinue] = useState(false);
   
-  // Racial bonuses from characterData
-  const [racialBonuses, setRacialBonuses] = useState({});
-  
-  // Effect to extract racial bonuses from character data
+  // Extract racial bonuses from character data
   useEffect(() => {
     const bonuses = {};
     
-    console.log("Character data in Step5:", characterData);
-    
-    // Use the complete race data saved in characterData
     if (characterData.raceData) {
-        const race = characterData.raceData;
+      const race = characterData.raceData;
+      
+      console.log("Race data found:", race);
+      
+      // Check for ability score adjustments
+      if (race.abilityScoreAdjustments) {
+        Object.entries(race.abilityScoreAdjustments).forEach(([ability, bonus]) => {
+          bonuses[ability] = (bonuses[ability] || 0) + bonus;
+        });
         
-        console.log("Race data structure:", race);
+        console.log("Base racial bonuses:", bonuses);
+      }
+      
+      // Add subrace bonuses if applicable
+      if (characterData.subraceId && race.subraces) {
+        const subrace = race.subraces.find(sr => sr.id === characterData.subraceId);
         
-        // Check for ability score adjustments
-        if (race.abilityScoreAdjustments) {
-            Object.entries(race.abilityScoreAdjustments).forEach(([ability, bonus]) => {
-                // Convert ability to lowercase to ensure consistent keys
-                bonuses[ability.toLowerCase()] = (bonuses[ability.toLowerCase()] || 0) + bonus;
-            });
-            
-            console.log("Base racial bonuses:", bonuses);
-        } 
-        // Fallback for different data structure (from traits)
-        else if (race.traits) {
-            // Try to extract ability score increases from traits
-            const abilityTrait = race.traits.find(trait => 
-                trait.name && trait.name.includes("Ability Score Increase"));
-            
-            if (abilityTrait && abilityTrait.description) {
-                // Parse the description to extract bonuses (this is a simplified approach)
-                // For example: "Your Dexterity score increases by 2"
-                const desc = abilityTrait.description.toLowerCase();
-                
-                if (desc.includes("strength")) bonuses.strength = 2;
-                if (desc.includes("dexterity")) bonuses.dexterity = 2;
-                if (desc.includes("constitution")) bonuses.constitution = 2;
-                if (desc.includes("intelligence")) bonuses.intelligence = 2;
-                if (desc.includes("wisdom")) bonuses.wisdom = 2;
-                if (desc.includes("charisma")) bonuses.charisma = 2;
-                
-                console.log("Parsed racial bonuses from traits:", bonuses);
-            }
+        if (subrace && subrace.abilityScoreAdjustments) {
+          Object.entries(subrace.abilityScoreAdjustments).forEach(([ability, bonus]) => {
+            bonuses[ability] = (bonuses[ability] || 0) + bonus;
+          });
+          
+          console.log("With subrace bonuses:", bonuses);
         }
-        
-        // Add subrace bonuses if applicable
-        if (characterData.subraceId && race.subraces) {
-            const subrace = race.subraces.find(sr => sr.id === characterData.subraceId);
-            
-            if (subrace) {
-                // Check if subrace has ability score adjustments directly
-                if (subrace.abilityScoreAdjustments) {
-                    Object.entries(subrace.abilityScoreAdjustments).forEach(([ability, bonus]) => {
-                        bonuses[ability.toLowerCase()] = (bonuses[ability.toLowerCase()] || 0) + bonus;
-                    });
-                    
-                    console.log("With subrace bonuses:", bonuses);
-                }
-                // Try to parse from traits if direct adjustment not found
-                else if (subrace.traits) {
-                    const abilityTrait = subrace.traits.find(trait => 
-                        trait.name && trait.name.includes("Ability Score Increase"));
-                    
-                    if (abilityTrait && abilityTrait.description) {
-                        const desc = abilityTrait.description.toLowerCase();
-                        
-                        if (desc.includes("strength")) bonuses.strength = (bonuses.strength || 0) + 1;
-                        if (desc.includes("dexterity")) bonuses.dexterity = (bonuses.dexterity || 0) + 1;
-                        if (desc.includes("constitution")) bonuses.constitution = (bonuses.constitution || 0) + 1;
-                        if (desc.includes("intelligence")) bonuses.intelligence = (bonuses.intelligence || 0) + 1;
-                        if (desc.includes("wisdom")) bonuses.wisdom = (bonuses.wisdom || 0) + 1;
-                        if (desc.includes("charisma")) bonuses.charisma = (bonuses.charisma || 0) + 1;
-                        
-                        console.log("Parsed subrace bonuses from traits:", bonuses);
-                    }
-                }
-            }
-        }
+      }
     } else {
-        console.log("No complete race data found in characterData");
+      console.log("No race data found in characterData");
     }
     
     setRacialBonuses(bonuses);
     console.log("Final racial bonuses set:", bonuses);
-}, [characterData]);
+  }, [characterData]);
   
-  // Calculate total ability scores including racial bonuses
-  const calculateTotalScores = () => {
-    const totalScores = {};
+  // Update total scores whenever base scores or racial bonuses change
+  useEffect(() => {
+    const newTotals = { ...baseScores };
     
-    Object.entries(abilityScores).forEach(([ability, score]) => {
-      const racialBonus = racialBonuses[ability] || 0;
-      totalScores[ability] = score + racialBonus;
+    Object.keys(newTotals).forEach(ability => {
+      // Apply racial bonus if exists
+      if (racialBonuses[ability]) {
+        newTotals[ability] += racialBonuses[ability];
+      }
     });
     
-    return totalScores;
-  };
+    setTotalScores(newTotals);
+    console.log("Updated total scores:", newTotals);
+  }, [baseScores, racialBonuses]);
   
   // Set validation error with animation
   const setError = (message) => {
@@ -189,8 +156,8 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
     setSelectedMethod(method);
     clearError();
     
-    // Reset ability scores
-    setAbilityScores({
+    // Reset base scores to 8
+    setBaseScores({
       strength: 8,
       dexterity: 8,
       constitution: 8,
@@ -215,7 +182,7 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
   // Handler for point buy method
   const handlePointBuy = (ability, change) => {
     // Get current score
-    const currentScore = abilityScores[ability];
+    const currentScore = baseScores[ability];
     const newScore = currentScore + change;
     
     // Check bounds (8-15)
@@ -250,8 +217,8 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
       }
     }
     
-    // Update score and points
-    setAbilityScores(prev => ({
+    // Update score
+    setBaseScores(prev => ({
       ...prev,
       [ability]: newScore
     }));
@@ -293,12 +260,7 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
       if (animationStep < totalSteps) {
         // During animation, show random values
         const animatedRolls = newDiceRolls.map(diceSet => 
-          diceSet.map(finalValue => {
-            // As animation progresses, increase chance of showing final value
-            return Math.random() > animationStep/totalSteps 
-              ? Math.floor(Math.random() * 6) + 1 
-              : finalValue;
-          })
+          diceSet.map(() => Math.floor(Math.random() * 6) + 1)
         );
         
         setDiceRolls(animatedRolls);
@@ -319,8 +281,8 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
       return;
     }
     
-    // Update ability score
-    setAbilityScores(prev => ({
+    // Update base score
+    setBaseScores(prev => ({
       ...prev,
       [ability]: rollResults[rollIndex]
     }));
@@ -363,8 +325,8 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
     // Check if we have a dragged value
     if (draggedValue === null) return;
     
-    // Update ability score
-    setAbilityScores(prev => ({
+    // Update base score
+    setBaseScores(prev => ({
       ...prev,
       [ability]: draggedValue
     }));
@@ -485,8 +447,8 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
   const applyRecommendedScores = () => {
     const recommended = getRecommendedScores();
     
-    // Apply to ability scores
-    setAbilityScores(recommended);
+    // Apply to base scores
+    setBaseScores(recommended);
     
     // Update method-specific state
     if (selectedMethod === 'pointBuy') {
@@ -564,13 +526,11 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
       return;
     }
     
-    // Calculate final scores with racial bonuses
-    const finalScores = calculateTotalScores();
-    
     // Update character data
     updateCharacterData({
-      abilityScores: abilityScores,
-      finalAbilityScores: finalScores,
+      baseAbilityScores: baseScores,
+      racialBonuses: racialBonuses,
+      finalAbilityScores: totalScores,
       scoreMethod: selectedMethod
     });
     
@@ -595,90 +555,89 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
   }, [selectedMethod, pointsRemaining, selectedRolls, usedArrayValues]);
   
   // Render ability card
-  // Update the renderAbilityCard function to better display racial bonuses
-    const renderAbilityCard = (ability) => {
-        const abilityName = ability.charAt(0).toUpperCase() + ability.slice(1);
-        const score = abilityScores[ability];
-        const racialBonus = racialBonuses[ability] || 0;
-        const totalScore = score + racialBonus;
-        const modifierText = getModifierText(totalScore);
+  const renderAbilityCard = (ability) => {
+    const abilityName = ability.charAt(0).toUpperCase() + ability.slice(1);
+    const baseScore = baseScores[ability];
+    const racialBonus = racialBonuses[ability] || 0;
+    const totalScore = totalScores[ability];
+    const modifierText = getModifierText(totalScore);
+    
+    return (
+      <div 
+        className={`ability-card ${racialBonus > 0 ? 'has-racial-bonus' : ''}`}
+        onDragOver={(e) => selectedMethod === 'standardArray' ? handleDragOver(e, ability) : null}
+        onDragLeave={(e) => selectedMethod === 'standardArray' ? handleDragLeave(e) : null}
+        onDrop={(e) => selectedMethod === 'standardArray' ? handleDrop(e, ability) : null}
+      >
+        <div className="ability-name">{abilityName}</div>
+        <div className="ability-description">{ABILITY_DESCRIPTIONS[ability]}</div>
         
-        return (
-        <div 
-            className={`ability-card ${racialBonus > 0 ? 'has-racial-bonus' : ''}`}
-            onDragOver={(e) => selectedMethod === 'standardArray' ? handleDragOver(e, ability) : null}
-            onDragLeave={(e) => selectedMethod === 'standardArray' ? handleDragLeave(e) : null}
-            onDrop={(e) => selectedMethod === 'standardArray' ? handleDrop(e, ability) : null}
-        >
-            <div className="ability-name">{abilityName}</div>
-            <div className="ability-description">{ABILITY_DESCRIPTIONS[ability]}</div>
-            
-            <div className="ability-score-display">
-            <div className="ability-controls">
-                {selectedMethod === 'pointBuy' && (
-                <button 
-                    type="button"
-                    className="ability-btn"
-                    onClick={() => handlePointBuy(ability, -1)}
-                    disabled={score <= 8}
-                >
-                    <i className="bi bi-dash"></i>
-                </button>
-                )}
-                
-                <div className={`ability-score ${getScoreClass(totalScore)}`}>
-                <span className="base-score">{score}</span>
-                {racialBonus > 0 && (
-                    <span className="racial-bonus-indicator">+{racialBonus}</span>
-                )}
-                <span className={`ability-modifier ${getModifierClass(totalScore)}`}>
-                    {modifierText}
-                </span>
-                </div>
-                
-                {selectedMethod === 'pointBuy' && (
-                <button 
-                    type="button"
-                    className="ability-btn"
-                    onClick={() => handlePointBuy(ability, 1)}
-                    disabled={score >= 15 || pointsRemaining < (score >= 13 ? 2 : 1)}
-                >
-                    <i className="bi bi-plus"></i>
-                </button>
-                )}
-            </div>
-            </div>
-            
-            {racialBonus > 0 && (
-            <div className="racial-bonus-tag">
-                +{racialBonus} from {characterData.raceName}
-                {characterData.subraceName && ` (${characterData.subraceName})`}
-            </div>
+        <div className="ability-score-display">
+          <div className="ability-controls">
+            {selectedMethod === 'pointBuy' && (
+              <button 
+                type="button"
+                className="ability-btn"
+                onClick={() => handlePointBuy(ability, -1)}
+                disabled={baseScore <= 8}
+              >
+                <i className="bi bi-dash"></i>
+              </button>
             )}
             
-            {selectedMethod === 'diceRoll' && rollResults.length > 0 && (
-            <div className="die-selection">
-                <select 
-                className="die-select form-select bg-dark text-light mt-2"
-                onChange={(e) => handleSelectRoll(parseInt(e.target.value), ability)}
-                value=""
-                disabled={selectedRolls.includes(rollResults.indexOf(score))}
-                >
-                <option value="" disabled>{selectedRolls.includes(rollResults.indexOf(score)) ? 
-                    `Roll ${rollResults.indexOf(score) + 1}: ${score}` : 
-                    'Select a roll'}</option>
-                {rollResults.map((roll, idx) => (
-                    !selectedRolls.includes(idx) && 
-                    <option key={idx} value={idx}>
-                    Roll {idx + 1}: {roll}
-                    </option>
-                ))}
-                </select>
+            <div className={`ability-score ${getScoreClass(totalScore)}`}>
+              <span className="base-score">{totalScore}</span>
+              {racialBonus > 0 && (
+                <span className="racial-bonus-indicator">+{racialBonus}</span>
+              )}
+              <span className={`ability-modifier ${getModifierClass(totalScore)}`}>
+                {modifierText}
+              </span>
             </div>
+            
+            {selectedMethod === 'pointBuy' && (
+              <button 
+                type="button"
+                className="ability-btn"
+                onClick={() => handlePointBuy(ability, 1)}
+                disabled={baseScore >= 15 || pointsRemaining < (baseScore >= 13 ? 2 : 1)}
+              >
+                <i className="bi bi-plus"></i>
+              </button>
             )}
+          </div>
         </div>
-        );
-    };
+        
+        {racialBonus > 0 && (
+          <div className="racial-bonus-tag">
+            +{racialBonus} from {characterData.raceName}
+            {characterData.subraceName && ` (${characterData.subraceName})`}
+          </div>
+        )}
+        
+        {selectedMethod === 'diceRoll' && rollResults.length > 0 && (
+          <div className="die-selection">
+            <select 
+              className="die-select form-select bg-dark text-light mt-2"
+              onChange={(e) => handleSelectRoll(parseInt(e.target.value), ability)}
+              value=""
+              disabled={selectedRolls.includes(rollResults.indexOf(baseScore))}
+            >
+              <option value="" disabled>{selectedRolls.includes(rollResults.indexOf(baseScore)) ? 
+                `Roll ${rollResults.indexOf(baseScore) + 1}: ${baseScore}` : 
+                'Select a roll'}</option>
+              {rollResults.map((roll, idx) => (
+                !selectedRolls.includes(idx) && 
+                <option key={idx} value={idx}>
+                  Roll {idx + 1}: {roll}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+    );
+  };
   
   return (
     <div className="step5-outer-container">
