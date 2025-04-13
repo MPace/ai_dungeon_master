@@ -97,6 +97,7 @@ function Step3_ClassSelector({ characterData, updateCharacterData, nextStep, pre
         updateCharacterData({
             classId: selectedClassDetails.id,
             className: selectedClassDetails.name,
+            classData: selectedClassDetails,
             // Reset subsequent steps if necessary
             raceId: null,
             raceName: null,

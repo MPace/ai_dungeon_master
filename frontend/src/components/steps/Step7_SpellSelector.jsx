@@ -23,9 +23,14 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
 
     // Determine if the class can cast spells
     const hasSpellcasting = useCallback(() => {
+        if (characterData.classData && characterData.classData.spellcasting) {
+            return true;
+        }
+        
+        // Fallback to list of known spellcasting classes
         const spellcastingClasses = ['wizard', 'sorcerer', 'bard', 'cleric', 'druid', 'paladin', 'ranger', 'warlock'];
-        return spellcastingClasses.includes(characterData.classId);
-    }, [characterData.classId]);
+        return spellcastingClasses.includes(characterData.classId.toLowerCase());
+    }, [characterData.classId, characterData.classData]);
 
     // Determine if character has racial spellcasting (e.g., High Elf cantrip)
     const hasRacialSpellcasting = useCallback(() => {
@@ -45,7 +50,9 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
             setIsLoading(false);
             return;
         }
-    
+        
+        console.log("Character data for spellcasting:", characterData);
+        
         // Extract spell counts from the spellcasting progression
         if (characterData.classData && characterData.classData.spellcasting) {
             const spellcasting = characterData.classData.spellcasting;
@@ -53,16 +60,17 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
             
             if (level1Data) {
                 // Set cantrips count
+                console.log("Level 1 spell data found:", level1Data);
                 setMaxCantrips(level1Data.cantrips_known || 0);
                 
                 // Set spells count based on spellcasting type
                 if (spellcasting.spellcasting_type === 'known') {
                     // Known spellcasters like bards and sorcerers have a fixed number
                     setMaxSpells(level1Data.spells_known || 0);
+                    console.log(`Known spellcaster: ${maxSpells} spells`);
                 } 
                 else if (spellcasting.spellcasting_type === 'prepared') {
                     // Prepared spellcasters like clerics and druids use an ability modifier formula
-                    // We need to calculate this based on their ability scores
                     const abilityName = spellcasting.ability.toLowerCase();
                     const abilityScore = characterData.finalAbilityScores?.[abilityName] || 10;
                     const abilityModifier = Math.floor((abilityScore - 10) / 2);
@@ -70,26 +78,22 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
                     // At level 1, they can prepare ability modifier + level (minimum 1)
                     const preparedCount = Math.max(1, abilityModifier + 1);
                     setMaxSpells(preparedCount);
-                    
-                    // If they have domain/circle spells that are always prepared,
-                    // we could show those separately or add them automatically
-                    
-                    // Check for domain spells if this is a cleric
-                    if (characterData.classId === 'cleric' && characterData.domainId) {
-                        const domainSpells = spellcasting.subclass_spells?.[characterData.domainId]?.level1 || [];
-                        console.log(`Domain spells for ${characterData.domainId}: ${domainSpells.join(', ')}`);
-                        // We could automatically select these or show them separately
-                    }
+                    console.log(`Prepared spellcaster: ${abilityName} mod (${abilityModifier}) + 1 = ${preparedCount} spells`);
                 }
+            } else {
+                console.log("No level 1 data found in spellcasting progression");
             }
+        } else {
+            console.log("No spellcasting data found in class data");
         }
         
         // For racial spellcasting
         if (hasRacialSpellcasting() && !hasSpellcasting()) {
             setMaxCantrips(1);
             setShowExtraSpells(true);
+            console.log("Racial spellcasting detected: 1 cantrip available");
         }
-    }, [characterData.classData, characterData.finalAbilityScores, characterData.domainId, hasSpellcasting, hasRacialSpellcasting]);
+    }, [characterData.classData, characterData.finalAbilityScores, hasSpellcasting, hasRacialSpellcasting]);
 
     // Fetch spells data
     useEffect(() => {
@@ -141,18 +145,25 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
                                 return;
                             }
                             
+                            // Normalize the class ID and spell classes for case-insensitive comparison
+                            const normalizedClassId = characterData.classId.toLowerCase();
+                            const normalizedSpellClasses = spell.classes.map(c => c.toLowerCase());
+                            
                             // For regular spellcasting class
-                            if (hasSpellcasting() && spell.classes.includes(characterData.classId)) {
+                            if (hasSpellcasting() && normalizedSpellClasses.includes(normalizedClassId)) {
                                 if (spell.level === 0) {
                                     classSpells.cantrips.push(spell);
+                                    console.log(`Added cantrip for ${characterData.classId}: ${spell.name}`);
                                 } else if (spell.level === 1) {
                                     classSpells.level1.push(spell);
+                                    console.log(`Added 1st-level spell for ${characterData.classId}: ${spell.name}`);
                                 }
                             }
                             // For racial spellcasting (High Elf), add wizard cantrips
                             else if (hasRacialSpellcasting() && !hasSpellcasting() && spell.level === 0) {
-                                if (spell.classes.includes('wizard')) {
+                                if (normalizedSpellClasses.includes('wizard')) {
                                     classSpells.cantrips.push(spell);
+                                    console.log(`Added racial cantrip: ${spell.name}`);
                                 }
                             }
                         });
