@@ -1,12 +1,10 @@
-// File: frontend/src/components/steps/Step6_ClassFeatures.jsx
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './Step6_ClassFeatures.css';
 
 function Step6_ClassFeatures({ characterData, updateCharacterData, nextStep, prevStep }) {
-    const [classFeatures, setClassFeatures] = useState([]);
-    const [requiredFeatures, setRequiredFeatures] = useState([]);
-    const [optionalFeatures, setOptionalFeatures] = useState([]);
+    const [level1Features, setLevel1Features] = useState([]);
+    const [choiceFeatures, setChoiceFeatures] = useState([]);
+    const [standardFeatures, setStandardFeatures] = useState([]);
     const [selectedChoices, setSelectedChoices] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -26,7 +24,7 @@ function Step6_ClassFeatures({ characterData, updateCharacterData, nextStep, pre
         setIsLoading(true);
         setError(null);
         
-        // Fetch data from the API using the world and class ID
+        // Fetch data from the API using the world ID
         fetch(`/characters/api/creation-data/${characterData.worldId}`)
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -40,30 +38,31 @@ function Step6_ClassFeatures({ characterData, updateCharacterData, nextStep, pre
                     const selectedClass = data.data.classes.find(c => c.id === characterData.classId);
                     
                     if (selectedClass && selectedClass.features && selectedClass.features.level1) {
-                        console.log("Class features found:", selectedClass.features.level1);
+                        console.log("Level 1 features found:", selectedClass.features.level1);
                         
-                        // Set class features
-                        setClassFeatures(selectedClass.features.level1);
+                        // Set level 1 features
+                        setLevel1Features(selectedClass.features.level1);
                         
-                        // Split features into required and optional
-                        if (selectedClass.features.level1.required) {
-                            setRequiredFeatures(selectedClass.features.level1.required);
-                        }
+                        // Separate standard features from choice features
+                        const standard = [];
+                        const choices = [];
                         
-                        if (selectedClass.features.level1.optional) {
-                            setOptionalFeatures(selectedClass.features.level1.optional);
-                        }
+                        selectedClass.features.level1.forEach(feature => {
+                            if (feature.type === 'choice') {
+                                choices.push(feature);
+                                
+                                // Initialize selected choice state
+                                setSelectedChoices(prev => ({
+                                    ...prev,
+                                    [feature.name]: null
+                                }));
+                            } else {
+                                standard.push(feature);
+                            }
+                        });
                         
-                        // Initialize selected choices with empty values
-                        const initialChoices = {};
-                        if (selectedClass.features.level1.optional) {
-                            selectedClass.features.level1.optional.forEach(feature => {
-                                if (feature.type === 'choice') {
-                                    initialChoices[feature.id] = null;
-                                }
-                            });
-                        }
-                        setSelectedChoices(initialChoices);
+                        setStandardFeatures(standard);
+                        setChoiceFeatures(choices);
                         
                         setIsLoading(false);
                     } else {
@@ -81,10 +80,10 @@ function Step6_ClassFeatures({ characterData, updateCharacterData, nextStep, pre
     }, [characterData.classId, characterData.worldId]);
 
     // Handler for selecting a choice
-    const handleChoiceSelect = (featureId, choiceId) => {
+    const handleChoiceSelect = (featureName, choiceId) => {
         setSelectedChoices(prev => ({
             ...prev,
-            [featureId]: choiceId
+            [featureName]: choiceId
         }));
     };
 
@@ -118,8 +117,8 @@ function Step6_ClassFeatures({ characterData, updateCharacterData, nextStep, pre
     const validateSelections = () => {
         // Check if all required choices are made
         const missingChoices = Object.entries(selectedChoices)
-            .filter(([featureId, choiceId]) => choiceId === null)
-            .map(([featureId]) => featureId);
+            .filter(([featureName, choiceId]) => choiceId === null)
+            .map(([featureName]) => featureName);
         
         if (missingChoices.length > 0) {
             return {
@@ -143,8 +142,8 @@ function Step6_ClassFeatures({ characterData, updateCharacterData, nextStep, pre
         // Update character data with selected features
         updateCharacterData({
             classFeatures: {
-                required: requiredFeatures.map(f => f.id),
-                optional: selectedChoices
+                standard: standardFeatures.map(f => f.name),
+                choices: selectedChoices
             }
         });
         
@@ -178,8 +177,8 @@ function Step6_ClassFeatures({ characterData, updateCharacterData, nextStep, pre
             {/* Title */}
             <h2 className="step6-title">{characterData.className} Features</h2>
             
-            {/* Required Features Section */}
-            {requiredFeatures.length > 0 && (
+            {/* Standard Features Section */}
+            {standardFeatures.length > 0 && (
                 <div className="features-section">
                     <h3 className="section-heading">Class Features</h3>
                     <p className="section-description">
@@ -187,7 +186,7 @@ function Step6_ClassFeatures({ characterData, updateCharacterData, nextStep, pre
                     </p>
                     
                     <div className="feature-grid">
-                        {requiredFeatures.map((feature, index) => (
+                        {standardFeatures.map((feature, index) => (
                             <div key={index} className="feature-card required-feature">
                                 <div className="feature-header">
                                     <h4 className="feature-name">{feature.name}</h4>
@@ -211,9 +210,9 @@ function Step6_ClassFeatures({ characterData, updateCharacterData, nextStep, pre
                                     </button>
                                 )}
                                 
-                                {feature.usageLimit && (
+                                {feature.uses && (
                                     <div className="feature-usage">
-                                        <i className="bi bi-clock"></i> {feature.usageLimit}
+                                        <i className="bi bi-clock"></i> {feature.uses} uses per rest
                                     </div>
                                 )}
                                 
@@ -228,62 +227,61 @@ function Step6_ClassFeatures({ characterData, updateCharacterData, nextStep, pre
                 </div>
             )}
             
-            {/* Optional Features Section */}
-            {optionalFeatures.length > 0 && (
+            {/* Choice Features Section */}
+            {choiceFeatures.length > 0 && (
                 <div className="features-section">
                     <h3 className="section-heading">Choose Your Features</h3>
                     <p className="section-description">
                         Select options for your class features:
                     </p>
                     
-                    {optionalFeatures.map((featureGroup, groupIndex) => (
+                    {choiceFeatures.map((feature, groupIndex) => (
                         <div key={groupIndex} className="feature-group">
-                            <h4 className="feature-group-name">{featureGroup.name}</h4>
-                            <p className="feature-group-description">{featureGroup.description}</p>
+                            <h4 className="feature-group-name">{feature.name}</h4>
+                            <p className="feature-group-description">{feature.description}</p>
                             
-                            {featureGroup.type === 'choice' && featureGroup.choices && (
-                                <div className={`choice-grid ${!selectedChoices[featureGroup.id] ? 'needs-selection' : ''}`}>
-                                    {featureGroup.choices.map((choice, choiceIndex) => (
-                                        <div 
-                                            key={choiceIndex} 
-                                            className={`choice-card ${selectedChoices[featureGroup.id] === choice.id ? 'selected' : ''}`}
-                                            onClick={() => handleChoiceSelect(featureGroup.id, choice.id)}
-                                        >
-                                            <div className="choice-header">
-                                                <h5 className="choice-name">{choice.name}</h5>
-                                            </div>
-                                            
-                                            <p className="choice-description">
-                                                {choice.description.length > 120 ? 
-                                                    `${choice.description.substring(0, 120)}...` : 
-                                                    choice.description}
-                                            </p>
-                                            
-                                            {choice.description.length > 120 && (
-                                                <button 
-                                                    className="details-button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleShowDetails(choice);
-                                                    }}
-                                                >
-                                                    See Details
-                                                </button>
-                                            )}
-                                            
-                                            {choice.benefit && (
-                                                <div className="choice-benefit">
-                                                    <i className="bi bi-star-fill"></i> {choice.benefit}
-                                                </div>
-                                            )}
-                                            
-                                            <div className="selected-indicator">
-                                                <i className="bi bi-check-circle-fill"></i> Selected
-                                            </div>
+                            <div className={`choice-grid ${!selectedChoices[feature.name] ? 'needs-selection' : ''}`}>
+                                {feature.options && feature.options.map((choice, choiceIndex) => (
+                                    <div 
+                                        key={choiceIndex} 
+                                        className={`choice-card ${selectedChoices[feature.name] === choice.id ? 'selected' : ''}`}
+                                        onClick={() => handleChoiceSelect(feature.name, choice.id)}
+                                    >
+                                        <div className="choice-header">
+                                            <h5 className="choice-name">{choice.name}</h5>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
+                                        
+                                        <p className="choice-description">
+                                            {choice.description.length > 120 ? 
+                                                `${choice.description.substring(0, 120)}...` : 
+                                                choice.description}
+                                        </p>
+                                        
+                                        {choice.description.length > 120 && (
+                                            <button 
+                                                className="details-button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleShowDetails(choice);
+                                                }}
+                                            >
+                                                See Details
+                                            </button>
+                                        )}
+                                        
+                                        {/* Render subfeatures if available */}
+                                        {choice.features && choice.features.length > 0 && (
+                                            <div className="choice-benefit">
+                                                <i className="bi bi-star-fill"></i> Grants: {choice.features[0].name}
+                                            </div>
+                                        )}
+                                        
+                                        <div className="selected-indicator">
+                                            <i className="bi bi-check-circle-fill"></i> Selected
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -311,10 +309,10 @@ function Step6_ClassFeatures({ characterData, updateCharacterData, nextStep, pre
                         <div className="feature-details-content">
                             <p className="feature-details-description">{showFeatureDetails.description}</p>
                             
-                            {showFeatureDetails.usageLimit && (
+                            {showFeatureDetails.uses && (
                                 <div className="feature-details-usage">
                                     <h4>Usage</h4>
-                                    <p>{showFeatureDetails.usageLimit}</p>
+                                    <p>{showFeatureDetails.uses} uses per rest</p>
                                 </div>
                             )}
                             
@@ -325,10 +323,16 @@ function Step6_ClassFeatures({ characterData, updateCharacterData, nextStep, pre
                                 </div>
                             )}
                             
-                            {showFeatureDetails.benefit && (
+                            {/* Display subfeatures if available */}
+                            {showFeatureDetails.features && showFeatureDetails.features.length > 0 && (
                                 <div className="feature-details-benefit">
-                                    <h4>Benefit</h4>
-                                    <p>{showFeatureDetails.benefit}</p>
+                                    <h4>Grants</h4>
+                                    {showFeatureDetails.features.map((subfeature, idx) => (
+                                        <div key={idx}>
+                                            <h5>{subfeature.name}</h5>
+                                            <p>{subfeature.description}</p>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
@@ -347,7 +351,7 @@ function Step6_ClassFeatures({ characterData, updateCharacterData, nextStep, pre
                     onClick={handleContinue}
                     disabled={!validateSelections().valid}
                 >
-                    Continue to Spells <i className="bi bi-arrow-right"></i>
+                    Continue to Skills <i className="bi bi-arrow-right"></i>
                 </button>
             </div>
         </div>
