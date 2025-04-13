@@ -1,0 +1,113 @@
+# Equipment Packs
+burglar_pack:
+  name: Burglar's Pack
+  cost: 16 gp
+  contents:
+    - backpack
+    - ball_bearings: 1000
+    - bell: 1
+    - candles: 5
+    - crowbar: 1
+    - hammer: 1
+    - hooded_lantern: 1
+    - oil_flask: 2
+    - rations: 5
+    - tinderbox: 1
+    - waterskin: 1
+    - hempen_rope: 1
+  description: |
+    Includes tools useful for breaking and entering.
+
+diplomat_pack:
+  name: Diplomat's Pack
+  cost: 39 gp
+  contents:
+    - chest: 1
+    - case_for_maps_or_scrolls: 2
+    - fine_clothes: 1
+    - ink_bottle: 1
+    - ink_pen: 1
+    - lamp: 1
+    - oil_flask: 2
+    - paper: 5
+    - perfume_vial: 1
+    - sealing_wax: 1
+    - soap: 1
+  description: |
+    Includes items for writing, correspondence, and representing authority or status during formal negotiations.
+
+dungeoneer_pack:
+  name: Dungeoneer's Pack
+  cost: 12 gp
+  contents:
+    - backpack
+    - crowbar: 1
+    - hammer: 1
+    - pitons: 10
+    - torches: 10
+    - tinderbox: 1
+    - rations: 10
+    - waterskin: 1
+    - hempen_rope: 1
+  description: |
+    Includes essential items for underground exploration.
+
+entertainer_pack:
+  name: Entertainer's Pack
+  cost: 40 gp
+  contents:
+    - backpack
+    - bedroll: 1
+    - costumes: 2
+    - candles: 5
+    - rations: 5
+    - waterskin: 1
+    - disguise_kit: 1
+  description: |
+    Includes tools for performing and maintaining an entertainer’s appearance on the road.
+
+explorer_pack:
+  name: Explorer's Pack
+  cost: 10 gp
+  contents:
+    - backpack
+    - bedroll: 1
+    - mess_kit: 1
+    - tinderbox: 1
+    - torches: 10
+    - rations: 10
+    - waterskin: 1
+    - hempen_rope: 1
+  description: |
+    Includes essential supplies for wilderness expeditions.
+
+priest_pack:
+  name: Priest's Pack
+  cost: 19 gp
+  contents:
+    - backpack
+    - blanket: 1
+    - candles: 10
+    - tinderbox: 1
+    - alms_box: 1
+    - blocks_of_incense: 2
+    - censer: 1
+    - vestments: 1
+    - rations: 2
+    - waterskin: 1
+  description: |
+    Includes items needed for religious ceremonies.
+
+scholar_pack:
+  name: Scholar's Pack
+  cost: 40 gp
+  contents:
+    - backpack
+    - book_of_lore: 1
+    - ink_bottle: 1
+    - ink_pen: 1
+    - parchment: 10
+    - little_bag_of_sand: 1
+    - small_knife: 1
+  description: |
+    Includes tools for study and academic work.

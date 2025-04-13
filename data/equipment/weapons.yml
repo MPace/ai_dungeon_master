@@ -1,0 +1,397 @@
+# Weapons Equipment
+simple_melee:
+  club:
+    name: Club
+    cost: 1 sp
+    weight: 2 lb
+    damage: 1d4
+    damage_type: bludgeoning
+    properties: [light]
+    description: |
+      A simple wooden club.
+
+  dagger:
+    name: Dagger
+    cost: 2 gp
+    weight: 1 lb
+    damage: 1d4
+    damage_type: piercing
+    properties: [finesse, light, thrown]
+    range: 20/60
+    description: |
+      A small, easily concealed blade that can be used for stabbing or throwing.
+
+  quarterstaff:
+    name: Quarterstaff
+    cost: 2 sp
+    weight: 4 lb
+    damage: 1d6
+    damage_type: bludgeoning
+    properties: [versatile]
+    versatile_damage: 1d8
+    description: |
+      A wooden staff that can be wielded with one or two hands.
+    
+  greatclub:
+    name: Greatclub
+    cost: 2 sp
+    weight: 10 lb
+    damage: 1d8
+    damage_type: bludgeoning
+    properties: [two-handed]
+    description: |
+      A large, heavy club made from a solid piece of wood, typically reinforced with metal bands or spikes.
+
+  handaxe:
+    name: Handaxe
+    cost: 5 gp
+    weight: 2 lb
+    damage: 1d6
+    damage_type: slashing
+    properties: [light, thrown]
+    range: 20/60
+    description: |
+      A small axe that can be wielded in one hand or thrown at enemies.
+
+  javelin:
+    name: Javelin
+    cost: 5 sp
+    weight: 2 lb
+    damage: 1d6
+    damage_type: piercing
+    properties: [thrown]
+    range: 30/120
+    description: |
+      A light spear designed primarily for throwing, but can also be used in melee.
+
+  light_hammer:
+    name: Light Hammer
+    cost: 2 gp
+    weight: 2 lb
+    damage: 1d4
+    damage_type: bludgeoning
+    properties: [light, thrown]
+    range: 20/60
+    description: |
+      A small hammer used for quick strikes or throwing.
+
+  mace:
+    name: Mace
+    cost: 5 gp
+    weight: 4 lb
+    damage: 1d6
+    damage_type: bludgeoning
+    properties: []
+    description: |
+      A sturdy club with a heavy head, often flanged or spiked for dealing crushing damage.
+
+  sickle:
+    name: Sickle
+    cost: 1 gp
+    weight: 2 lb
+    damage: 1d4
+    damage_type: slashing
+    properties: [light]
+    description: |
+      A curved blade traditionally used for harvesting, repurposed for close combat.
+
+  spear:
+    name: Spear
+    cost: 1 gp
+    weight: 3 lb
+    damage: 1d6
+    damage_type: piercing
+    properties: [thrown, versatile]
+    range: 20/60
+    versatile_damage: 1d8
+    description: |
+      A versatile pole weapon that can be thrown or used with one or two hands in melee.
+
+simple_ranged:
+  shortbow:
+    name: Shortbow
+    cost: 25 gp
+    weight: 2 lb
+    damage: 1d6
+    damage_type: piercing
+    properties: [ammunition, two-handed]
+    range: 80/320
+    description: |
+      A small bow optimized for use on foot or horseback.
+
+  light_crossbow:
+    name: Light Crossbow
+    cost: 25 gp
+    weight: 5 lb
+    damage: 1d8
+    damage_type: piercing
+    properties: [ammunition, loading, two-handed]
+    range: 80/320
+    description: |
+      A small crossbow that fires bolts and can be loaded while holding the weapon with one hand.
+
+  dart:
+    name: Dart
+    cost: 5 cp
+    weight: 0.25 lb
+    damage: 1d4
+    damage_type: piercing
+    properties: [finesse, thrown]
+    range: 20/60
+    description: |
+      A small missile weapon, easily concealed and thrown with precision.
+
+  sling:
+    name: Sling
+    cost: 1 sp
+    weight: 0 lb
+    damage: 1d4
+    damage_type: bludgeoning
+    properties: [ammunition]
+    range: 30/120
+    description: |
+      A simple leather strap used to hurl small stones with surprising force.
+
+
+martial_melee:
+  longsword:
+    name: Longsword
+    cost: 15 gp
+    weight: 3 lb
+    damage: 1d8
+    damage_type: slashing
+    properties: [versatile]
+    versatile_damage: 1d10
+    description: |
+      A versatile and balanced weapon, favored by knights and warriors.
+
+  rapier:
+    name: Rapier
+    cost: 25 gp
+    weight: 2 lb
+    damage: 1d8
+    damage_type: piercing
+    properties: [finesse]
+    description: |
+      A slender, sharply pointed sword optimized for thrusting.
+
+  greatsword:
+    name: Greatsword
+    cost: 50 gp
+    weight: 6 lb
+    damage: 2d6
+    damage_type: slashing
+    properties: [heavy, two-handed]
+    description: |
+      A large, two-handed sword with a long hilt and a double-edged blade.
+
+  battleaxe:
+    name: Battleaxe
+    cost: 10 gp
+    weight: 4 lb
+    damage: 1d8
+    damage_type: slashing
+    properties: [versatile]
+    versatile_damage: 1d10
+    description: |
+      A sturdy axe favored in close-quarters combat, effective when wielded in one or two hands.
+
+  flail:
+    name: Flail
+    cost: 10 gp
+    weight: 2 lb
+    damage: 1d8
+    damage_type: bludgeoning
+    properties: []
+    description: |
+      A spiked head attached to a handle by a chain, designed to strike around shields or armor.
+
+  glaive:
+    name: Glaive
+    cost: 20 gp
+    weight: 6 lb
+    damage: 1d10
+    damage_type: slashing
+    properties: [heavy, reach, two-handed]
+    description: |
+      A polearm with a curved blade on the end, used to strike from a distance.
+
+  greataxe:
+    name: Greataxe
+    cost: 30 gp
+    weight: 7 lb
+    damage: 1d12
+    damage_type: slashing
+    properties: [heavy, two-handed]
+    description: |
+      A massive axe favored by warriors who rely on raw strength and devastating power.
+
+  halberd:
+    name: Halberd
+    cost: 20 gp
+    weight: 6 lb
+    damage: 1d10
+    damage_type: slashing
+    properties: [heavy, reach, two-handed]
+    description: |
+      A pole weapon with an axe blade topped with a spike and a hook for tripping or pulling riders.
+
+  lance:
+    name: Lance
+    cost: 10 gp
+    weight: 6 lb
+    damage: 1d12
+    damage_type: piercing
+    properties: [reach, special]
+    description: |
+      Designed for mounted combat, this long weapon is awkward on foot but deadly when charging.
+
+  maul:
+    name: Maul
+    cost: 10 gp
+    weight: 10 lb
+    damage: 2d6
+    damage_type: bludgeoning
+    properties: [heavy, two-handed]
+    description: |
+      A huge, two-handed hammer designed to smash armor and bones with brutal force.
+
+  morningstar:
+    name: Morningstar
+    cost: 15 gp
+    weight: 4 lb
+    damage: 1d8
+    damage_type: piercing
+    properties: []
+    description: |
+      A brutal spiked mace combining bludgeoning and piercing power.
+
+  pike:
+    name: Pike
+    cost: 5 gp
+    weight: 18 lb
+    damage: 1d10
+    damage_type: piercing
+    properties: [heavy, reach, two-handed]
+    description: |
+      A very long spear best used to keep foes at bay or repel cavalry.
+
+  scimitar:
+    name: Scimitar
+    cost: 25 gp
+    weight: 3 lb
+    damage: 1d6
+    damage_type: slashing
+    properties: [finesse, light]
+    description: |
+      A curved, single-edged blade perfect for quick slashes and agile combatants.
+
+  shortsword:
+    name: Shortsword
+    cost: 10 gp
+    weight: 2 lb
+    damage: 1d6
+    damage_type: piercing
+    properties: [finesse, light]
+    description: |
+      A light and quick blade commonly used by rogues and duelists.
+
+  trident:
+    name: Trident
+    cost: 5 gp
+    weight: 4 lb
+    damage: 1d6
+    damage_type: piercing
+    properties: [thrown, versatile]
+    range: 20/60
+    versatile_damage: 1d8
+    description: |
+      A three-pronged spear used both in melee and for throwing, often associated with aquatic warriors.
+
+  war_pick:
+    name: War Pick
+    cost: 5 gp
+    weight: 2 lb
+    damage: 1d8
+    damage_type: piercing
+    properties: []
+    description: |
+      A weapon with a steel spike used to puncture armor or crush helmets.
+
+  warhammer:
+    name: Warhammer
+    cost: 15 gp
+    weight: 2 lb
+    damage: 1d8
+    damage_type: bludgeoning
+    properties: [versatile]
+    versatile_damage: 1d10
+    description: |
+      A balanced hammer used by warriors and clerics alike to smash enemies in battle.
+
+  whip:
+    name: Whip
+    cost: 2 gp
+    weight: 3 lb
+    damage: 1d4
+    damage_type: slashing
+    properties: [finesse, reach]
+    description: |
+      A long, flexible weapon useful for disarming or entangling foes at a distance.
+    
+
+martial_ranged:
+  longbow:
+    name: Longbow
+    cost: 50 gp
+    weight: 2 lb
+    damage: 1d8
+    damage_type: piercing
+    properties: [ammunition, heavy, two-handed]
+    range: 150/600
+    description: |
+      A tall bow that requires significant strength to use effectively.
+
+  hand_crossbow:
+    name: Hand Crossbow
+    cost: 75 gp
+    weight: 3 lb
+    damage: 1d6
+    damage_type: piercing
+    properties: [ammunition, light, loading]
+    range: 30/120
+    description: |
+      A small crossbow that can be used with one hand.
+
+  blowgun:
+    name: Blowgun
+    cost: 10 gp
+    weight: 1 lb
+    damage: 1
+    damage_type: piercing
+    properties: [ammunition, loading]
+    range: 25/100
+    description: |
+      A simple tube used to silently fire tiny darts. Effective for stealth and delivering poisons.
+
+  heavy_crossbow:
+    name: Heavy Crossbow
+    cost: 50 gp
+    weight: 18 lb
+    damage: 1d10
+    damage_type: piercing
+    properties: [ammunition, heavy, loading, two-handed]
+    range: 100/400
+    description: |
+      A powerful crossbow capable of piercing armor at range, but slow to reload.
+
+  net:
+    name: Net
+    cost: 1 gp
+    weight: 3 lb
+    damage: null
+    damage_type: null
+    properties: [special, thrown]
+    range: 5/15
+    description: |
+      A mesh of rope used to entangle creatures. A Large or smaller creature hit by a net is restrained until freed. The net has no effect on creatures that are formless or Huge or larger.

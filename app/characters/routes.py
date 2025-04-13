@@ -580,7 +580,13 @@ def get_world_data(world_id):
             "races": [],
             "backgrounds": [],
             "spells": [], 
-            "proficiencies": {"skills": {}}
+            "proficiencies": {"skills": {}},
+            "equipment": {
+                "armor": {},
+                "weapons": {},
+                "packs": {},
+                "gear": {}
+            }
         }
 
         # Load Classes
@@ -687,7 +693,7 @@ def get_world_data(world_id):
             else:
                 current_app.logger.warning(f"Could not find background file for {bg_id}")
 
-             
+        # Load Spells     
         current_app.logger.info(f"Loading spells for world '{world_id}'")
         if os.path.exists(SPELLS_DIR):
             # Process each spell level directory
@@ -705,7 +711,7 @@ def get_world_data(world_id):
         else:
             current_app.logger.warning(f"Spells directory not found at {SPELLS_DIR}")
 
-
+        # Load Proficiencies
         skills_file = os.path.join(PROFICIENCIES_DIR, 'skills.yaml')
         if not os.path.exists(skills_file):
             skills_file = os.path.join(PROFICIENCIES_DIR, 'skills.yml')
@@ -718,6 +724,52 @@ def get_world_data(world_id):
                 current_app.logger.debug(f"Loaded {len(proficiency_data)} skills")
         else:
             current_app.logger.warning(f"Skills file not found at {skills_file}")
+
+        # Load armor
+        armor_file = os.path.join(DATA_DIR, 'equipment', 'armor.yml')
+        if not os.path.exists(armor_file):
+            armor_file = os.path.join(DATA_DIR, 'equipment', 'armor.yaml')
+        
+        if os.path.exists(armor_file):
+            current_app.logger.debug(f"Loading armor file: {armor_file}")
+            armor_data = load_data_from_file(armor_file)
+            if armor_data:
+                world_specific_data["equipment"]["armor"] = armor_data
+        
+        # Load weapons
+        weapons_file = os.path.join(DATA_DIR, 'equipment', 'weapons.yml')
+        if not os.path.exists(weapons_file):
+            weapons_file = os.path.join(DATA_DIR, 'equipment', 'weapons.yaml')
+        
+        if os.path.exists(weapons_file):
+            current_app.logger.debug(f"Loading weapons file: {weapons_file}")
+            weapons_data = load_data_from_file(weapons_file)
+            if weapons_data:
+                world_specific_data["equipment"]["weapons"] = weapons_data
+        
+        # Load packs
+        packs_file = os.path.join(DATA_DIR, 'equipment', 'packs.yml')
+        if not os.path.exists(packs_file):
+            packs_file = os.path.join(DATA_DIR, 'equipment', 'packs.yaml')
+        
+        if os.path.exists(packs_file):
+            current_app.logger.debug(f"Loading packs file: {packs_file}")
+            packs_data = load_data_from_file(packs_file)
+            if packs_data:
+                world_specific_data["equipment"]["packs"] = packs_data
+        
+        # Load gear
+        gear_file = os.path.join(DATA_DIR, 'equipment', 'gear.yml')
+        if not os.path.exists(gear_file):
+            gear_file = os.path.join(DATA_DIR, 'equipment', 'gear.yaml')
+        
+        if os.path.exists(gear_file):
+            current_app.logger.debug(f"Loading gear file: {gear_file}")
+            gear_data = load_data_from_file(gear_file)
+            if gear_data:
+                world_specific_data["equipment"]["gear"] = gear_data
+
+
 
         return jsonify({"success": True, "data": world_specific_data})
 

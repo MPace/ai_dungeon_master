@@ -1,4 +1,1063 @@
-# Basic Spell Information
+# Alarm
+id: alarm
+name: Alarm
+level: 1
+school: abjuration
+casting_time: 1 minute
+range: 30 feet
+components: V, S, M (a tiny bell and a piece of fine silver wire)
+duration: 8 hours
+
+shortDescription: Create a magical alarm to protect an area.
+
+description: |
+  You set an alarm against unwanted intrusion. Choose a door, a window, or an area within range that is no larger than a 20-foot cube. Until the spell ends, an alarm alerts you whenever a Tiny or larger creature touches or enters the warded area.
+
+  When you cast the spell, you can designate creatures that won't set off the alarm. You also choose whether the alarm is mental or audible.
+
+  A mental alarm alerts you with a ping in your mind if you are within 1 mile of the warded area. An audible alarm produces the sound of a hand bell for 10 seconds within 60 feet.
+
+classes: [ranger, wizard]
+
+effects:
+  - area_protection: 20-foot cube
+  - alarm_type: mental or audible
+  - customization: exclude designated creatures
+
+# Animal Friendship
+id: animal_friendship
+name: Animal Friendship
+level: 1
+school: enchantment
+casting_time: 1 action
+range: 30 feet
+components: V, S, M (a morsel of food)
+duration: 24 hours
+
+shortDescription: Convince a beast you mean it no harm.
+
+description: |
+  This spell lets you convince a beast that you mean it no harm. Choose a beast that you can see within range. It must see and hear you. If the beast's Intelligence is 4 or higher, the spell fails.
+
+  Otherwise, the beast must succeed on a Wisdom saving throw or be charmed by you for the spell’s duration. If you or one of your companions harms the target, the spell ends.
+
+classes: [bard, druid, ranger]
+
+effects:
+  - saving_throw: wisdom
+  - condition: charmed
+  - restriction: fails if Intelligence >= 4
+
+# Bane
+id: bane
+name: Bane
+level: 1
+school: enchantment
+casting_time: 1 action
+range: 30 feet
+components: V, S, M (a drop of blood)
+duration: Concentration, up to 1 minute
+
+shortDescription: Up to three creatures subtract 1d4 from attack rolls and saving throws.
+
+description: |
+  Up to three creatures of your choice within range must make Charisma saving throws. Whenever a target that fails this saving throw makes an attack roll or a saving throw before the spell ends, the target must roll a d4 and subtract the number rolled from the attack roll or saving throw.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.
+
+classes: [bard, cleric]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.
+
+effects:
+  - saving_throw: charisma
+  - penalty: -1d4 to attacks and saves
+  - target_limit: 3 (scales with level)
+
+# Bless
+id: bless
+name: Bless
+level: 1
+school: enchantment
+casting_time: 1 action
+range: 30 feet
+components: V, S, M (a sprinkling of holy water)
+duration: Concentration, up to 1 minute
+
+shortDescription: Up to three creatures add 1d4 to attack rolls and saving throws.
+
+description: |
+  You bless up to three creatures of your choice within range. Whenever a target makes an attack roll or a saving throw before the spell ends, the target can roll a d4 and add the number rolled to the attack roll or saving throw.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.
+
+classes: [cleric, paladin]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.
+
+effects:
+  - bonus: +1d4 to attacks and saves
+  - target_limit: 3 (scales with level)
+
+# Burnings Hands
+id: burning_hands
+name: Burning Hands
+level: 1
+school: evocation
+casting_time: 1 action
+range: Self (15-foot cone)
+components: V, S
+duration: Instantaneous
+
+shortDescription: Flames shoot from your fingertips in a 15-foot cone.
+
+description: |
+  As you hold your hands with thumbs touching and fingers spread, a thin sheet of flames shoots forth from your outstretched fingertips. Each creature in a 15-foot cone must make a Dexterity saving throw. A creature takes 3d6 fire damage on a failed save, or half as much damage on a successful one.
+
+  The fire ignites any flammable objects in the area that aren’t being worn or carried.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.
+
+classes: [sorcerer, wizard]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.
+
+damage:
+  type: fire
+  diceCount: 3
+  diceType: d6
+
+effects:
+  - area_of_effect: 15-foot cone
+  - saving_throw: dexterity
+  - ignite_objects: true
+
+# Charm Person
+id: charm_person
+name: Charm Person
+level: 1
+school: enchantment
+casting_time: 1 action
+range: 30 feet
+components: V, S
+duration: 1 hour
+
+shortDescription: Charm a humanoid who regards you as a friendly acquaintance.
+
+description: |
+  You attempt to charm a humanoid you can see within range. It must make a Wisdom saving throw, and does so with advantage if you or your companions are fighting it.
+
+  If it fails the saving throw, it is charmed by you until the spell ends or until you or your companions do anything harmful to it. The charmed creature regards you as a friendly acquaintance.
+
+  When the spell ends, the creature knows it was charmed by you.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional humanoid for each slot level above 1st.
+
+classes: [bard, druid, sorcerer, warlock, wizard]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, you can target one additional humanoid for each slot level above 1st.
+
+effects:
+  - saving_throw: wisdom
+  - condition: charmed
+  - target_type: humanoid
+  - target_limit: 1 (scales with level)
+  - post_effect: target knows it was charmed
+
+# Color Spray
+id: color_spray
+name: Color Spray
+level: 1
+school: illusion
+casting_time: 1 action
+range: Self (15-foot cone)
+components: V, S, M (a pinch of powder or sand that is colored red, yellow, and blue)
+duration: 1 round
+
+shortDescription: A dazzling array of flashing colors blinds creatures in a cone.
+
+description: |
+  A dazzling array of flashing, colored light springs from your hand. Roll 6d10; the total is how many hit points of creatures this spell can affect. Creatures in a 15-foot cone originating from you are affected in ascending order of their current hit points (ignoring unconscious creatures and creatures that can't see).
+
+  Starting with the creature that has the lowest current hit points, each creature affected by this spell is blinded until the end of your next turn. Subtract each creature’s hit points from the total before moving to the next.
+
+  The spell doesn’t affect creatures that are blind or immune to being blinded.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, roll an additional 2d10 for each slot level above 1st.
+
+classes: [sorcerer, wizard]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, roll an additional 2d10 for each slot level above 1st.
+
+damage:
+  type: hp-based effect
+  diceCount: 6
+  diceType: d10
+
+effects:
+  - area_of_effect: 15-foot cone
+  - condition: blinded
+  - target_order: ascending HP
+  - scaling: +2d10 per slot level above 1st
+
+# Command
+id: command
+name: Command
+level: 1
+school: enchantment
+casting_time: 1 action
+range: 60 feet
+components: V
+duration: 1 round
+
+shortDescription: Speak a one-word command to compel a creature's action.
+
+description: |
+  You speak a one-word command to a creature you can see within range. The target must succeed on a Wisdom saving throw or follow the command on its next turn.
+
+  The spell has no effect if the target is undead, doesn’t understand your language, or if your command is directly harmful to it.
+
+  Common commands include: Approach, Drop, Flee, Grovel, Halt.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can affect one additional creature for each slot level above 1st.
+
+classes: [cleric, paladin]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.
+
+effects:
+  - saving_throw: wisdom
+  - compel_action: one-word command
+  - target_limit: 1 (scales with level)
+
+# Comprehend Languages
+id: comprehend_languages
+name: Comprehend Languages
+level: 1
+school: divination
+casting_time: 1 action
+range: Self
+components: V, S, M (a pinch of soot and salt)
+duration: 1 hour
+
+shortDescription: Understand the literal meaning of any spoken or written language.
+
+description: |
+  For the duration, you understand the literal meaning of any spoken language you hear. You must be touching the surface on which the words are written to read written language. It takes about 1 minute to read one page of text.
+
+  This spell doesn’t decode secret messages in text or speech.
+
+classes: [bard, sorcerer, warlock, wizard]
+
+effects:
+  - utility: understand all spoken or written languages
+  - restriction: no secret message decoding
+
+# Create or Destroy Water
+id: create_or_destroy_water
+name: Create or Destroy Water
+level: 1
+school: transmutation
+casting_time: 1 action
+range: 30 feet
+components: V, S, M (a drop of water if creating or a few grains of sand if destroying)
+duration: Instantaneous
+
+shortDescription: Create or destroy 10 gallons of water in an area or container.
+
+description: |
+  You either create or destroy water.
+
+  • Create Water: Create up to 10 gallons of clean water in an open container, or cause rain to fall in a 30-foot cube.
+
+  • Destroy Water: Destroy up to 10 gallons of water in an open container, or cause fog in a 30-foot cube to vanish.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you create or destroy 10 additional gallons of water for each slot level above 1st.
+
+classes: [cleric, druid]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, you create or destroy 10 additional gallons of water for each slot level above 1st.
+
+effects:
+  - utility: create/destroy water or rainfall/fog
+  - area_of_effect: 30-foot cube
+  - volume: 10 gallons (scales with level)
+
+# Cure Wounds
+id: cure_wounds
+name: Cure Wounds
+level: 1
+school: evocation
+casting_time: 1 action
+range: Touch
+components: V, S
+duration: Instantaneous
+
+shortDescription: A creature you touch regains hit points.
+
+description: |
+  A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier.
+
+  This spell has no effect on undead or constructs.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.
+
+classes: [bard, cleric, druid, paladin, ranger]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.
+
+damage:
+  type: healing
+  diceCount: 1
+  diceType: d8
+
+effects:
+  - target: creature you touch
+  - healing_modifier: spellcasting ability modifier
+
+# Detect Evil and Good
+id: detect_evil_and_good
+name: Detect Evil and Good
+level: 1
+school: divination
+casting_time: 1 action
+range: Self
+components: V, S
+duration: Concentration, up to 10 minutes
+
+shortDescription: Sense aberrations, celestials, elementals, fey, fiends, and undead within 30 feet.
+
+description: |
+  For the duration, you know if there is an aberration, celestial, elemental, fey, fiend, or undead within 30 feet of you, as well as where the creature is located.
+
+  Similarly, you know if a place or object within 30 feet has been magically consecrated or desecrated.
+
+  The spell can penetrate most barriers, but it is blocked by 1 foot of stone, 1 inch of common metal, a thin sheet of lead, or 3 feet of wood or dirt.
+
+classes: [cleric, paladin]
+
+effects:
+  - detection: aberration, celestial, elemental, fey, fiend, undead
+  - detection_range: 30 feet
+  - also_detects: consecrated/desecrated objects or places
+
+# Detect Magic
+id: detect_magic
+name: Detect Magic
+level: 1
+school: divination
+casting_time: 1 action
+range: Self
+components: V, S
+duration: Concentration, up to 10 minutes
+
+shortDescription: Sense the presence of magic within 30 feet.
+
+description: |
+  For the duration, you sense the presence of magic within 30 feet of you. If you sense magic, you can use your action to see a faint aura around any visible creature or object that bears magic, and you learn its school of magic, if any.
+
+  The spell can penetrate most barriers, but is blocked by 1 foot of stone, 1 inch of common metal, a thin sheet of lead, or 3 feet of wood or dirt.
+
+classes: [bard, cleric, druid, paladin, ranger, sorcerer, wizard]
+
+effects:
+  - detection: magical auras
+  - detection_range: 30 feet
+  - aura_identification: school of magic
+
+# Detect Poison and Disease
+id: detect_poison_and_disease
+name: Detect Poison and Disease
+level: 1
+school: divination
+casting_time: 1 action
+range: 30 feet
+components: V, S, M (a yew leaf)
+duration: Concentration, up to 10 minutes
+
+shortDescription: Detect the presence and location of poisons, poisonous creatures, and diseases.
+
+description: |
+  For the duration, you can sense the presence and location of poisons, poisonous creatures, and diseases within 30 feet of you. You also identify the kind of poison, poisonous creature, or disease.
+
+  The spell can penetrate most barriers, but is blocked by 1 foot of stone, 1 inch of common metal, a thin sheet of lead, or 3 feet of wood or dirt.
+
+classes: [cleric, druid, paladin, ranger]
+
+effects:
+  - detection: poisons, poisonous creatures, diseases
+  - detection_range: 30 feet
+  - identification: type of poison/disease
+
+# Disguise Self
+id: disguise_self
+name: Disguise Self
+level: 1
+school: illusion
+casting_time: 1 action
+range: Self
+components: V, S
+duration: 1 hour
+
+shortDescription: Make yourself look different, including clothing and gear.
+
+description: |
+  You make yourself, including your clothing, armor, weapons, and other belongings, look different until the spell ends or until you use your action to dismiss it.
+
+  You can seem up to 1 foot shorter or taller and appear thin, fat, or in between. You can’t change your body type, so you must adopt a form with the same basic arrangement of limbs.
+
+  To discern that you are disguised, a creature can use its action to inspect your appearance and must succeed on an Intelligence (Investigation) check against your spell save DC.
+
+classes: [bard, sorcerer, wizard]
+
+effects:
+  - illusion: appearance, including clothes/gear
+  - inspection_check: investigation vs. spell save DC
+  - size_limit: 1 foot shorter/taller
+
+# Divine Favor
+id: divine_favor
+name: Divine Favor
+level: 1
+school: evocation
+casting_time: 1 bonus action
+range: Self
+components: V, S
+duration: Concentration, up to 1 minute
+
+shortDescription: Your weapon attacks deal an extra 1d4 radiant damage.
+
+description: |
+  Your prayer empowers your weapon strikes with divine radiance. Until the spell ends, your weapon attacks deal an extra 1d4 radiant damage on a hit.
+
+classes: [paladin]
+
+damage:
+  type: radiant
+  diceCount: 1
+  diceType: d4
+
+effects:
+  - bonus_damage: weapon attacks
+
+# Entangle
+id: entangle
+name: Entangle
+level: 1
+school: conjuration
+casting_time: 1 action
+range: 90 feet
+components: V, S
+duration: Concentration, up to 1 minute
+
+shortDescription: Grasping weeds and vines restrain creatures in a 20-foot square.
+
+description: |
+  Grasping weeds and vines sprout from the ground in a 20-foot square starting from a point within range. For the duration, these plants turn the ground into difficult terrain.
+
+  A creature in the area when you cast the spell must succeed on a Strength saving throw or be restrained by the entangling plants until the spell ends. A creature restrained by the plants can use its action to make another Strength check against your spell save DC. On a success, it frees itself.
+
+classes: [druid]
+
+effects:
+  - area_of_effect: 20-foot square
+  - saving_throw: strength
+  - condition: restrained
+  - terrain_effect: difficult terrain
+
+# Expeditious Retreat
+id: expeditious_retreat
+name: Expeditious Retreat
+level: 1
+school: transmutation
+casting_time: 1 bonus action
+range: Self
+components: V, S
+duration: Concentration, up to 10 minutes
+
+shortDescription: Take the Dash action as a bonus action on each turn.
+
+description: |
+  This spell allows you to move at an incredible pace. When you cast this spell, and then as a bonus action on each of your turns until the spell ends, you can take the Dash action.
+
+classes: [sorcerer, warlock, wizard]
+
+effects:
+  - action_gain: Dash as bonus action
+
+# Faerie Fire
+id: faerie_fire
+name: Faerie Fire
+level: 1
+school: evocation
+casting_time: 1 action
+range: 60 feet
+components: V
+duration: Concentration, up to 1 minute
+
+shortDescription: Light up creatures to grant advantage on attacks against them.
+
+description: |
+  Each object in a 20-foot cube within range is outlined in blue, green, or violet light (your choice). Any creature in the area when the spell is cast is also outlined in light if it fails a Dexterity saving throw.
+
+  For the duration, objects and affected creatures shed dim light in a 10-foot radius. Attack rolls against an affected creature or object have advantage if the attacker can see it, and the affected creature or object can’t benefit from being invisible.
+
+classes: [bard, druid]
+
+effects:
+  - area_of_effect: 20-foot cube
+  - saving_throw: dexterity
+  - advantage: attack rolls against affected targets
+  - reveals_invisible: true
+
+# False Life
+id: false_life
+name: False Life
+level: 1
+school: necromancy
+casting_time: 1 action
+range: Self
+components: V, S, M (a small amount of alcohol or distilled spirits)
+duration: 1 hour
+
+shortDescription: Gain temporary hit points to protect yourself.
+
+description: |
+  Bolstering yourself with a necromantic facsimile of life, you gain 1d4 + 4 temporary hit points for the duration.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you gain 5 additional temporary hit points for each slot level above 1st.
+
+classes: [sorcerer, wizard]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, you gain 5 additional temporary hit points for each slot level above 1st.
+
+damage:
+  type: temp_hp
+  diceCount: 1
+  diceType: d4
+
+effects:
+  - bonus_hp: +4
+  - scaling: +5 temp HP per slot level above 1st
+
+# Feather Fall
+id: feather_fall
+name: Feather Fall
+level: 1
+school: transmutation
+casting_time: 1 reaction (which you take when you or a creature within 60 feet of you falls)
+range: 60 feet
+components: V, M (a small feather or piece of down)
+duration: 1 minute
+
+shortDescription: Slow the rate of falling for up to five creatures.
+
+description: |
+  Choose up to five falling creatures within range. A falling creature’s rate of descent slows to 60 feet per round until the spell ends.
+
+  If the creature lands before the spell ends, it takes no falling damage and lands on its feet.
+
+classes: [bard, sorcerer, wizard]
+
+effects:
+  - reaction_trigger: falling creature
+  - fall_speed: 60 feet per round
+  - no_fall_damage: true
+  - target_limit: 5
+
+# Find Familiar
+id: find_familiar
+name: Find Familiar
+level: 1
+school: conjuration
+casting_time: 1 hour
+range: 10 feet
+components: V, S, M (10 gp worth of charcoal, incense, and herbs that must be consumed by fire in a brass brazier)
+duration: Instantaneous
+
+shortDescription: Summon a familiar spirit in animal form to serve you.
+
+description: |
+  You gain the service of a familiar, a spirit that takes the form of an animal: bat, cat, crab, frog (toad), hawk, lizard, octopus, owl, poisonous snake, fish (quipper), rat, raven, seahorse, spider, or weasel.
+
+  The familiar acts independently but obeys your commands. It has its own initiative in combat and can't attack but can take other actions.
+
+  You can communicate telepathically with your familiar within 100 feet and can see through its senses by sacrificing your own.
+
+  You can’t have more than one familiar at a time. You can dismiss it or summon it again using this spell.
+
+classes: [wizard]
+
+effects:
+  - summon: familiar in animal form
+  - utility: telepathy and senses through familiar
+  - limitation: one familiar at a time
+
+# Floating Disk
+id: floating_disk
+name: Floating Disk
+level: 1
+school: conjuration
+casting_time: 1 action
+range: 30 feet
+components: V, S, M (a drop of mercury)
+duration: 1 hour
+
+shortDescription: Create a floating disk that carries up to 500 pounds.
+
+description: |
+  This spell creates a circular, horizontal plane of force, 3 feet in diameter and 1 inch thick, that floats 3 feet above the ground in an unoccupied space of your choice within range. The disk remains for the duration and can hold up to 500 pounds. If more weight is placed on it, the spell ends.
+
+  The disk is immobile while within 20 feet of you. If you move more than 20 feet away, the disk follows you so that it remains within 20 feet. It can move across uneven terrain, up or down stairs, slopes, and the like, but it can’t cross an elevation change of 10 feet or more.
+
+  If you move more than 100 feet away from the disk (typically because of an obstacle), the spell ends.
+
+classes: [wizard]
+
+effects:
+  - utility: levitating platform
+  - weight_limit: 500 pounds
+  - movement_range: follows within 20 feet
+  - duration: 1 hour
+
+# Fog Cloud
+id: fog_cloud
+name: Fog Cloud
+level: 1
+school: conjuration
+casting_time: 1 action
+range: 120 feet
+components: V, S
+duration: Concentration, up to 1 hour
+
+shortDescription: Create a 20-foot-radius sphere of fog that heavily obscures the area.
+
+description: |
+  You create a 20-foot-radius sphere of fog centered on a point within range. The sphere spreads around corners and its area is heavily obscured.
+
+  It lasts for the duration or until a wind of moderate or greater speed (at least 10 miles per hour) disperses it.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the radius of the fog increases by 20 feet for each slot level above 1st.
+
+classes: [druid, ranger, sorcerer, wizard]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, the radius of the fog increases by 20 feet for each slot level above 1st.
+
+effects:
+  - area_of_effect: 20-foot-radius sphere (scales with level)
+  - condition: heavily obscured
+  - dispersal: wind 10+ mph
+
+# Goodberry
+id: goodberry
+name: Goodberry
+level: 1
+school: transmutation
+casting_time: 1 action
+range: Touch
+components: V, S, M (a sprig of mistletoe)
+duration: Instantaneous
+
+shortDescription: Create up to ten magical berries that heal and provide nourishment.
+
+description: |
+  Up to ten berries appear in your hand and are infused with magic. A creature can use its action to eat one berry to restore 1 hit point. A berry provides enough nourishment to sustain a creature for one day.
+
+  The berries lose their potency if not consumed within 24 hours.
+
+classes: [druid, ranger]
+
+damage:
+  type: healing
+  diceCount: 1
+  diceType: flat
+
+effects:
+  - creation: 10 berries
+  - healing_per_berry: 1 HP
+  - nourishment: sustains for one day
+  - duration: 24 hours
+
+# Grease 
+id: grease
+name: Grease
+level: 1
+school: conjuration
+casting_time: 1 action
+range: 60 feet
+components: V, S, M (a bit of pork rind or butter)
+duration: 1 minute
+
+shortDescription: Slick a 10-foot square, causing creatures to fall prone.
+
+description: |
+  Slick grease covers the ground in a 10-foot square centered on a point within range and turns it into difficult terrain for the duration.
+
+  When the grease appears, each creature standing in its area must succeed on a Dexterity saving throw or fall prone. A creature that enters the area or ends its turn there must also succeed on a Dexterity saving throw or fall prone.
+
+classes: [wizard]
+
+effects:
+  - area_of_effect: 10-foot square
+  - saving_throw: dexterity
+  - condition: prone
+  - terrain_effect: difficult terrain
+
+# Guiding Bolt
+id: guiding_bolt
+name: Guiding Bolt
+level: 1
+school: evocation
+casting_time: 1 action
+range: 120 feet
+components: V, S
+duration: 1 round
+
+shortDescription: A radiant blast that gives the next attacker advantage.
+
+description: |
+  A flash of light streaks toward a creature of your choice within range. Make a ranged spell attack against the target. On a hit, the target takes 4d6 radiant damage, and the next attack roll made against this target before the end of your next turn has advantage.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.
+
+classes: [cleric]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.
+
+damage:
+  type: radiant
+  diceCount: 4
+  diceType: d6
+
+effects:
+  - attack_type: ranged_spell
+  - advantage: next attack against target
+
+# Healing Word
+id: healing_word
+name: Healing Word
+level: 1
+school: evocation
+casting_time: 1 bonus action
+range: 60 feet
+components: V
+duration: Instantaneous
+
+shortDescription: Heal a creature you can see as a bonus action.
+
+description: |
+  A creature of your choice that you can see within range regains hit points equal to 1d4 + your spellcasting ability modifier.
+
+  This spell has no effect on undead or constructs.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d4 for each slot level above 1st.
+
+classes: [bard, cleric, druid]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d4 for each slot level above 1st.
+
+damage:
+  type: healing
+  diceCount: 1
+  diceType: d4
+
+effects:
+  - target: creature you can see
+  - healing_modifier: spellcasting ability modifier
+
+# Hellish Rebuke
+id: hellish_rebuke
+name: Hellish Rebuke
+level: 1
+school: evocation
+casting_time: 1 reaction (which you take in response to being damaged by a creature within 60 feet of you that you can see)
+range: 60 feet
+components: V, S
+duration: Instantaneous
+
+shortDescription: Wreathe an attacker in flames as a reaction.
+
+description: |
+  You point your finger, and the creature that damaged you is momentarily surrounded by hellish flames. The creature must make a Dexterity saving throw. It takes 2d10 fire damage on a failed save, or half as much on a successful one.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d10 for each slot level above 1st.
+
+classes: [warlock]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d10 for each slot level above 1st.
+
+damage:
+  type: fire
+  diceCount: 2
+  diceType: d10
+
+effects:
+  - reaction_trigger: take damage from visible creature
+  - saving_throw: dexterity
+
+# Heroism
+id: heroism
+name: Heroism
+level: 1
+school: enchantment
+casting_time: 1 action
+range: Touch
+components: V, S
+duration: Concentration, up to 1 minute
+
+shortDescription: Make a creature immune to fear and give it temporary HP each round.
+
+description: |
+  A willing creature you touch is imbued with bravery. Until the spell ends, the creature is immune to being frightened and gains temporary hit points equal to your spellcasting ability modifier at the start of each of its turns.
+
+  When the spell ends, the target loses any remaining temporary hit points from this spell.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.
+
+classes: [bard, paladin]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.
+
+effects:
+  - immunity: frightened
+  - temp_hp: equal to spellcasting modifier
+  - refresh_each_turn: true
+
+# Hideous Laughter
+id: hideous_laughter
+name: Hideous Laughter
+level: 1
+school: enchantment
+casting_time: 1 action
+range: 30 feet
+components: V, S, M (tiny tarts and a feather that is waved in the air)
+duration: Concentration, up to 1 minute
+
+shortDescription: A creature falls into fits of laughter, becoming prone and incapacitated.
+
+description: |
+  A creature of your choice that you can see within range perceives everything as hilariously funny and falls into fits of laughter if it fails a Wisdom saving throw. The target must be able to hear you.
+
+  The target falls prone, becoming incapacitated and unable to stand up for the duration.
+
+  A creature with an Intelligence score of 4 or less isn't affected.
+
+  At the end of each of its turns, and each time it takes damage, the target can make another Wisdom saving throw. The target has advantage on the saving throw if it’s triggered by damage. On a success, the spell ends.
+
+classes: [bard, wizard]
+
+effects:
+  - saving_throw: wisdom
+  - condition: prone, incapacitated
+  - duration_check: end of each turn and when damaged
+  - restriction: Intelligence 5 or higher
+
+# Hunter's Mark
+id: hunters_mark
+name: Hunter's Mark
+level: 1
+school: divination
+casting_time: 1 bonus action
+range: 90 feet
+components: V
+duration: Concentration, up to 1 hour
+
+shortDescription: Mark a target to deal extra damage and track it more easily.
+
+description: |
+  You choose a creature you can see within range and mystically mark it as your quarry. Until the spell ends, you deal an extra 1d6 damage to the target whenever you hit it with a weapon attack.
+
+  You also have advantage on any Wisdom (Perception) or Wisdom (Survival) checks you make to find it.
+
+  If the target drops to 0 hit points before the spell ends, you can use a bonus action on a subsequent turn to mark a new creature.
+
+  At Higher Levels. When you cast this spell using a spell slot of 3rd or 4th level, you can concentrate for up to 8 hours. When you use a spell slot of 5th level or higher, the duration is 24 hours.
+
+classes: [ranger]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 3rd or 4th level, you can concentrate for up to 8 hours. When you use a spell slot of 5th level or higher, the duration is 24 hours.
+
+damage:
+  type: weapon (extra)
+  diceCount: 1
+  diceType: d6
+
+effects:
+  - advantage: Wisdom (Perception, Survival) to track
+  - bonus_damage: on weapon hit
+
+# Identify
+id: identify
+name: Identify
+level: 1
+school: divination
+casting_time: 1 minute
+range: Touch
+components: V, S, M (a pearl worth at least 100 gp and an owl feather)
+duration: Instantaneous
+
+shortDescription: Learn properties and charges of a magical item or spell affecting a creature.
+
+description: |
+  You choose one object that you must touch throughout the casting of the spell. If it is a magic item or some other magic-imbued object, you learn its properties and how to use them, whether it requires attunement, and how many charges it has (if any).
+
+  You learn whether any spells are affecting the item and what they are. If the item was created by a spell, you learn which spell created it.
+
+  Alternatively, you can touch a creature and learn what spells, if any, are currently affecting it.
+
+classes: [bard, wizard]
+
+effects:
+  - utility: reveals magical properties and effects
+  - object_focus: item or creature
+
+# Illusory Script
+id: illusory_script
+name: Illusory Script
+level: 1
+school: illusion
+casting_time: 1 minute
+range: Touch
+components: S, M (a lead-based ink worth at least 10 gp)
+duration: 10 days
+
+shortDescription: Hide a message in script only specific creatures can read.
+
+description: |
+  You write on parchment, paper, or some other suitable writing material and imbue it with a potent illusion that lasts for the duration.
+
+  To you and any creatures you designate when you cast the spell, the writing appears normal and conveys whatever meaning you intended.
+
+  To all others, it appears as unintelligible or as some other message you choose.
+
+  A creature with truesight can see through the illusion. A creature that uses *detect magic* can see there's an illusion but must succeed on an Intelligence (Investigation) check against your spell save DC to decipher it.
+
+classes: [bard, warlock, wizard]
+
+effects:
+  - utility: hidden writing visible only to chosen readers
+  - duration: 10 days
+  - detectability: detect magic, truesight
+
+# Inflict Wounds
+id: inflict_wounds
+name: Inflict Wounds
+level: 1
+school: necromancy
+casting_time: 1 action
+range: Touch
+components: V, S
+duration: Instantaneous
+
+shortDescription: Melee spell that deals 3d10 necrotic damage.
+
+description: |
+  Make a melee spell attack against a creature you can reach. On a hit, the target takes 3d10 necrotic damage.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d10 for each slot level above 1st.
+
+classes: [cleric]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d10 for each slot level above 1st.
+
+damage:
+  type: necrotic
+  diceCount: 3
+  diceType: d10
+
+effects:
+  - attack_type: melee_spell
+
+# Jump 
+id: jump
+name: Jump
+level: 1
+school: transmutation
+casting_time: 1 action
+range: Touch
+components: V, S, M (a grasshopper's hind leg)
+duration: 1 minute
+
+shortDescription: Triple the jump distance of a creature you touch.
+
+description: |
+  You touch a creature. The creature’s jump distance is tripled until the spell ends.
+
+classes: [druid, ranger, sorcerer, wizard]
+
+effects:
+  - buff: triple jump distance
+  - target: one creature
+
+# Longstrider
+id: longstrider
+name: Longstrider
+level: 1
+school: transmutation
+casting_time: 1 action
+range: Touch
+components: V, S, M (a pinch of dirt)
+duration: 1 hour
+
+shortDescription: Increase a creature's speed by 10 feet.
+
+description: |
+  You touch a creature. The target’s speed increases by 10 feet until the spell ends.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.
+
+classes: [bard, druid, ranger, wizard]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, you can target one additional creature for each slot level above 1st.
+
+effects:
+  - speed_buff: +10 feet
+  - duration: 1 hour
+
+# Mage Armor
+id: mage_armor
+name: Mage Armor
+level: 1
+school: abjuration
+casting_time: 1 action
+range: Touch
+components: V, S, M (a piece of cured leather)
+duration: 8 hours
+
+shortDescription: Give an unarmored creature an AC of 13 + Dexterity modifier.
+
+description: |
+  You touch a willing creature who isn’t wearing armor, and a magical force surrounds it until the spell ends.
+
+  The target’s base AC becomes 13 + its Dexterity modifier.
+
+  The spell ends if the target dons armor or if you dismiss the spell as an action.
+
+classes: [sorcerer, wizard]
+
+effects:
+  - ac_buff: base AC = 13 + Dex modifier
+  - target_restriction: must not be wearing armor
+  - duration: 8 hours
+
+# Magic Missile
 id: magic_missile
 name: Magic Missile
 level: 1
@@ -8,27 +1067,291 @@ range: 120 feet
 components: V, S
 duration: Instantaneous
 
-# Short description for selection screen
 shortDescription: You create three glowing darts of magical force that unerringly strike their targets.
 
-# Full description
 description: |
   You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals 1d4 + 1 force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.
 
-# At Higher Levels
 atHigherLevels: |
   When you cast this spell using a spell slot of 2nd level or higher, the spell creates one more dart for each slot level above 1st.
 
-# Classes that can use this spell
 classes: [sorcerer, wizard]
 
-# Damage information
 damage:
   type: force
   diceCount: 1
   diceType: d4
   bonus: 1
   
-# Additional effects
 effects:
   - automatic_hit: true
+
+# Protection from Evil and Good
+id: protection_from_evil_and_good
+name: Protection from Evil and Good
+level: 1
+school: abjuration
+casting_time: 1 action
+range: Touch
+components: V, S, M (holy water or powdered silver and iron)
+duration: Concentration, up to 10 minutes
+
+shortDescription: Protect a creature from aberrations, celestials, elementals, fey, fiends, and undead.
+
+description: |
+  Until the spell ends, one willing creature you touch is protected against certain types of creatures: aberrations, celestials, elementals, fey, fiends, and undead.
+
+  The protection grants several benefits:
+  • Creatures of those types have disadvantage on attack rolls against the target.
+  • The target can’t be charmed, frightened, or possessed by them.
+  • If the target is already charmed, frightened, or possessed, the target has advantage on any new saving throw against the effect.
+
+classes: [cleric, paladin, warlock, wizard]
+
+effects:
+  - protection: against specific creature types
+  - disadvantage: attack rolls from those types
+  - immunity: charm, frighten, possession (from those types)
+
+# Purify Food and Drink
+id: purify_food_and_drink
+name: Purify Food and Drink
+level: 1
+school: transmutation
+casting_time: 1 action
+range: 10 feet
+components: V, S
+duration: Instantaneous
+
+shortDescription: Purify food and drink for up to 10 nonmagical creatures.
+
+description: |
+  All nonmagical food and drink within a 5-foot-radius sphere centered on a point of your choice within range is purified and rendered free of poison and disease.
+
+classes: [cleric, druid, paladin]
+
+effects:
+  - utility: purifies nonmagical food and drink
+  - area_of_effect: 5-foot-radius sphere
+
+# Sanctuary
+id: sanctuary
+name: Sanctuary
+level: 1
+school: abjuration
+casting_time: 1 bonus action
+range: 30 feet
+components: V, S, M (a small silver mirror)
+duration: 1 minute
+
+shortDescription: Protect a creature by warding it against attacks.
+
+description: |
+  You ward a creature within range against attack. Until the spell ends, any creature who targets the warded creature with an attack or harmful spell must first make a Wisdom saving throw.
+
+  On a failed save, the creature must choose a new target or lose the attack/spell. The spell doesn’t protect the target from area effects.
+
+  If the warded creature makes an attack or casts a spell that affects an enemy, the spell ends.
+
+classes: [cleric]
+
+effects:
+  - saving_throw: wisdom (for attackers)
+  - condition: redirect or lose attack
+  - ends_on_attack: true
+
+# Shield
+id: shield
+name: Shield
+level: 1
+school: abjuration
+casting_time: 1 reaction (which you take when you're hit by an attack or targeted by *magic missile*)
+range: Self
+components: V, S
+duration: 1 round
+
+shortDescription: Gain +5 to AC and block Magic Missile.
+
+description: |
+  An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from *magic missile*.
+
+classes: [sorcerer, wizard]
+
+effects:
+  - reaction_trigger: hit by attack or targeted by Magic Missile
+  - ac_bonus: +5
+  - immunity: magic missile
+
+# Shield of Faith
+id: shield_of_faith
+name: Shield of Faith
+level: 1
+school: abjuration
+casting_time: 1 bonus action
+range: 60 feet
+components: V, S, M (a small parchment with a bit of holy text written on it)
+duration: Concentration, up to 10 minutes
+
+shortDescription: Give +2 AC to a creature of your choice.
+
+description: |
+  A shimmering field appears and surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration.
+
+classes: [cleric, paladin]
+
+effects:
+  - ac_bonus: +2
+  - duration: concentration, 10 minutes
+
+# Silent Image
+id: silent_image
+name: Silent Image
+level: 1
+school: illusion
+casting_time: 1 action
+range: 60 feet
+components: V, S, M (a bit of fleece)
+duration: Concentration, up to 10 minutes
+
+shortDescription: Create a visual illusion no larger than a 15-foot cube.
+
+description: |
+  You create the image of an object, creature, or other visible phenomenon no larger than a 15-foot cube. The image appears at a spot within range and lasts for the duration.
+
+  The illusion is purely visual — it isn’t accompanied by sound, smell, or other sensory effects.
+
+  You can use your action to move the image to any spot within range. As the image moves, you can alter its appearance to make it more convincing.
+
+  A creature can use its action to examine the image and make an Intelligence (Investigation) check against your spell save DC to determine that it is an illusion.
+
+classes: [bard, sorcerer, wizard]
+
+effects:
+  - illusion: visual only
+  - size_limit: 15-foot cube
+  - movement: can be moved with action
+  - investigation_reveal: true
+
+# Sleep
+id: sleep
+name: Sleep
+level: 1
+school: enchantment
+casting_time: 1 action
+range: 90 feet
+components: V, S, M (a pinch of fine sand, rose petals, or a cricket)
+duration: 1 minute
+
+shortDescription: Put creatures to sleep starting with the lowest HP.
+
+description: |
+  This spell sends creatures into a magical slumber. Roll 5d8; the total is how many hit points of creatures this spell can affect. Creatures within 20 feet of a point you choose are affected in ascending order of their current hit points.
+
+  Starting with the creature with the lowest current HP, each creature falls unconscious until the spell ends, takes damage, or someone uses an action to wake it. Subtract each creature’s HP from the total before moving to the next.
+
+  Undead and creatures immune to being charmed aren’t affected.
+
+  At Higher Levels. Roll an additional 2d8 for each slot level above 1st.
+
+classes: [bard, sorcerer, wizard]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, roll an additional 2d8 for each slot level above 1st.
+
+damage:
+  type: hp-based effect
+  diceCount: 5
+  diceType: d8
+
+effects:
+  - area_of_effect: 20-foot radius
+  - condition: unconscious
+
+# Speak with Animals
+id: speak_with_animals
+name: Speak with Animals
+level: 1
+school: divination
+casting_time: 1 action
+range: Self
+components: V, S
+duration: 10 minutes
+
+shortDescription: Understand and communicate with beasts.
+
+description: |
+  For the duration, you gain the ability to comprehend and verbally communicate with beasts.
+
+  The knowledge and awareness of many beasts is limited by their intelligence, but at minimum, beasts can give you information about nearby locations and monsters, including what they can perceive or have perceived within the past day.
+
+  You might be able to persuade a beast to perform a small favor.
+
+classes: [bard, druid, ranger]
+
+effects:
+  - communication: with beasts
+  - utility: information, limited aid
+
+# Thunderwave
+id: thunderwave
+name: Thunderwave
+level: 1
+school: evocation
+casting_time: 1 action
+range: Self (15-foot cube)
+components: V, S
+duration: Instantaneous
+
+shortDescription: Emit a thunderous wave that damages and pushes creatures.
+
+description: |
+  A wave of thunderous force sweeps out from you. Each creature in a 15-foot cube originating from you must make a Constitution saving throw. On a failed save, a creature takes 2d8 thunder damage and is pushed 10 feet away from you. On a successful save, the creature takes half as much damage and isn't pushed.
+
+  Unsecured objects that are completely within the area of effect are automatically pushed 10 feet away from you. The spell emits a thunderous boom audible out to 300 feet.
+
+  At Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d8 for each slot level above 1st.
+
+classes: [bard, druid, sorcerer, wizard]
+
+atHigherLevels: |
+  When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d8 for each slot level above 1st.
+
+damage:
+  type: thunder
+  diceCount: 2
+  diceType: d8
+
+effects:
+  - area_of_effect: 15-foot cube
+  - saving_throw: constitution
+  - push_distance: 10 feet
+  - noise: 300 feet audible
+
+# Unseen Servant
+id: unseen_servant
+name: Unseen Servant
+level: 1
+school: conjuration
+casting_time: 1 action
+range: 60 feet
+components: V, S, M (a piece of string and a bit of wood)
+duration: 1 hour
+
+shortDescription: Create an invisible force to perform simple tasks.
+
+description: |
+  This spell creates an invisible, mindless, shapeless force that performs simple tasks at your command until the spell ends.
+
+  The servant springs into existence in an unoccupied space within range. It has AC 10, 1 hit point, a Strength of 2, and can't attack.
+
+  It can perform tasks a human servant could do, such as cleaning, mending, folding clothes, lighting fires, serving food, and fetching things. Once you give it a command, it performs the task until complete, then waits for your next command.
+
+  If it moves more than 60 feet away from you, it disappears.
+
+classes: [bard, wizard]
+
+effects:
+  - summon: invisible servant
+  - utility: performs basic tasks
+  - duration: 1 hour
+
