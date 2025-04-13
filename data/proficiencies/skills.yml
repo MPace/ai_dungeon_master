@@ -1,0 +1,110 @@
+# File: data/proficiencies/skills.yml
+
+# Core skills with descriptions
+acrobatics:
+  name: Acrobatics
+  ability: Dexterity
+  description: "Acrobatics covers your attempt to stay on your feet in a tricky situation, such as when you're trying to run across a sheet of ice, balance on a tightrope, or stay upright on a rocking ship's deck."
+  examples: "Balance, flips, tumbling, gymnastically demanding tasks"
+
+animal_handling:
+  name: Animal Handling
+  ability: Wisdom
+  description: "When there is any question whether you can calm down a domesticated animal, keep a mount from getting spooked, or intuit an animal's intentions, you make an Animal Handling check."
+  examples: "Calming animals, controlling a scared mount, understanding animal behavior"
+
+arcana:
+  name: Arcana
+  ability: Intelligence
+  description: "Arcana measures your ability to recall lore about spells, magic items, eldritch symbols, magical traditions, the planes of existence, and the inhabitants of those planes."
+  examples: "Identifying spells, understanding magical phenomena, recalling magical traditions"
+
+athletics:
+  name: Athletics
+  ability: Strength
+  description: "Athletics covers difficult situations you encounter while climbing, jumping, or swimming. Examples include climbing a sheer or slippery cliff, avoiding hazards while scaling a wall, or jumping unusually long distances."
+  examples: "Climbing, jumping, swimming, feats of strength and endurance"
+
+deception:
+  name: Deception
+  ability: Charisma
+  description: "Deception determines whether you can convincingly hide the truth, either verbally or through your actions. This deception can encompass everything from misleading others through ambiguity to telling outright lies."
+  examples: "Lying convincingly, disguising yourself, forgery"
+
+history:
+  name: History
+  ability: Intelligence
+  description: "History measures your ability to recall lore about historical events, legendary people, ancient kingdoms, past disputes, recent wars, and lost civilizations."
+  examples: "Recognizing ancient ruins, identifying historic artifacts, recalling legends"
+
+insight:
+  name: Insight
+  ability: Wisdom
+  description: "Insight is the ability to determine the true intentions of a creature, such as when searching out a lie or predicting someone's next move. Doing so involves gleaning clues from body language, speech habits, and changes in mannerisms."
+  examples: "Detecting lies, reading intentions, understanding motivations"
+
+intimidation:
+  name: Intimidation
+  ability: Charisma
+  description: "When you attempt to influence someone through overt threats, hostile actions, and physical violence, you make an Intimidation check. Examples include trying to pry information out of a prisoner, convincing street thugs to back down from a confrontation, or using the edge of a broken bottle to convince a sneering vizier to reconsider a decision."
+  examples: "Threatening others, instilling fear, interrogation through force"
+
+investigation:
+  name: Investigation
+  ability: Intelligence
+  description: "Investigation is when you look around for clues and make deductions based on those clues. You might deduce the location of a hidden object, discern from the appearance of a wound what kind of weapon dealt it, or determine the weakest point in a tunnel that could cause it to collapse."
+  examples: "Searching for clues, finding hidden objects, analyzing evidence"
+
+medicine:
+  name: Medicine
+  ability: Wisdom
+  description: "Medicine lets you try to stabilize a dying companion or diagnose an illness."
+  examples: "Stabilizing the dying, diagnosing diseases, understanding injuries"
+
+nature:
+  name: Nature
+  ability: Intelligence
+  description: "Nature measures your ability to recall lore about terrain, plants and animals, the weather, and natural cycles."
+  examples: "Identifying plants and animals, predicting weather, understanding terrain"
+
+perception:
+  name: Perception
+  ability: Wisdom
+  description: "Perception lets you spot, hear, or otherwise detect the presence of something. It measures your general awareness of your surroundings and the keenness of your senses."
+  examples: "Spotting hidden creatures, hearing noises, noticing details"
+
+performance:
+  name: Performance
+  ability: Charisma
+  description: "Performance determines how well you can delight an audience with music, dance, acting, storytelling, or some other form of entertainment."
+  examples: "Playing instruments, singing, acting, storytelling"
+
+persuasion:
+  name: Persuasion
+  ability: Charisma
+  description: "When you attempt to influence someone or a group of people with tact, social graces, or good nature, you make a Persuasion check. Typically, you use persuasion when acting in good faith, to foster friendships, make cordial requests, or exhibit proper etiquette."
+  examples: "Negotiation, diplomacy, befriending others, inspiring people"
+
+religion:
+  name: Religion
+  ability: Intelligence
+  description: "Religion measures your ability to recall lore about deities, rites and prayers, religious hierarchies, holy symbols, and the practices of secret cults."
+  examples: "Recalling religious customs, recognizing deities, understanding rituals"
+
+sleight_of_hand:
+  name: Sleight of Hand
+  ability: Dexterity
+  description: "Sleight of Hand encompasses acts of manual trickery, such as planting something on someone else or concealing an object on your person. The DM might also call for a Sleight of Hand check to determine whether you can lift a coin purse off another person or slip something out of another person's pocket."
+  examples: "Picking pockets, planting evidence, hiding small objects"
+
+stealth:
+  name: Stealth
+  ability: Dexterity
+  description: "Stealth determines how well you can conceal yourself from enemies, slink past guards, slip away without being noticed, or sneak up on someone without being seen or heard."
+  examples: "Hiding, moving silently, avoiding detection"
+
+survival:
+  name: Survival
+  ability: Wisdom
+  description: "Survival helps you to follow tracks, hunt wild game, guide your group through frozen wastelands, identify signs that owlbears live nearby, predict the weather, or avoid quicksand and other natural hazards."
+  examples: "Tracking, hunting, navigating wilderness, foraging"

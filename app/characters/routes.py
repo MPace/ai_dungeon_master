@@ -23,6 +23,8 @@ CAMPAIGNS_DIR = os.path.join(DATA_DIR, 'campaigns')
 CLASSES_DIR = os.path.join(DATA_DIR, 'classes')
 RACES_DIR = os.path.join(DATA_DIR, 'races')
 BACKGROUNDS_DIR = os.path.join(DATA_DIR, 'backgrounds')
+SPELLS_DIR = os.path.join(DATA_DIR, 'spells')
+PROFICIENCIES_DIR = os.path.join(DATA_DIR, 'proficiencies')
 VITE_BASE_URL = "https://staging.arcanedm.com:8443/static/build/" # Base URL for Vite assets
 
 
@@ -577,8 +579,8 @@ def get_world_data(world_id):
             "classes": [],
             "races": [],
             "backgrounds": [],
-            "spells": []
-            
+            "spells": [], 
+            "proficiencies": []
         }
 
         # Load Classes
@@ -687,7 +689,6 @@ def get_world_data(world_id):
 
              
         current_app.logger.info(f"Loading spells for world '{world_id}'")
-        SPELLS_DIR = os.path.join(DATA_DIR, 'spells')
         if os.path.exists(SPELLS_DIR):
             # Process each spell level directory
             for level_dir in ['cantrips', 'level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9']:
@@ -703,6 +704,20 @@ def get_world_data(world_id):
                                 current_app.logger.debug(f"Added spell: {spell_data.get('name')}")
         else:
             current_app.logger.warning(f"Spells directory not found at {SPELLS_DIR}")
+
+
+        skills_file = os.path.join(PROFICIENCIES_DIR, 'skills.yaml')
+        if not os.path.exists(skills_file):
+            skills_file = os.path.join(PROFICIENCIES_DIR, 'skills.yml')
+        
+        if os.path.exists(skills_file):
+            current_app.logger.debug(f"Loading proficiency data from: {skills_file}")
+            proficiency_data = load_data_from_file(skills_file)
+            if proficiency_data:
+                world_specific_data["proficiencies"]["skills"] = proficiency_data
+                current_app.logger.debug(f"Loaded {len(proficiency_data)} skills")
+        else:
+            current_app.logger.warning(f"Skills file not found at {skills_file}")
 
         return jsonify({"success": True, "data": world_specific_data})
 
