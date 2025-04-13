@@ -580,7 +580,7 @@ def get_world_data(world_id):
             "races": [],
             "backgrounds": [],
             "spells": [], 
-            "proficiencies": []
+            "proficiencies": {"skills": {}}
         }
 
         # Load Classes
