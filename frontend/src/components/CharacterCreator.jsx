@@ -9,6 +9,7 @@ import Step4_CharacterInfo from './steps/Step4_CharacterInfo';
 import Step5_AbilityScores from './steps/Step5_AbilityScores'; 
 import Step6_ClassFeatures from './steps/Step6_ClassFeatures';
 import Step7_SpellSelector from './steps/Step7_SpellSelector';
+import Step8_ProficiencySelector from './steps/Step8_ProficiencySelector';
 // Import other steps when ready
 
 const initialCharacterData = {
@@ -123,6 +124,15 @@ function CharacterCreator() {
                 case 7:
                     return (
                         <Step7_SpellSelector
+                            characterData={characterData}
+                            updateCharacterData={updateCharacterData}
+                            nextStep={nextStep}
+                            prevStep={prevStep}
+                        />
+                    )
+                case 8:
+                    return (
+                        <Step8_ProficiencySelector
                             characterData={characterData}
                             updateCharacterData={updateCharacterData}
                             nextStep={nextStep}
