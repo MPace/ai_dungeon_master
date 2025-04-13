@@ -140,3 +140,42 @@ features:
       type: passive
       description: |
         You gain access to 3rd-level druid spells.
+
+
+spellcasting:
+  ability: Wisdom
+  spellcasting_type: prepared
+  spellcasting_focus: druidic focus
+
+  progression:
+    level1:
+      cantrips_known: 2
+      prapation formula: "Wisdom modifier + druid level"
+      spell_slots: 
+        level1: 2
+    level2:
+      cantrips_known: 2
+      preparation_formula: "wisdom_modifier + cleric_level"  
+      spell_slots:
+        level1: 3
+    level3:
+      cantrips_known: 2
+      preparation_formula: "wisdom_modifier + cleric_level"  
+      spell_slots: 
+        level1: 4
+        level2: 2
+    level4:
+      cantrips_known: 3
+      preparation_formula: "wisdom_modifier + cleric_level"
+      spell_slots: 
+        level1: 4
+        level2: 3
+    level5:
+      cantrips_known: 3
+      preparation_formula: "wisdom_modifier + cleric_level"
+      spell_slots: 
+        level1: 4
+        level2: 3
+        level3: 2
+
+  

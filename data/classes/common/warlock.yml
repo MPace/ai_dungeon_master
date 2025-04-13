@@ -147,3 +147,35 @@ features:
       type: passive
       description: |
         You can learn another Eldritch Invocation, expanding your magical arsenal.
+
+spellcasting:
+  ability: Charisma
+  spellcasting_type: pact magic
+  spellcasting_focus: arcane focus
+
+  progression:
+    level1:
+      cantrips_known: 2
+      spells_known: 2
+      spell_slots:
+        level1: 1
+    level2:
+      cantrips_known: 2
+      spells_known: 3
+      spell_slots:
+        level1: 2
+    level3:
+      cantrips_known: 2
+      spells_known: 4
+      spell_slots:
+        level1: 2
+    level4:
+      cantrips_known: 3
+      spells_known: 5
+      spell_slots:
+        level1: 3
+    level5:
+      cantrips_known: 3
+      spells_known: 6
+      spell_slots:
+        level1: 3

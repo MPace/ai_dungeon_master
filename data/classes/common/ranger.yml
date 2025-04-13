@@ -169,3 +169,28 @@ features:
       type: passive
       description: |
         You can attack twice, instead of once, whenever you take the Attack action on your turn.
+
+
+spellcasting:
+  ability: Wisdom
+  spellcasting_type: prepared
+  spellcasting_focus: druidic focus
+
+  progression:
+    level2:
+      spells_known: 2
+      spell_slots:
+        level1: 2
+    level3:
+      spells_known: 3
+      spell_slots:
+        level1: 3
+    level4:
+      spells_known: 3
+      spell_slots:
+        level1: 3
+    level5:
+      spells_known: 4
+      spell_slots:
+        level1: 4
+        level2: 2

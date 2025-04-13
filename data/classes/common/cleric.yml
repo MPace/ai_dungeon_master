@@ -90,6 +90,7 @@ features:
         your spellcasting ability. You prepare a number of spells equal to your Wisdom modifier + your 
         cleric level.
 
+
     - name: Divine Domain
       type: choice
       description: |
@@ -157,3 +158,49 @@ features:
       type: passive
       description: |
         You gain access to 3rd-level cleric spells.
+
+spellcasting:
+  ability: Wisdom
+  spellcasting_type: prepared
+  spellcasting_focus: holy symbol
+  
+  progression:
+    level1:
+      cantrips_known: 3
+      preparation_formula: "wisdom_modifier + cleric_level"  
+      spell_slots:
+        level1: 2
+    level2:
+      cantrips_known: 3
+      preparation_formula: "wisdom_modifier + cleric_level"  
+      spell_slots:
+        level1: 3
+    level3:
+      cantrips_known: 3
+      preparation_formula: "wisdom_modifier + cleric_level"  
+      spell_slots:
+        level1: 4
+        level2: 2
+    level4:
+      cantrips_known: 3
+      preparation_formula: "wisdom_modifier + cleric_level"  
+      spell_slots:
+        level1: 4
+        level2: 3
+    level5:
+      cantrips_known: 3
+      preparation_formula: "wisdom_modifier + cleric_level"  
+      spell_slots:
+        level1: 4
+        level2: 3
+        level3: 2
+  
+  subclass_spells:
+    life:  # Domain name
+      level1: ["cure wounds", "bless"]
+      level3: ["lesser restoration", "spiritual weapon"]
+      level5: ["beacon of hope", "revivify"]
+    
+    light:
+      level1: ["burning hands", "faerie fire"]
+      

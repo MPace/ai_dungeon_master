@@ -146,3 +146,28 @@ features:
       description: |
         Whenever you or a friendly creature within 10 feet makes a saving throw, they gain a bonus equal 
         to your Charisma modifier (minimum +1). You must be conscious to grant this bonus.
+
+
+spellcasting: 
+  ability: Charisma
+  spellcasting_type: prepared
+  spellcasting_focus: holy symbol
+
+  progression:
+    level2:
+      preparation_formula: "Charisma modifier + paladin level/2"
+      spell_slots:
+        level1: 2
+    level3:
+      preparation_formula: "Charisma modifier + paladin level/2"
+      spell_slots: 
+        level1: 3
+    level4:
+      preparation_formula: "Charisma modifier + paladin level/2"
+      spell_slots:
+        level1: 3
+    level5:
+      preparation_formula: "Charisma modifier + paladin level/2"
+      spell_slots: 
+        level1: 4
+        level2: 2

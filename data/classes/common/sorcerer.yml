@@ -134,3 +134,40 @@ features:
       type: passive
       description: |
         Whenever you gain a level in this class, you can replace one known spell and one Metamagic option with another from the sorcerer list.
+
+
+spellcasting:
+  ability: Charisma
+  spellcasting_type: known
+  spellcasting_focus: arcane focus
+
+  progression:
+    level1:
+      cantrips_known: 4
+      spells_known: 2
+      spell_slots: 
+        level1: 2
+    level2:
+      cantrips_known: 4
+      spells_known: 3
+      spell_slots:
+        level1: 3
+    level3:
+      cantrips_known: 4
+      spells_known: 4
+      spell_slots: 
+        level1: 4
+        level2: 2
+    level4:
+      cantrips_known: 5
+      spells_known: 5
+      spell_slots: 
+        level1: 4
+        level2: 3
+    level5:
+      cantrips_known: 5
+      spells_known: 6
+      spell_slots: 
+        level1: 4
+        level2: 3
+        level3: 2

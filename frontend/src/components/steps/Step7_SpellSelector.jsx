@@ -39,51 +39,57 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
         return false;
     }, [characterData.raceData, characterData.subraceId]);
 
-    // Calculate spell slots based on class
+    // Get spell slots based on class data
     useEffect(() => {
         if (!hasSpellcasting() && !hasRacialSpellcasting()) {
-            // If character can't cast spells, skip loading
             setIsLoading(false);
             return;
         }
-
-        // Get spell slots based on class
-        if (hasSpellcasting()) {
-            switch (characterData.classId) {
-                case 'wizard':
-                case 'cleric':
-                case 'druid':
-                case 'bard':
-                    setMaxCantrips(3);
-                    setMaxSpells(6); // Typically Intelligence/Wisdom/Charisma mod + level (assumed to be ~3 at level 1)
-                    break;
-                case 'sorcerer':
-                    setMaxCantrips(4);
-                    setMaxSpells(2);
-                    break;
-                case 'warlock':
-                    setMaxCantrips(2);
-                    setMaxSpells(2);
-                    break;
-                case 'paladin':
-                case 'ranger':
-                    // These classes don't get spells at level 1
-                    setMaxCantrips(0);
-                    setMaxSpells(0);
-                    break;
-                default:
-                    setMaxCantrips(0);
-                    setMaxSpells(0);
-                    break;
+    
+        // Extract spell counts from the spellcasting progression
+        if (characterData.classData && characterData.classData.spellcasting) {
+            const spellcasting = characterData.classData.spellcasting;
+            const level1Data = spellcasting.progression?.level1;
+            
+            if (level1Data) {
+                // Set cantrips count
+                setMaxCantrips(level1Data.cantrips_known || 0);
+                
+                // Set spells count based on spellcasting type
+                if (spellcasting.spellcasting_type === 'known') {
+                    // Known spellcasters like bards and sorcerers have a fixed number
+                    setMaxSpells(level1Data.spells_known || 0);
+                } 
+                else if (spellcasting.spellcasting_type === 'prepared') {
+                    // Prepared spellcasters like clerics and druids use an ability modifier formula
+                    // We need to calculate this based on their ability scores
+                    const abilityName = spellcasting.ability.toLowerCase();
+                    const abilityScore = characterData.finalAbilityScores?.[abilityName] || 10;
+                    const abilityModifier = Math.floor((abilityScore - 10) / 2);
+                    
+                    // At level 1, they can prepare ability modifier + level (minimum 1)
+                    const preparedCount = Math.max(1, abilityModifier + 1);
+                    setMaxSpells(preparedCount);
+                    
+                    // If they have domain/circle spells that are always prepared,
+                    // we could show those separately or add them automatically
+                    
+                    // Check for domain spells if this is a cleric
+                    if (characterData.classId === 'cleric' && characterData.domainId) {
+                        const domainSpells = spellcasting.subclass_spells?.[characterData.domainId]?.level1 || [];
+                        console.log(`Domain spells for ${characterData.domainId}: ${domainSpells.join(', ')}`);
+                        // We could automatically select these or show them separately
+                    }
+                }
             }
         }
-
-        // For racial spellcasting (High Elf), allow 1 cantrip if not already a spellcaster
+        
+        // For racial spellcasting
         if (hasRacialSpellcasting() && !hasSpellcasting()) {
             setMaxCantrips(1);
             setShowExtraSpells(true);
         }
-    }, [characterData.classId, hasSpellcasting, hasRacialSpellcasting]);
+    }, [characterData.classData, characterData.finalAbilityScores, characterData.domainId, hasSpellcasting, hasRacialSpellcasting]);
 
     // Fetch spells data
     useEffect(() => {

@@ -94,6 +94,16 @@ features:
           name: Archery
           description: |
             You gain a +2 bonus to attack rolls you make with ranged weapons.
+          
+        - id: protection
+          name: Protection
+          description: |
+            When a creature you can see attacks a target other than you within 5 feet of you, you can use your reaction to impose disadvantage on the attack roll. You must be wearing armor to use this feature.
+          
+        - id: two_weapon_fighting
+          name: Two-Weapon Fighting
+          description: |
+            When you engage in two-weapon fighting, you can add your ability modifier to the damage of the second attack.
 
     - name: Second Wind
       type: active

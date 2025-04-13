@@ -160,3 +160,40 @@ features:
         You can use musical notes or words of power to disrupt mind-influencing effects. As an action, you 
         grant yourself and all friendly creatures within 30 feet advantage on saving throws against being 
         frightened or charmed. The effect lasts until the start of your next turn.
+
+
+spellcasting:
+  ability: Charisma
+  spellcasting_type: known
+  spellcasting_focus: musical instrument
+
+  progression:
+    level1:
+      cantrips_known: 2
+      spells_known: 4
+      spell_slots: 
+        level1: 2
+    level2:
+      cantrips_known: 2
+      spells_known: 5
+      spell_slots:
+        level1: 3
+    level3:
+      cantrips_known: 2
+      spells_known: 6
+      spell_slots: 
+        level1: 4
+        level2: 2
+    level4:
+      cantrips_known: 3
+      spells_known: 7
+      spell_slots: 
+        level1: 4
+        level2: 3
+    level5:
+      cantrips_known: 3
+      spells_known: 8
+      spell_slots: 
+        level1: 4
+        level2: 3
+        level3: 2
