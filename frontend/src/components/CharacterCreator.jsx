@@ -6,7 +6,8 @@ import Step1_WorldSelector from './steps/Step1_WorldSelector';
 import Step2_CampaignSelector from './steps/Step2_CampaignSelector';
 import Step3_ClassSelector from './steps/Step3_ClassSelector';
 import Step4_CharacterInfo from './steps/Step4_CharacterInfo';
-import Step5_AbilityScores from './steps/Step5_AbilityScores'; // Import the new component
+import Step5_AbilityScores from './steps/Step5_AbilityScores'; 
+import Step6_ClassFeatures from './steps/Step6_ClassFeatures';
 // Import other steps when ready
 
 const initialCharacterData = {
@@ -109,6 +110,15 @@ function CharacterCreator() {
                         prevStep={prevStep}
                     />
                 )
+                case 6:
+                    return (
+                        <Step6_ClassFeatures
+                            characterData={characterData}
+                            updateCharacterData={updateCharacterData}
+                            nextStep={nextStep}
+                            prevStep={prevStep}
+                        />
+                    )
             // Add cases for other steps
             default:
                 return <div>Step {currentStep} - Component not implemented yet.</div>;

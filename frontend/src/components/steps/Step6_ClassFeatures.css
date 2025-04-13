@@ -1,0 +1,604 @@
+/* File: frontend/src/components/steps/Step6_ClassFeatures.css */
+
+/* Overall container */
+.step6-outer-container {
+    width: 100%;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 20px 30px;
+}
+
+/* Title Style */
+.step6-title {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 2.5rem;
+    text-shadow: 0 0 15px rgba(255, 100, 0, 0.5);
+    margin-bottom: 40px;
+    position: relative;
+}
+
+.step6-title::after {
+    content: "";
+    position: absolute;
+    width: 120px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #a24a2c, transparent);
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Features section */
+.features-section {
+    background-color: rgba(31, 31, 41, 0.7);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+.section-heading {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    text-align: center;
+    position: relative;
+}
+
+.section-heading::after {
+    content: "";
+    position: absolute;
+    width: 80px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #a24a2c, transparent);
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.section-description {
+    color: #cccccc;
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 1.05rem;
+}
+
+/* Feature grid */
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.feature-card {
+    background-color: rgba(41, 41, 51, 0.7);
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid rgba(60, 60, 70, 0.6);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    border-color: rgba(162, 74, 44, 0.4);
+}
+
+.feature-card.required-feature {
+    border-left: 3px solid #a24a2c;
+}
+
+.feature-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.feature-name {
+    font-family: 'Cinzel', serif;
+    color: #e0e0e0;
+    font-size: 1.3rem;
+    margin: 0;
+}
+
+.feature-type-badge {
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.active-type {
+    background-color: rgba(162, 74, 44, 0.2);
+    color: #ff6400;
+    border: 1px solid rgba(162, 74, 44, 0.4);
+}
+
+.passive-type {
+    background-color: rgba(60, 60, 120, 0.2);
+    color: #8080ff;
+    border: 1px solid rgba(60, 60, 120, 0.4);
+}
+
+.feature-description {
+    color: #aaaaaa;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+.feature-usage, .feature-action-type {
+    display: inline-block;
+    margin-right: 15px;
+    color: #cccccc;
+    font-size: 0.9rem;
+}
+
+.feature-usage i, .feature-action-type i {
+    color: #a24a2c;
+    margin-right: 5px;
+}
+
+/* Feature group styling */
+.feature-group {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(80, 80, 90, 0.3);
+}
+
+.feature-group:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.feature-group-name {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.feature-group-description {
+    color: #cccccc;
+    font-size: 1rem;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+/* Choice grid */
+.choice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.choice-grid.needs-selection {
+    border: 2px dashed rgba(162, 74, 44, 0.4);
+    border-radius: 15px;
+    padding: 20px;
+    animation: pulse 2s infinite;
+}
+
+.choice-card {
+    background-color: rgba(41, 41, 51, 0.7);
+    border-radius: 10px;
+    padding: 20px;
+    border: 2px solid rgba(60, 60, 70, 0.6);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.choice-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    border-color: rgba(162, 74, 44, 0.5);
+}
+
+.choice-card.selected {
+    border-color: #a24a2c;
+    box-shadow: 0 0 20px rgba(255, 100, 0, 0.3);
+    animation: pulse 2s infinite;
+}
+
+.choice-header {
+    margin-bottom: 10px;
+}
+
+.choice-name {
+    font-family: 'Cinzel', serif;
+    color: #e0e0e0;
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.choice-description {
+    color: #aaaaaa;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+.choice-benefit {
+    padding: 5px 10px;
+    background-color: rgba(44, 133, 44, 0.2);
+    border: 1px solid rgba(44, 133, 44, 0.4);
+    border-radius: 5px;
+    color: #6aff6a;
+    font-size: 0.9rem;
+    margin-top: 10px;
+}
+
+.choice-benefit i {
+    margin-right: 5px;
+}
+
+.selected-indicator {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    color: #a24a2c;
+    font-weight: bold;
+    font-size: 0.9rem;
+    display: none;
+}
+
+.choice-card.selected .selected-indicator {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Details button */
+.details-button {
+    background-color: rgba(60, 60, 70, 0.6);
+    color: #cccccc;
+    border: 1px solid rgba(60, 60, 70, 0.8);
+    border-radius: 15px;
+    padding: 5px 10px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-block;
+    margin-bottom: 15px;
+}
+
+.details-button:hover {
+    background-color: rgba(162, 74, 44, 0.3);
+    color: #ffffff;
+    border-color: #a24a2c;
+}
+
+/* Feature Details Modal */
+.feature-details-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
+}
+
+.feature-details-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.feature-details-modal {
+    width: 90%;
+    max-width: 700px;
+    max-height: 85vh;
+    background-color: #1a1a20;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 100, 0, 0.2);
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    border: 3px solid #a24a2c;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    animation: modalFadeIn 0.3s forwards;
+}
+
+.feature-details-overlay.active .feature-details-modal {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+.close-button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    border: none;
+    outline: none;
+}
+
+.close-button:hover {
+    background-color: #a24a2c;
+    transform: rotate(90deg);
+}
+
+.feature-details-header {
+    padding: 25px 30px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.feature-details-name {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 1.8rem;
+    margin: 0;
+}
+
+.feature-details-type {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+}
+
+.feature-details-content {
+    padding: 0 30px 30px;
+    overflow-y: auto;
+    max-height: calc(85vh - 80px);
+}
+
+.feature-details-description {
+    color: #cccccc;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    white-space: pre-line;
+}
+
+.feature-details-usage, 
+.feature-details-action, 
+.feature-details-benefit {
+    margin-top: 15px;
+    background-color: rgba(41, 41, 51, 0.7);
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid rgba(60, 60, 70, 0.6);
+}
+
+.feature-details-usage h4, 
+.feature-details-action h4, 
+.feature-details-benefit h4 {
+    color: #a24a2c;
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
+.feature-details-usage p, 
+.feature-details-action p, 
+.feature-details-benefit p {
+    color: #cccccc;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Navigation Buttons */
+.step6-navigation {
+    width: 100%;
+    max-width: 900px;
+    padding: 30px 0 20px;
+    margin-top: 30px;
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid rgba(80, 80, 90, 0.3);
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.back-button {
+    background-color: transparent;
+    color: #cccccc;
+    border: 1px solid #555;
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.back-button:hover {
+    background-color: rgba(60, 60, 70, 0.5);
+    border-color: #777;
+    color: #ffffff;
+}
+
+.continue-button {
+    background-color: rgba(134, 58, 32, 0.2);
+    color: #888;
+    border: 1px solid rgba(134, 58, 32, 0.3);
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.continue-button.active {
+    background-color: #863a20;
+    color: white;
+    border-color: #863a20;
+    cursor: pointer;
+}
+
+.continue-button.active:hover {
+    background-color: #a24a2c;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(255, 100, 0, 0.2);
+}
+
+/* Loading and Error States */
+.loading-container, 
+.error-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    width: 100%;
+    color: #ccc;
+    gap: 20px;
+}
+
+.loading-container .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: #a24a2c;
+}
+
+.error-container {
+    color: #dc3545;
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 8px;
+    padding: 30px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 100, 0, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 100, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 100, 0, 0); }
+}
+
+@keyframes shake {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(-10px); }
+    40% { transform: translateX(10px); }
+    60% { transform: translateX(-10px); }
+    80% { transform: translateX(10px); }
+    100% { transform: translateX(0); }
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.95) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 992px) {
+    .step6-title {
+        font-size: 2.2rem;
+    }
+    
+    .feature-grid, .choice-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .feature-details-name {
+        font-size: 1.6rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .step6-title {
+        font-size: 2rem;
+    }
+    
+    .feature-grid, .choice-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .feature-details-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .feature-details-type {
+        align-self: flex-start;
+    }
+    
+    .step6-navigation {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .back-button, .continue-button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .step6-title {
+        font-size: 1.8rem;
+    }
+    
+    .section-heading {
+        font-size: 1.5rem;
+    }
+    
+    .feature-name, .choice-name {
+        font-size: 1.1rem;
+    }
+    
+    .feature-details-name {
+        font-size: 1.4rem;
+    }
+    
+    .feature-details-content {
+        padding: 0 20px 20px;
+    }
+}

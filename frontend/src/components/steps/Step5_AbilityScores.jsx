@@ -824,7 +824,7 @@ function Step5_AbilityScores({ characterData, updateCharacterData, nextStep, pre
           onClick={handleContinue}
           disabled={!canContinue}
         >
-          Continue to Skills <i className="bi bi-arrow-right"></i>
+          Continue to Class Features <i className="bi bi-arrow-right"></i>
         </button>
       </div>
     </div>
