@@ -576,8 +576,9 @@ def get_world_data(world_id):
         world_specific_data = {
             "classes": [],
             "races": [],
-            "backgrounds": []
-            # Add spells, equipment etc.
+            "backgrounds": [],
+            "spells": []
+            
         }
 
         # Load Classes
@@ -685,7 +686,23 @@ def get_world_data(world_id):
                 current_app.logger.warning(f"Could not find background file for {bg_id}")
 
              
-        # --- TODO: Add similar loading logic for spells, equipment packs etc. ---
+        current_app.logger.info(f"Loading spells for world '{world_id}'")
+        SPELLS_DIR = os.path.join(DATA_DIR, 'spells')
+        if os.path.exists(SPELLS_DIR):
+            # Process each spell level directory
+            for level_dir in ['cantrips', 'level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9']:
+                level_path = os.path.join(SPELLS_DIR, level_dir)
+                if os.path.exists(level_path):
+                    for filename in os.listdir(level_path):
+                        if filename.endswith(('.yaml', '.yml')):
+                            spell_file = os.path.join(level_path, filename)
+                            current_app.logger.debug(f"Loading spell file: {spell_file}")
+                            spell_data = load_data_from_file(spell_file)
+                            if spell_data:
+                                world_specific_data["spells"].append(spell_data)
+                                current_app.logger.debug(f"Added spell: {spell_data.get('name')}")
+        else:
+            current_app.logger.warning(f"Spells directory not found at {SPELLS_DIR}")
 
         return jsonify({"success": True, "data": world_specific_data})
 
