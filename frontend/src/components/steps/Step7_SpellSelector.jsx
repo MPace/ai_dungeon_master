@@ -21,7 +21,7 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
     // Ref for spell details modal
     const spellDetailsRef = useRef(null);
 
-    const classMatchesSpell = (classId, spellClasses) => {
+    const classMatchesSpell = useCallback ((classId, spellClasses) => {
         if (!spellClasses) return false;
         
         const normalizedClassId = classId.toLowerCase();
@@ -34,7 +34,7 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
         }
         
         return false;
-    };
+    }, []);
 
     // Determine if the class can cast spells
     const hasSpellcasting = useCallback(() => {
@@ -168,27 +168,24 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
                         
                         // Properly filter by class
                         data.data.spells.forEach(spell => {
-                            // Debug output for each spell
-                            console.log(`Checking spell: ${spell.name}, Level: ${spell.level}, Classes: ${JSON.stringify(spell.classes)}`);
-                            
                             // For regular spellcasting class
                             if (hasSpellcasting() && classMatchesSpell(characterData.classId, spell.classes)) {
-                                if (spell.level === 0) {
-                                    classSpells.cantrips.push(spell);
-                                    console.log(`Added cantrip for ${characterData.classId}: ${spell.name}`);
-                                } else if (spell.level === 1) {
-                                    classSpells.level1.push(spell);
-                                    console.log(`Added 1st-level spell for ${characterData.classId}: ${spell.name}`);
-                                }
+                              if (spell.level === 0) {
+                                classSpells.cantrips.push(spell);
+                                console.log(`Added cantrip for ${characterData.classId}: ${spell.name}`);
+                              } else if (spell.level === 1) {
+                                classSpells.level1.push(spell);
+                                console.log(`Added 1st-level spell for ${characterData.classId}: ${spell.name}`);
+                              }
                             }
                             // For racial spellcasting (High Elf), add wizard cantrips
                             else if (hasRacialSpellcasting() && !hasSpellcasting() && spell.level === 0) {
-                                if (classMatchesSpell('wizard', spell.classes)) {
-                                    classSpells.cantrips.push(spell);
-                                    console.log(`Added racial cantrip: ${spell.name}`);
-                                }
+                              if (classMatchesSpell('wizard', spell.classes)) {
+                                classSpells.cantrips.push(spell);
+                                console.log(`Added racial cantrip: ${spell.name}`);
+                              }
                             }
-                        });
+                          });
                         
                         // Log the results after filtering
                         console.log(`After filtering: ${classSpells.cantrips.length} cantrips, ${classSpells.level1.length} level 1 spells`);
@@ -209,7 +206,7 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
                 setError(`Failed to load spells: ${err.message}. Check your connection or try again later.`);
                 setIsLoading(false);
             });
-    }, [characterData.worldId, characterData.classId, hasSpellcasting, hasRacialSpellcasting, updateCharacterData, classMatchesSpell]);
+    }, [characterData.worldId, characterData.classId, hasSpellcasting, hasRacialSpellcasting, updateCharacterData]);
 
     // Handle spell selection
     const handleSpellSelect = (spellId, spellType) => {
