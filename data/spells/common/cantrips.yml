@@ -26,6 +26,8 @@ effects:
   - saving_throw: dexterity
   - targets: one or two creatures within 5 feet of each other
 
+---
+
 # Blade Ward
 id: blade_ward
 name: Blade Ward
@@ -45,6 +47,8 @@ classes: [bard, sorcerer, warlock, wizard]
 
 effects:
   - resistance: bludgeoning, piercing, and slashing from weapon attacks
+
+---
 
 # Chill Touch
 id: chill_touch
@@ -77,6 +81,8 @@ effects:
   - condition: can't regain hit points
   - undead_disadvantage: true
 
+---
+
 # Dancing Lights
 id: dancing_lights
 name: Dancing Lights
@@ -101,6 +107,8 @@ classes: [bard, sorcerer, wizard]
 effects:
   - light: dim, 10-foot radius
   - movement: move lights as bonus action
+
+---
 
 # Druidcraft
 id: druidcraft
@@ -127,6 +135,8 @@ classes: [druid]
 effects:
   - sensory_effect: harmless nature effect
   - utility: predict weather, ignite/snuff flame, affect plants
+
+---
 
 # Eldritch Blast
 id: eldritch_blast
@@ -156,6 +166,8 @@ effects:
   - attack_type: ranged_spell
   - scaling: multiple beams at higher levels
 
+---
+
 # Fire Bolt
 id: fire_bolt
 name: Fire Bolt
@@ -184,6 +196,8 @@ effects:
   - attack_type: ranged_spell
   - ignite_flammable_objects: true
 
+---
+
 # Guidance
 id: guidance
 name: Guidance
@@ -205,6 +219,8 @@ classes: [cleric, druid]
 
 effects:
   - bonus: +1d4 to one ability check
+
+---
 
 # Light
 id: light
@@ -229,6 +245,8 @@ classes: [bard, cleric, sorcerer, wizard]
 
 effects:
   - light: bright 20 feet, dim 20 feet
+
+---
 
 # Mage Hand
 id: mage_hand
@@ -255,6 +273,8 @@ effects:
   - utility: floating hand to interact with objects
   - movement: 30 feet as bonus action
 
+---
+
 # Mending
 id: mending
 name: Mending
@@ -278,6 +298,8 @@ classes: [bard, cleric, druid, sorcerer, wizard]
 
 effects:
   - utility: repairs minor breaks in objects
+
+---
 
 # Message
 id: message
@@ -304,6 +326,7 @@ effects:
   - communication: private two-way message
   - barrier_rules: limited material penetration
 
+---
 
 # Minor Illusion
 id: minor_illusion
@@ -333,6 +356,8 @@ effects:
   - size_limit: 5-foot cube
   - investigation_reveal: true
 
+---
+
 # Poison Spray
 id: poison_spray
 name: Poison Spray
@@ -359,6 +384,8 @@ damage:
 
 effects:
   - saving_throw: constitution
+
+---
 
 # Prestidigitation
 id: prestidigitation
@@ -390,6 +417,8 @@ effects:
   - utility: minor magical effects
   - limit: 3 effects active
 
+---
+
 # Produce Flame
 id: produce_flame
 name: Produce Flame
@@ -420,6 +449,8 @@ effects:
   - light: bright 10 feet, dim 10 feet
   - attack_type: ranged_spell
 
+---
+
 # Ray of Frost
 id: ray_of_frost
 name: Ray of Frost
@@ -448,6 +479,8 @@ effects:
   - attack_type: ranged_spell
   - movement_penalty: -10 feet
 
+---
+
 # Resistance
 id: resistance
 name: Resistance
@@ -469,6 +502,8 @@ classes: [cleric, druid]
 
 effects:
   - bonus: +1d4 to one saving throw
+
+---
 
 # Sacred Flame
 id: sacred_flame
@@ -498,6 +533,8 @@ effects:
   - saving_throw: dexterity
   - ignore_cover: true
 
+---
+
 # Shillelagh
 id: shillelagh
 name: Shillelagh
@@ -520,6 +557,8 @@ classes: [druid]
 effects:
   - weapon_buff: use spellcasting for attack/damage, damage becomes d8
   - weapon_type: club or quarterstaff
+
+---
 
 # Shocking Grasp
 id: shocking_grasp
@@ -552,6 +591,8 @@ effects:
   - reaction_denial: true
   - advantage_condition: metal armor
 
+---
+
 # Spare the Dying
 id: spare_the_dying
 name: Spare the Dying
@@ -572,6 +613,8 @@ classes: [cleric]
 effects:
   - utility: stabilize creature at 0 HP
   - restriction: not effective on undead or constructs
+
+---
 
 # Thaumaturgy
 id: thaumaturgy
@@ -603,6 +646,8 @@ effects:
   - utility: minor supernatural effects
   - limit: 3 effects active
 
+---
+
 # Thorn Whip
 id: thorn_whip
 name: Thorn Whip
@@ -631,6 +676,8 @@ effects:
   - attack_type: melee_spell
   - pull_effect: 10 feet
 
+---
+
 # True Strike
 id: true_strike
 name: True Strike
@@ -650,6 +697,8 @@ classes: [bard, sorcerer, warlock, wizard]
 
 effects:
   - advantage: next attack against target
+
+---
 
 # Vicious Mockery
 id: vicious_mockery
