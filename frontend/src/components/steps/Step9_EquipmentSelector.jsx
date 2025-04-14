@@ -175,7 +175,12 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
     };
 
     // Handler for showing item details
-    const handleShowDetails = (item) => {
+    const handleShowDetails = (item, e) => {
+        // If the event is provided, prevent it from bubbling up to parent elements
+        if (e) {
+            e.stopPropagation();
+        }
+        
         // Get full item details from our consolidated data
         const details = getItemDetails(item.id || item.item, item.type);
         
@@ -191,6 +196,8 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
                     itemDetailsRef.current.classList.add('active');
                 }
             }, 10);
+        } else {
+            console.warn(`No details found for item: ${item.item || item.id}`);
         }
     };
 
@@ -314,8 +321,9 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
                                         <button 
                                             className="details-button"
                                             onClick={(e) => {
+                                                // Stop propagation to prevent triggering the parent's onClick
                                                 e.stopPropagation();
-                                                handleShowDetails(item);
+                                                handleShowDetails(item, e);
                                             }}
                                         >
                                             <i className="bi bi-info-circle"></i>
