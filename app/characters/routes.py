@@ -698,75 +698,56 @@ def get_world_data(world_id):
 
         # Load Spells     
         current_app.logger.info(f"Loading spells for world '{world_id}'")
-        if os.path.exists(SPELLS_DIR):
-            # First check for direct files
-            spell_files = {
-                'cantrips': 0,  # level 0
-                'level1': 1,
-                'level2': 2,
-                'level3': 3,
-                'level4': 4,
-                'level5': 5,
-                'level6': 6,
-                'level7': 7,
-                'level8': 8,
-                'level9': 9
-            }
-            
-            for file_name, level_value in spell_files.items():
+        all_spells_loaded = [] # Temporary list to hold all loaded spells
+
+        # Define the spell files and their corresponding levels
+        spell_files_info = {
+            'cantrips': 0,
+            'level1': 1,
+            'level2': 2,
+            'level3': 3,
+            'level4': 4,
+            'level5': 5,
+            'level6': 6,
+            'level7': 7,
+            'level8': 8,
+            'level9': 9
+        }
+
+        # Correct path to the 'common' spells directory
+        common_spells_dir = os.path.join(SPELLS_DIR, 'common')
+
+        if os.path.exists(common_spells_dir):
+            for file_base_name, level_value in spell_files_info.items():
                 # Try both .yml and .yaml extensions
                 for ext in ['.yml', '.yaml']:
-                    file_path = os.path.join(SPELLS_DIR, 'common', f"{file_name}{ext}")
+                    file_path = os.path.join(common_spells_dir, f"{file_base_name}{ext}")
                     if os.path.exists(file_path):
-                        current_app.logger.debug(f"Loading spells from file: {file_path}")
+                        current_app.logger.debug(f"Processing spell file: {file_path}")
                         try:
                             with open(file_path, 'r', encoding='utf-8') as f:
-                                for spell in yaml.safe_load_all(f):  # Use load_all for multi-document YAML
+                                # Use safe_load_all as these are multi-document files
+                                loaded_docs = list(yaml.safe_load_all(f))
+                                current_app.logger.debug(f"Found {len(loaded_docs)} spell documents in {file_path}")
+                                for spell in loaded_docs:
                                     if spell and isinstance(spell, dict):
-                                        # Ensure level is set correctly
-                                        spell['level'] = level_value
-                                        world_specific_data["spells"].append(spell)
-                                        current_app.logger.debug(f"Added spell: {spell.get('name')}")
+                                        spell['level'] = level_value # Assign correct level
+                                        all_spells_loaded.append(spell)
+                                        # Optional: Deeper log for debugging individual spells
+                                        # current_app.logger.debug(f"  - Loaded spell: {spell.get('name', 'UNKNOWN')}")
+                                    # else: # Optional: log if a document wasn't a dict
+                                        # current_app.logger.warning(f"  - Skipped non-dict document in {file_path}")
+                        except yaml.YAMLError as e:
+                            current_app.logger.error(f"YAML parsing error in {file_path}: {e}")
                         except Exception as e:
-                            current_app.logger.error(f"Error loading spells from {file_path}: {e}")
-                        break  # Found and processed the file, no need to check other extension
-            
-            # Also check directories for backwards compatibility
-            for level_dir in ['cantrips', 'level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9']:
-                level_path = os.path.join(SPELLS_DIR, 'common', level_dir)
-                if os.path.exists(level_path) and os.path.isdir(level_path):
-                    for filename in os.listdir(level_path):
-                        if filename.endswith(('.yaml', '.yml')):
-                            spell_file = os.path.join(level_path, filename)
-                            current_app.logger.debug(f"Loading spell file: {spell_file}")
-                            try:
-                                with open(spell_file, 'r', encoding='utf-8') as f:
-                                    if filename.endswith('.yml'):
-                                        # Try as multi-document first
-                                        for spell in yaml.safe_load_all(f):
-                                            if spell and isinstance(spell, dict):
-                                                # Set level based on directory
-                                                if level_dir == 'cantrips':
-                                                    spell['level'] = 0
-                                                else:
-                                                    level_num = int(level_dir.replace('level', ''))
-                                                    spell['level'] = level_num
-                                                world_specific_data["spells"].append(spell)
-                                                current_app.logger.debug(f"Added spell: {spell.get('name')}")
-                                    else:
-                                        # Single document
-                                        spell_data = yaml.safe_load(f)
-                                        if spell_data and isinstance(spell_data, dict):
-                                            # Set level based on directory
-                                            if level_dir == 'cantrips':
-                                                spell_data['level'] = 0
-                                            else:
-                                                level_num = int(level_dir.replace('level', ''))
-                                                spell_data['level'] = level_num
-                                            world_specific_data["spells"].append(spell_data)
-                                            current_app.logger.debug(f"Added spell: {spell_data.get('name')}")
-                            except Exception as e:
-                                current_app.logger.error(f"Error loading spell file {spell_file}: {e}")
+                            current_app.logger.error(f"Error reading or processing {file_path}: {e}")
+                        break # Found the file with one extension, no need to check the other
+        else:
+             current_app.logger.warning(f"Common spells directory not found: {common_spells_dir}")
+
+        # Add the loaded spells to the main data structure
+        world_specific_data["spells"] = all_spells_loaded
+        current_app.logger.info(f"Finished loading spells. Total spells loaded: {len(all_spells_loaded)}")
             
 
         # Load Proficiencies
