@@ -89,42 +89,31 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
     const getItemDetails = (itemId, type) => {
         if (!itemId) return null;
         
-        console.log(`Looking up details for item: ${itemId}, type: ${type || 'any'}`);
+        // For debugging
+        console.log("Looking up:", itemId, type);
         
-        // First, try to normalize the item ID
         const normalizedId = itemId.toLowerCase().replace(/\s+/g, '_');
         let itemDetails = null;
         
-        // Check if this is a compound item (contains "and")
-        if (itemId.includes(" and ")) {
-            // Split the compound item and return a custom details object
-            const items = itemId.split(" and ");
-            return {
-                name: itemId,
-                description: `A combination of ${items.join(" and ")}.`,
-                category: type || 'equipment',
-                compound: true,
-                components: items
-            };
-        }
-        
-        // Check weapons
+        // For weapons (has extra nesting level)
         if (!itemDetails && (type === 'weapon' || !type)) {
-            // Look in all weapon subcategories
+            // Loop through each weapon category (simple_melee, martial_ranged, etc.)
             for (const category in equipmentDetails.weapons) {
-                // Check for exact match with normalized ID
-                if (equipmentDetails.weapons[category][normalizedId]) {
+                const weaponCategory = equipmentDetails.weapons[category];
+                
+                // Check if this category contains our item
+                if (weaponCategory[normalizedId]) {
                     itemDetails = {
-                        ...equipmentDetails.weapons[category][normalizedId],
+                        ...weaponCategory[normalizedId],
                         category: 'weapon',
                         subcategory: category
                     };
                     break;
                 }
                 
-                // If no exact match, search by name (case-insensitive)
-                for (const key in equipmentDetails.weapons[category]) {
-                    const weapon = equipmentDetails.weapons[category][key];
+                // If not found by ID, try by name
+                for (const weaponId in weaponCategory) {
+                    const weapon = weaponCategory[weaponId];
                     if (weapon.name && weapon.name.toLowerCase() === itemId.toLowerCase()) {
                         itemDetails = {
                             ...weapon,
@@ -134,26 +123,29 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
                         break;
                     }
                 }
+                
                 if (itemDetails) break;
             }
         }
         
-        // Similar checks for armor
+        // For armor (has extra nesting level)
         if (!itemDetails && (type === 'armor' || !type)) {
             for (const category in equipmentDetails.armor) {
-                // Check for exact match with normalized ID
-                if (equipmentDetails.armor[category][normalizedId]) {
+                const armorCategory = equipmentDetails.armor[category];
+                
+                // Check if this category contains our item
+                if (armorCategory[normalizedId]) {
                     itemDetails = {
-                        ...equipmentDetails.armor[category][normalizedId],
+                        ...armorCategory[normalizedId],
                         category: 'armor',
                         subcategory: category
                     };
                     break;
                 }
                 
-                // If no exact match, search by name
-                for (const key in equipmentDetails.armor[category]) {
-                    const armor = equipmentDetails.armor[category][key];
+                // If not found by ID, try by name
+                for (const armorId in armorCategory) {
+                    const armor = armorCategory[armorId];
                     if (armor.name && armor.name.toLowerCase() === itemId.toLowerCase()) {
                         itemDetails = {
                             ...armor,
@@ -163,22 +155,22 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
                         break;
                     }
                 }
+                
                 if (itemDetails) break;
             }
         }
         
-        // Check packs
+        // For packs (direct top-level items)
         if (!itemDetails && (type === 'pack' || !type)) {
-            // Check exact match
             if (equipmentDetails.packs[normalizedId]) {
                 itemDetails = {
                     ...equipmentDetails.packs[normalizedId],
                     category: 'pack'
                 };
             } else {
-                // Search by name
-                for (const key in equipmentDetails.packs) {
-                    const pack = equipmentDetails.packs[key];
+                // Try by name
+                for (const packId in equipmentDetails.packs) {
+                    const pack = equipmentDetails.packs[packId];
                     if (pack.name && pack.name.toLowerCase() === itemId.toLowerCase()) {
                         itemDetails = {
                             ...pack,
@@ -190,18 +182,17 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
             }
         }
         
-        // Check gear
+        // For gear (direct top-level items)
         if (!itemDetails && (type === 'gear' || !type)) {
-            // Check exact match
             if (equipmentDetails.gear[normalizedId]) {
                 itemDetails = {
                     ...equipmentDetails.gear[normalizedId],
                     category: 'gear'
                 };
             } else {
-                // Search by name
-                for (const key in equipmentDetails.gear) {
-                    const gear = equipmentDetails.gear[key];
+                // Try by name
+                for (const gearId in equipmentDetails.gear) {
+                    const gear = equipmentDetails.gear[gearId];
                     if (gear.name && gear.name.toLowerCase() === itemId.toLowerCase()) {
                         itemDetails = {
                             ...gear,
@@ -213,18 +204,23 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
             }
         }
         
-        // If still not found, add a fallback
-        if (!itemDetails) {
-            console.warn(`No details found for item: ${itemId}`);
-            itemDetails = {
+        // Special case for compound items
+        if (!itemDetails && itemId.includes(" and ")) {
+            const parts = itemId.split(" and ").map(part => part.trim());
+            return {
                 name: itemId,
-                description: `A standard ${itemId.toLowerCase()}.`,
-                category: type || 'equipment'
+                description: `This equipment consists of: ${parts.join(" and ")}.`,
+                category: type || 'equipment',
+                compound: true
             };
         }
         
+        if (!itemDetails) {
+            console.warn(`No details found for item: ${itemId}`);
+        }
+        
         return itemDetails;
-    };            
+    };       
         
 
     // Handler for selecting equipment option
