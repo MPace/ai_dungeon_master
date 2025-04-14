@@ -24,6 +24,8 @@ effects:
   - alarm_type: mental or audible
   - customization: exclude designated creatures
 
+---
+
 # Animal Friendship
 id: animal_friendship
 name: Animal Friendship
@@ -47,6 +49,8 @@ effects:
   - saving_throw: wisdom
   - condition: charmed
   - restriction: fails if Intelligence >= 4
+
+---
 
 # Bane
 id: bane
@@ -75,6 +79,8 @@ effects:
   - penalty: -1d4 to attacks and saves
   - target_limit: 3 (scales with level)
 
+---
+
 # Bless
 id: bless
 name: Bless
@@ -100,6 +106,8 @@ atHigherLevels: |
 effects:
   - bonus: +1d4 to attacks and saves
   - target_limit: 3 (scales with level)
+
+---
 
 # Burnings Hands
 id: burning_hands
@@ -135,6 +143,8 @@ effects:
   - saving_throw: dexterity
   - ignite_objects: true
 
+---
+
 # Charm Person
 id: charm_person
 name: Charm Person
@@ -167,6 +177,8 @@ effects:
   - target_type: humanoid
   - target_limit: 1 (scales with level)
   - post_effect: target knows it was charmed
+
+---
 
 # Color Spray
 id: color_spray
@@ -205,6 +217,8 @@ effects:
   - target_order: ascending HP
   - scaling: +2d10 per slot level above 1st
 
+---
+
 # Command
 id: command
 name: Command
@@ -236,6 +250,8 @@ effects:
   - compel_action: one-word command
   - target_limit: 1 (scales with level)
 
+---
+
 # Comprehend Languages
 id: comprehend_languages
 name: Comprehend Languages
@@ -258,6 +274,8 @@ classes: [bard, sorcerer, warlock, wizard]
 effects:
   - utility: understand all spoken or written languages
   - restriction: no secret message decoding
+
+---
 
 # Create or Destroy Water
 id: create_or_destroy_water
@@ -289,6 +307,8 @@ effects:
   - utility: create/destroy water or rainfall/fog
   - area_of_effect: 30-foot cube
   - volume: 10 gallons (scales with level)
+
+---
 
 # Cure Wounds
 id: cure_wounds
@@ -323,6 +343,8 @@ effects:
   - target: creature you touch
   - healing_modifier: spellcasting ability modifier
 
+---
+
 # Detect Evil and Good
 id: detect_evil_and_good
 name: Detect Evil and Good
@@ -349,6 +371,8 @@ effects:
   - detection_range: 30 feet
   - also_detects: consecrated/desecrated objects or places
 
+---
+
 # Detect Magic
 id: detect_magic
 name: Detect Magic
@@ -373,6 +397,8 @@ effects:
   - detection_range: 30 feet
   - aura_identification: school of magic
 
+---
+
 # Detect Poison and Disease
 id: detect_poison_and_disease
 name: Detect Poison and Disease
@@ -396,6 +422,8 @@ effects:
   - detection: poisons, poisonous creatures, diseases
   - detection_range: 30 feet
   - identification: type of poison/disease
+
+---
 
 # Disguise Self
 id: disguise_self
@@ -423,6 +451,8 @@ effects:
   - inspection_check: investigation vs. spell save DC
   - size_limit: 1 foot shorter/taller
 
+---
+
 # Divine Favor
 id: divine_favor
 name: Divine Favor
@@ -447,6 +477,8 @@ damage:
 
 effects:
   - bonus_damage: weapon attacks
+
+---
 
 # Entangle
 id: entangle
@@ -473,6 +505,8 @@ effects:
   - condition: restrained
   - terrain_effect: difficult terrain
 
+---
+
 # Expeditious Retreat
 id: expeditious_retreat
 name: Expeditious Retreat
@@ -492,6 +526,8 @@ classes: [sorcerer, warlock, wizard]
 
 effects:
   - action_gain: Dash as bonus action
+
+---
 
 # Faerie Fire
 id: faerie_fire
@@ -517,6 +553,8 @@ effects:
   - saving_throw: dexterity
   - advantage: attack rolls against affected targets
   - reveals_invisible: true
+
+---
 
 # False Life
 id: false_life
@@ -549,6 +587,8 @@ effects:
   - bonus_hp: +4
   - scaling: +5 temp HP per slot level above 1st
 
+---
+
 # Feather Fall
 id: feather_fall
 name: Feather Fall
@@ -573,6 +613,8 @@ effects:
   - fall_speed: 60 feet per round
   - no_fall_damage: true
   - target_limit: 5
+
+---
 
 # Find Familiar
 id: find_familiar
@@ -602,6 +644,8 @@ effects:
   - utility: telepathy and senses through familiar
   - limitation: one familiar at a time
 
+---
+
 # Floating Disk
 id: floating_disk
 name: Floating Disk
@@ -628,6 +672,8 @@ effects:
   - weight_limit: 500 pounds
   - movement_range: follows within 20 feet
   - duration: 1 hour
+
+---
 
 # Fog Cloud
 id: fog_cloud
@@ -657,6 +703,8 @@ effects:
   - area_of_effect: 20-foot-radius sphere (scales with level)
   - condition: heavily obscured
   - dispersal: wind 10+ mph
+
+---
 
 # Goodberry
 id: goodberry
@@ -688,6 +736,8 @@ effects:
   - nourishment: sustains for one day
   - duration: 24 hours
 
+---
+
 # Grease 
 id: grease
 name: Grease
@@ -712,6 +762,8 @@ effects:
   - saving_throw: dexterity
   - condition: prone
   - terrain_effect: difficult terrain
+
+---
 
 # Guiding Bolt
 id: guiding_bolt
@@ -743,6 +795,8 @@ damage:
 effects:
   - attack_type: ranged_spell
   - advantage: next attack against target
+
+---
 
 # Healing Word
 id: healing_word
@@ -777,6 +831,8 @@ effects:
   - target: creature you can see
   - healing_modifier: spellcasting ability modifier
 
+---
+
 # Hellish Rebuke
 id: hellish_rebuke
 name: Hellish Rebuke
@@ -808,6 +864,8 @@ effects:
   - reaction_trigger: take damage from visible creature
   - saving_throw: dexterity
 
+---
+
 # Heroism
 id: heroism
 name: Heroism
@@ -837,6 +895,8 @@ effects:
   - temp_hp: equal to spellcasting modifier
   - refresh_each_turn: true
 
+---
+
 # Hideous Laughter
 id: hideous_laughter
 name: Hideous Laughter
@@ -865,6 +925,8 @@ effects:
   - condition: prone, incapacitated
   - duration_check: end of each turn and when damaged
   - restriction: Intelligence 5 or higher
+
+---
 
 # Hunter's Mark
 id: hunters_mark
@@ -901,6 +963,8 @@ effects:
   - advantage: Wisdom (Perception, Survival) to track
   - bonus_damage: on weapon hit
 
+---
+
 # Identify
 id: identify
 name: Identify
@@ -925,6 +989,8 @@ classes: [bard, wizard]
 effects:
   - utility: reveals magical properties and effects
   - object_focus: item or creature
+
+---
 
 # Illusory Script
 id: illusory_script
@@ -953,6 +1019,8 @@ effects:
   - utility: hidden writing visible only to chosen readers
   - duration: 10 days
   - detectability: detect magic, truesight
+
+---
 
 # Inflict Wounds
 id: inflict_wounds
@@ -984,6 +1052,8 @@ damage:
 effects:
   - attack_type: melee_spell
 
+---
+
 # Jump 
 id: jump
 name: Jump
@@ -1004,6 +1074,8 @@ classes: [druid, ranger, sorcerer, wizard]
 effects:
   - buff: triple jump distance
   - target: one creature
+
+---
 
 # Longstrider
 id: longstrider
@@ -1031,6 +1103,8 @@ effects:
   - speed_buff: +10 feet
   - duration: 1 hour
 
+---
+
 # Mage Armor
 id: mage_armor
 name: Mage Armor
@@ -1056,6 +1130,8 @@ effects:
   - ac_buff: base AC = 13 + Dex modifier
   - target_restriction: must not be wearing armor
   - duration: 8 hours
+
+---
 
 # Magic Missile
 id: magic_missile
@@ -1086,6 +1162,8 @@ damage:
 effects:
   - automatic_hit: true
 
+---
+
 # Protection from Evil and Good
 id: protection_from_evil_and_good
 name: Protection from Evil and Good
@@ -1113,6 +1191,8 @@ effects:
   - disadvantage: attack rolls from those types
   - immunity: charm, frighten, possession (from those types)
 
+---
+
 # Purify Food and Drink
 id: purify_food_and_drink
 name: Purify Food and Drink
@@ -1133,6 +1213,8 @@ classes: [cleric, druid, paladin]
 effects:
   - utility: purifies nonmagical food and drink
   - area_of_effect: 5-foot-radius sphere
+
+---
 
 # Sanctuary
 id: sanctuary
@@ -1160,6 +1242,8 @@ effects:
   - condition: redirect or lose attack
   - ends_on_attack: true
 
+---
+
 # Shield
 id: shield
 name: Shield
@@ -1182,6 +1266,8 @@ effects:
   - ac_bonus: +5
   - immunity: magic missile
 
+---
+
 # Shield of Faith
 id: shield_of_faith
 name: Shield of Faith
@@ -1202,6 +1288,8 @@ classes: [cleric, paladin]
 effects:
   - ac_bonus: +2
   - duration: concentration, 10 minutes
+
+---
 
 # Silent Image
 id: silent_image
@@ -1231,6 +1319,8 @@ effects:
   - size_limit: 15-foot cube
   - movement: can be moved with action
   - investigation_reveal: true
+
+---
 
 # Sleep
 id: sleep
@@ -1267,6 +1357,8 @@ effects:
   - area_of_effect: 20-foot radius
   - condition: unconscious
 
+---
+
 # Speak with Animals
 id: speak_with_animals
 name: Speak with Animals
@@ -1291,6 +1383,8 @@ classes: [bard, druid, ranger]
 effects:
   - communication: with beasts
   - utility: information, limited aid
+
+---
 
 # Thunderwave
 id: thunderwave
@@ -1326,6 +1420,8 @@ effects:
   - saving_throw: constitution
   - push_distance: 10 feet
   - noise: 300 feet audible
+
+---
 
 # Unseen Servant
 id: unseen_servant
