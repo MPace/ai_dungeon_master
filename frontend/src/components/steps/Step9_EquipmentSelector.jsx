@@ -89,13 +89,29 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
     const getItemDetails = (itemId, type) => {
         if (!itemId) return null;
         
-        // Equipment data is now organized by category and subcategory
+        console.log(`Looking up details for item: ${itemId}, type: ${type || 'any'}`);
+        
+        // Check if this is a compound item (contains "and")
+        if (itemId.includes(" and ")) {
+            // Split the compound item and return a custom details object
+            const items = itemId.split(" and ");
+            return {
+                name: itemId,
+                description: `A combination of ${items.join(" and ")}.`,
+                category: type || 'equipment',
+                compound: true,
+                components: items
+            };
+        }
+        
+        // Rest of your existing getItemDetails function...
         let itemDetails = null;
         
         // Check armor
         if (type === 'armor' || !type) {
             for (const category in equipmentDetails.armor) {
-                if (equipmentDetails.armor[category][itemId]) {
+                if (equipmentDetails.armor[category] && 
+                    equipmentDetails.armor[category][itemId]) {
                     itemDetails = {
                         ...equipmentDetails.armor[category][itemId],
                         category: 'armor',
@@ -109,7 +125,8 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
         // Check weapons
         if (!itemDetails && (type === 'weapon' || !type)) {
             for (const category in equipmentDetails.weapons) {
-                if (equipmentDetails.weapons[category][itemId]) {
+                if (equipmentDetails.weapons[category] && 
+                    equipmentDetails.weapons[category][itemId]) {
                     itemDetails = {
                         ...equipmentDetails.weapons[category][itemId],
                         category: 'weapon',
@@ -122,7 +139,7 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
         
         // Check packs
         if (!itemDetails && (type === 'pack' || !type)) {
-            if (equipmentDetails.packs[itemId]) {
+            if (equipmentDetails.packs && equipmentDetails.packs[itemId]) {
                 itemDetails = {
                     ...equipmentDetails.packs[itemId],
                     category: 'pack'
@@ -132,12 +149,16 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
         
         // Check gear
         if (!itemDetails && (type === 'gear' || !type)) {
-            if (equipmentDetails.gear[itemId]) {
+            if (equipmentDetails.gear && equipmentDetails.gear[itemId]) {
                 itemDetails = {
                     ...equipmentDetails.gear[itemId],
                     category: 'gear'
                 };
             }
+        }
+        
+        if (!itemDetails) {
+            console.warn(`No details found for item: ${itemId}`);
         }
         
         return itemDetails;
