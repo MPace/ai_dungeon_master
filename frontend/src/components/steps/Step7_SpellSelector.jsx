@@ -21,16 +21,19 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
     // Ref for spell details modal
     const spellDetailsRef = useRef(null);
 
-    const classMatchesSpell = useCallback ((classId, spellClasses) => {
+    const classMatchesSpell = useCallback((classId, spellClasses) => {
         if (!spellClasses) return false;
         
         const normalizedClassId = classId.toLowerCase();
         
         // Handle different formats of the classes property
         if (Array.isArray(spellClasses)) {
-            return spellClasses.some(c => typeof c === 'string' && c.toLowerCase() === normalizedClassId);
+            return spellClasses.some(c => 
+                typeof c === 'string' && c.toLowerCase() === normalizedClassId
+            );
         } else if (typeof spellClasses === 'string') {
-            return spellClasses.toLowerCase().includes(normalizedClassId);
+            // Split by comma if it's a comma-separated string
+            return spellClasses.toLowerCase().split(/,\s*/).includes(normalizedClassId);
         }
         
         return false;

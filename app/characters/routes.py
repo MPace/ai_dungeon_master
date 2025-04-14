@@ -544,11 +544,14 @@ def get_campaigns(world_id):
         return jsonify({"success": False, "error": f"Failed to retrieve campaigns for world {world_id}.", "details": str(e)}), 500
 
 
-def load_data_from_file(file_path):
+def load_data_from_file(file_path, multi_doc=False):
     """Helper to load YAML data from a file."""
     try:
-        with open(file_path, 'r') as f:
-            return yaml.safe_load(f)
+        with open(file_path, 'r', encoding='utf-8') as f:
+            if multi_doc:
+                return list(yaml.safe_load_all(f))  # Return a list of all documents
+            else:
+                return yaml.safe_load(f)  # Return a single document
     except Exception as e:
         current_app.logger.error(f"Error loading data file {file_path}: {e}")
         return None
@@ -696,10 +699,38 @@ def get_world_data(world_id):
         # Load Spells     
         current_app.logger.info(f"Loading spells for world '{world_id}'")
         if os.path.exists(SPELLS_DIR):
-            # Process each spell level directory
+            # Check for direct spell files first
+            cantrips_file = os.path.join(SPELLS_DIR, 'common', 'cantrips.yml')
+            if not os.path.exists(cantrips_file):
+                cantrips_file = os.path.join(SPELLS_DIR, 'common', 'cantrips.yaml')
+            
+            if os.path.exists(cantrips_file):
+                current_app.logger.debug(f"Loading cantrips from: {cantrips_file}")
+                cantrips_list = load_data_from_file(cantrips_file, multi_doc=True)
+                if cantrips_list:
+                    for cantrip in cantrips_list:
+                        if cantrip:
+                            world_specific_data["spells"].append(cantrip)
+                            current_app.logger.debug(f"Added cantrip: {cantrip.get('name')}")
+            
+            # Check for level1.yml
+            level1_file = os.path.join(SPELLS_DIR, 'common', 'level1.yml')
+            if not os.path.exists(level1_file):
+                level1_file = os.path.join(SPELLS_DIR, 'common', 'level1.yaml')
+            
+            if os.path.exists(level1_file):
+                current_app.logger.debug(f"Loading level 1 spells from: {level1_file}")
+                level1_list = load_data_from_file(level1_file, multi_doc=True)
+                if level1_list:
+                    for spell in level1_list:
+                        if spell:
+                            world_specific_data["spells"].append(spell)
+                            current_app.logger.debug(f"Added level 1 spell: {spell.get('name')}")
+            
+            # Also check for the directory structure as a fallback
             for level_dir in ['cantrips', 'level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9']:
-                level_path = os.path.join(SPELLS_DIR, level_dir)
-                if os.path.exists(level_path):
+                level_path = os.path.join(SPELLS_DIR, 'common', level_dir)
+                if os.path.exists(level_path) and os.path.isdir(level_path):
                     for filename in os.listdir(level_path):
                         if filename.endswith(('.yaml', '.yml')):
                             spell_file = os.path.join(level_path, filename)
@@ -708,8 +739,6 @@ def get_world_data(world_id):
                             if spell_data:
                                 world_specific_data["spells"].append(spell_data)
                                 current_app.logger.debug(f"Added spell: {spell_data.get('name')}")
-        else:
-            current_app.logger.warning(f"Spells directory not found at {SPELLS_DIR}")
 
         # Load Proficiencies
         skills_file = os.path.join(PROFICIENCIES_DIR, 'skills.yaml')
