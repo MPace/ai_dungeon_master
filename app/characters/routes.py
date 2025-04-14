@@ -698,7 +698,7 @@ def get_world_data(world_id):
 
         # Load Spells     
         current_app.logger.info(f"Loading spells for world '{world_id}'")
-        all_spells_loaded = [] # Temporary list to hold all loaded spells
+        all_spells_loaded = [] # Use a list to accumulate spells
 
         # Define the spell files and their corresponding levels
         spell_files_info = {
@@ -726,28 +726,32 @@ def get_world_data(world_id):
                         current_app.logger.debug(f"Processing spell file: {file_path}")
                         try:
                             with open(file_path, 'r', encoding='utf-8') as f:
-                                # Use safe_load_all as these are multi-document files
-                                loaded_docs = list(yaml.safe_load_all(f))
-                                current_app.logger.debug(f"Found {len(loaded_docs)} spell documents in {file_path}")
-                                for spell in loaded_docs:
+                                # Directly iterate over the generator from safe_load_all
+                                docs_in_file = 0
+                                for spell in yaml.safe_load_all(f):
                                     if spell and isinstance(spell, dict):
                                         spell['level'] = level_value # Assign correct level
                                         all_spells_loaded.append(spell)
-                                        # Optional: Deeper log for debugging individual spells
+                                        docs_in_file += 1
+                                        # Deeper log for debugging individual spells if needed
                                         # current_app.logger.debug(f"  - Loaded spell: {spell.get('name', 'UNKNOWN')}")
-                                    # else: # Optional: log if a document wasn't a dict
+                                    # else: # Log if a document wasn't a dict (optional)
                                         # current_app.logger.warning(f"  - Skipped non-dict document in {file_path}")
+                                current_app.logger.debug(f"Processed {docs_in_file} spell documents from {file_path}")
+
                         except yaml.YAMLError as e:
                             current_app.logger.error(f"YAML parsing error in {file_path}: {e}")
                         except Exception as e:
                             current_app.logger.error(f"Error reading or processing {file_path}: {e}")
-                        break # Found the file with one extension, no need to check the other
+                        # Found the file with one extension, break inner loop to avoid double-loading if both .yml and .yaml exist
+                        break
         else:
-             current_app.logger.warning(f"Common spells directory not found: {common_spells_dir}")
+            current_app.logger.warning(f"Common spells directory not found: {common_spells_dir}")
 
-        # Add the loaded spells to the main data structure
+        # Assign the accumulated list to the final data structure
         world_specific_data["spells"] = all_spells_loaded
         current_app.logger.info(f"Finished loading spells. Total spells loaded: {len(all_spells_loaded)}")
+                
             
 
         # Load Proficiencies
