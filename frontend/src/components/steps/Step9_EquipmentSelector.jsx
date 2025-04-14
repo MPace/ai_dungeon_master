@@ -91,6 +91,10 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
         
         console.log(`Looking up details for item: ${itemId}, type: ${type || 'any'}`);
         
+        // First, try to normalize the item ID
+        const normalizedId = itemId.toLowerCase().replace(/\s+/g, '_');
+        let itemDetails = null;
+        
         // Check if this is a compound item (contains "and")
         if (itemId.includes(" and ")) {
             // Split the compound item and return a custom details object
@@ -104,65 +108,124 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
             };
         }
         
-        // Rest of your existing getItemDetails function...
-        let itemDetails = null;
-        
-        // Check armor
-        if (type === 'armor' || !type) {
-            for (const category in equipmentDetails.armor) {
-                if (equipmentDetails.armor[category] && 
-                    equipmentDetails.armor[category][itemId]) {
-                    itemDetails = {
-                        ...equipmentDetails.armor[category][itemId],
-                        category: 'armor',
-                        subcategory: category
-                    };
-                    break;
-                }
-            }
-        }
-        
         // Check weapons
         if (!itemDetails && (type === 'weapon' || !type)) {
+            // Look in all weapon subcategories
             for (const category in equipmentDetails.weapons) {
-                if (equipmentDetails.weapons[category] && 
-                    equipmentDetails.weapons[category][itemId]) {
+                // Check for exact match with normalized ID
+                if (equipmentDetails.weapons[category][normalizedId]) {
                     itemDetails = {
-                        ...equipmentDetails.weapons[category][itemId],
+                        ...equipmentDetails.weapons[category][normalizedId],
                         category: 'weapon',
                         subcategory: category
                     };
                     break;
                 }
+                
+                // If no exact match, search by name (case-insensitive)
+                for (const key in equipmentDetails.weapons[category]) {
+                    const weapon = equipmentDetails.weapons[category][key];
+                    if (weapon.name && weapon.name.toLowerCase() === itemId.toLowerCase()) {
+                        itemDetails = {
+                            ...weapon,
+                            category: 'weapon',
+                            subcategory: category
+                        };
+                        break;
+                    }
+                }
+                if (itemDetails) break;
+            }
+        }
+        
+        // Similar checks for armor
+        if (!itemDetails && (type === 'armor' || !type)) {
+            for (const category in equipmentDetails.armor) {
+                // Check for exact match with normalized ID
+                if (equipmentDetails.armor[category][normalizedId]) {
+                    itemDetails = {
+                        ...equipmentDetails.armor[category][normalizedId],
+                        category: 'armor',
+                        subcategory: category
+                    };
+                    break;
+                }
+                
+                // If no exact match, search by name
+                for (const key in equipmentDetails.armor[category]) {
+                    const armor = equipmentDetails.armor[category][key];
+                    if (armor.name && armor.name.toLowerCase() === itemId.toLowerCase()) {
+                        itemDetails = {
+                            ...armor,
+                            category: 'armor',
+                            subcategory: category
+                        };
+                        break;
+                    }
+                }
+                if (itemDetails) break;
             }
         }
         
         // Check packs
         if (!itemDetails && (type === 'pack' || !type)) {
-            if (equipmentDetails.packs && equipmentDetails.packs[itemId]) {
+            // Check exact match
+            if (equipmentDetails.packs[normalizedId]) {
                 itemDetails = {
-                    ...equipmentDetails.packs[itemId],
+                    ...equipmentDetails.packs[normalizedId],
                     category: 'pack'
                 };
+            } else {
+                // Search by name
+                for (const key in equipmentDetails.packs) {
+                    const pack = equipmentDetails.packs[key];
+                    if (pack.name && pack.name.toLowerCase() === itemId.toLowerCase()) {
+                        itemDetails = {
+                            ...pack,
+                            category: 'pack'
+                        };
+                        break;
+                    }
+                }
             }
         }
         
         // Check gear
         if (!itemDetails && (type === 'gear' || !type)) {
-            if (equipmentDetails.gear && equipmentDetails.gear[itemId]) {
+            // Check exact match
+            if (equipmentDetails.gear[normalizedId]) {
                 itemDetails = {
-                    ...equipmentDetails.gear[itemId],
+                    ...equipmentDetails.gear[normalizedId],
                     category: 'gear'
                 };
+            } else {
+                // Search by name
+                for (const key in equipmentDetails.gear) {
+                    const gear = equipmentDetails.gear[key];
+                    if (gear.name && gear.name.toLowerCase() === itemId.toLowerCase()) {
+                        itemDetails = {
+                            ...gear,
+                            category: 'gear'
+                        };
+                        break;
+                    }
+                }
             }
         }
         
+        // If still not found, add a fallback
         if (!itemDetails) {
             console.warn(`No details found for item: ${itemId}`);
+            itemDetails = {
+                name: itemId,
+                description: `A standard ${itemId.toLowerCase()}.`,
+                category: type || 'equipment'
+            };
         }
         
         return itemDetails;
-    };
+    };            
+        
 
     // Handler for selecting equipment option
     const handleOptionSelect = (optionIndex, choiceIndex) => {
