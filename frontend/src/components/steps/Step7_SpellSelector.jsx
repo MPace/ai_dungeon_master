@@ -122,15 +122,17 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
     }, [characterData.classData, characterData.finalAbilityScores, hasSpellcasting, hasRacialSpellcasting]);
 
     // Fetch spells data
-
     useEffect(() => {
         if (!characterData.worldId) {
             setError("No world selected. Please go back to Step 1.");
             setIsLoading(false);
             return;
         }
-    
-        if (!hasSpellcasting() && !hasRacialSpellcasting()) {
+
+        // Combine spellcasting checks
+        const canCastSpells = hasSpellcasting() || hasRacialSpellcasting();
+
+        if (!canCastSpells) {
             // If character can't cast spells, skip loading
             updateCharacterData({
                 spells: {
@@ -142,10 +144,10 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
             setIsLoading(false);
             return;
         }
-    
+
         setIsLoading(true);
         setError(null);
-        
+
         // Fetch data from the API using the world ID
         fetch(`/characters/api/creation-data/${characterData.worldId}`)
             .then(response => {
@@ -153,100 +155,82 @@ function Step7_SpellSelector({ characterData, updateCharacterData, nextStep, pre
                 return response.json();
             })
             .then(data => {
-                if (data.success && data.data) {
-                    console.log("Spell data received:", data.data);
-                    
-                    // Debug - log a sample spell to understand structure
-                    if (data.data.spells && data.data.spells.length > 0) {
-                        console.log("Sample spell structure:", JSON.stringify(data.data.spells[0], null, 2));
-                    }
-                    
-                    // Filter spells by class
-                    let classSpells = {
-                        cantrips: [],
-                        level1: []
-                    };
-    
-                    // Debug output for spell filtering
-                    console.log(`Filtering spells for class: ${characterData.classId}`);
-                    
-                    // Add class-specific spells
-                    if (data.data.spells && Array.isArray(data.data.spells)) {
-                        // Count how many spells are available before filtering
-                        const cantripsBeforeFilter = data.data.spells.filter(s => s.level === 0).length;
-                        const level1BeforeFilter = data.data.spells.filter(s => s.level === 1).length;
-                        console.log(`Available before filtering: ${cantripsBeforeFilter} cantrips, ${level1BeforeFilter} level 1 spells`);
-                        
-                        console.log("Step7: Raw spell data received:", JSON.stringify(data.data.spells, null, 2));
-                        console.log("Step7: Current classId for filtering:", characterData.classId);
-                        console.log("Step7: hasSpellcasting() check:", hasSpellcasting()); // Check this too
+                if (data.success && data.data && Array.isArray(data.data.spells)) {
+                    console.log("Step7: Raw spell data received:", JSON.stringify(data.data.spells.length, null, 2));
+                    console.log("Step7: Current classId for filtering:", characterData.classId);
+                    console.log("Step7: hasSpellcasting() check:", hasSpellcasting());
+                    console.log("Step7: hasRacialSpellcasting() check:", hasRacialSpellcasting());
 
-                        let filteredCantrips = [];
-                        let filteredLevel1Spells = [];
+                    // *** Declare variables here ***
+                    let filteredCantrips = [];
+                    let filteredLevel1Spells = [];
+                    
 
-                        // Properly filter by class
-                        data.data.spells.forEach(spell => {
-                            if (!spell || !spell.name) {
-                                console.warn("Skipping invalid spell data:", spell);
-                                return; // Skip this iteration if spell data is malformed
-                            }
-                        
-                            const spellClasses = spell.classes; // Get the classes field
-                            const currentClassId = characterData.classId;
-                        
-                            // **Log the types and values being compared**
-                            console.log(`--- Filtering Spell: ${spell.name} (Level ${spell.level}) ---`);
-                            console.log(`   Current Class ID: '${currentClassId}' (Type: ${typeof currentClassId})`);
-                            // **Crucially log the spell.classes value and type**
-                            console.log(`   Spell Available Classes Field:`, spellClasses, `(Type: ${typeof spellClasses}, IsArray: ${Array.isArray(spellClasses)})`);
-                        
-                            // Perform the check
-                            const isMatch = classMatchesSpell(currentClassId, spellClasses);
-                            console.log(`   Match Result for '${currentClassId}': ${isMatch}`);
-                        
-                            // Add to temporary arrays if match is found
-                            if (hasSpellcasting() && isMatch) {
-                              if (spell.level === 0) {
+                    data.data.spells.forEach(spell => {
+                        if (!spell || !spell.name) {
+                            console.warn("Skipping invalid spell data:", spell);
+                            return; // Skip this iteration if spell data is malformed
+                        }
+
+                        const spellClasses = spell.classes; // Get the classes field
+                        const currentClassId = characterData.classId;
+
+                        // Log the types and values being compared
+                        // console.log(`--- Filtering Spell: ${spell.name} (Level ${spell.level}) ---`);
+                        // console.log(`   Current Class ID: '${currentClassId}' (Type: ${typeof currentClassId})`);
+                        // console.log(`   Spell Available Classes Field:`, spellClasses, `(Type: ${typeof spellClasses}, IsArray: ${Array.isArray(spellClasses)})`);
+
+                        // Perform the check using the updated classMatchesSpell
+                        const isMatch = classMatchesSpell(currentClassId, spellClasses);
+                        // console.log(`   Match Result for '${currentClassId}': ${isMatch}`);
+
+                        // Check for class spellcasting match
+                        if (hasSpellcasting() && isMatch) {
+                            if (spell.level === 0) {
                                 filteredCantrips.push(spell);
-                                console.log(`   >>> Matched Cantrip: ${spell.name}`);
-                              } else if (spell.level === 1) {
+                                // console.log(`   >>> Matched Class Cantrip: ${spell.name}`);
+                            } else if (spell.level === 1) {
                                 filteredLevel1Spells.push(spell);
-                                console.log(`   >>> Matched Level 1 Spell: ${spell.name}`);
-                              }
-                            } else if (hasRacialSpellcasting() && !hasSpellcasting() && spell.level === 0) {
-                              // Handle racial spellcasting separately if needed
-                              if (classMatchesSpell('wizard', spellClasses)) { // Example: High Elf
-                                  // Add logic for racial spells
-                              }
+                                // console.log(`   >>> Matched Class Level 1 Spell: ${spell.name}`);
                             }
-                        });
-                        
-                        // Log the results after filtering
-                        console.log(`After filtering: ${classSpells.cantrips.length} cantrips, ${classSpells.level1.length} level 1 spells`);
-                    }
-    
-                    // Sort spells by name
+                        }
+                        // Check for racial spellcasting match (only if *not* a class spellcaster)
+                        else if (hasRacialSpellcasting() && !hasSpellcasting() && spell.level === 0) {
+                            // Example: High Elf gets a wizard cantrip
+                            if (classMatchesSpell('wizard', spellClasses)) {
+                                filteredCantrips.push(spell);
+                                // console.log(`   >>> Matched Racial Cantrip (Wizard): ${spell.name}`);
+                            }
+                        }
+                    });
+
+                    // Sort the filtered arrays before setting state
                     filteredCantrips.sort((a, b) => a.name.localeCompare(b.name));
                     filteredLevel1Spells.sort((a, b) => a.name.localeCompare(b.name));
-    
+
+                    // Update the state with the filtered spells
                     setAvailableSpells({
                         cantrips: filteredCantrips,
                         level1: filteredLevel1Spells
                     });
-                    
+
                     console.log(`After filtering: ${filteredCantrips.length} cantrips, ${filteredLevel1Spells.length} level 1 spells`);
 
-                    setIsLoading(false);
                 } else {
                     throw new Error(data.error || 'Invalid data format.');
                 }
+                setIsLoading(false);
             })
             .catch(err => {
-                console.error("Step7: Failed to fetch spells:", err);
-                setError(`Failed to load spells: ${err.message}. Check your connection or try again later.`);
+                console.error("Step7: Failed to fetch or process spells:", err);
+                // Set the error message directly in the component state
+                setError(`Failed to load spells: ${err.message}. Check connection or API.`);
                 setIsLoading(false);
             });
-    }, [characterData.worldId, characterData.classId, hasSpellcasting, hasRacialSpellcasting, updateCharacterData]);
+    // Include all relevant dependencies
+    }, [characterData.worldId, characterData.classId, hasSpellcasting, hasRacialSpellcasting, updateCharacterData, classMatchesSpell]); // Added missing dependencies
+                        
+    
 
     // Handle spell selection
     const handleSpellSelect = (spellId, spellType) => {
