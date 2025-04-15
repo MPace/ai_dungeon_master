@@ -169,9 +169,9 @@ function Step11_ReviewFinalize({ characterData, updateCharacterData, nextStep, p
     };
 
     return (
-        <div className={styles.step11Step10-outer-container}>
+        <div className={styles.step11-outer-container}>
             {/* Title */}
-            <h2 className={styles.step11Step10-title}>Review Your Character</h2>
+            <h2 className={styles.step11-title}>Review Your Character</h2>
             
             {error && (
                 <div className={styles.step11Error-alert}>
@@ -436,7 +436,7 @@ function Step11_ReviewFinalize({ characterData, updateCharacterData, nextStep, p
             </div>
             
             {/* Action Buttons */}
-            <div className={styles.step11Step10-navigation}>
+            <div className={styles.step11-navigation}>
                 <button className={styles.step11Back-button} onClick={prevStep}>
                     <i className="bi bi-arrow-left"></i> Back to Equipment
                 </button>
