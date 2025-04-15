@@ -28,6 +28,10 @@ jobs:
             echo "Pulling latest code from staging branch..."
             git pull origin staging || exit 1
 
+            # Ensure run_celery.sh is executable
+            echo "Setting executable permission for run_celery.sh..."
+            chmod +x scripts/run_celery.sh || exit 1
+
             # Navigate to frontend directory
             echo "Changing to frontend directory..."
             cd frontend || exit 1
