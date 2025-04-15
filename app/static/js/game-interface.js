@@ -794,6 +794,12 @@ function addMessageToChat(message, sender) {
     const chatWindow = document.getElementById('chatWindow');
     if (!chatWindow) return;
     
+    // Safety check - if message is undefined or null, use a fallback message
+    if (message === undefined || message === null) {
+        console.error("Attempted to add undefined or null message to chat");
+        message = "Error: No response received from the Dungeon Master.";
+    }
+    
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message');
     
@@ -808,8 +814,13 @@ function addMessageToChat(message, sender) {
     const messagePara = document.createElement('p');
     
     // Use the marked library to parse markdown to HTML
-    if (typeof marked !== 'undefined' && sender !== 'system') {
-        messagePara.innerHTML = marked.parse(message);
+    if (typeof marked !== 'undefined' && sender !== 'system' && message) {
+        try {
+            messagePara.innerHTML = marked.parse(message);
+        } catch (e) {
+            console.error("Error parsing markdown:", e);
+            messagePara.textContent = message;
+        }
     } else {
         // System messages or when marked is unavailable
         messagePara.textContent = message;

@@ -226,15 +226,30 @@ def check_task(task_id):
             response = {
                 'success': False,
                 'status': 'error',
-                'error': str(task.info)
+                'error': str(task.info or "Unknown task error")
             }
         elif task.state == 'SUCCESS':
             # Task completed successfully
-            response = {
-                'success': True,
-                'status': 'completed',
-                'result': task.result
-            }
+            result = task.result
+            
+            # Ensure result has proper format
+            if isinstance(result, dict) and 'response' in result:
+                # Make sure response is not None
+                if result['response'] is None:
+                    result['response'] = "The Dungeon Master seems momentarily lost in thought."
+                
+                response = {
+                    'success': True,
+                    'status': 'completed',
+                    'result': result
+                }
+            else:
+                # Malformed result
+                response = {
+                    'success': False,
+                    'status': 'error',
+                    'error': 'Received malformed response from AI service'
+                }
         else:
             # Other states (STARTED, RETRY, etc.)
             response = {
