@@ -174,192 +174,192 @@ function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, 
             <h2 className="step11-title">Review Your Character</h2>
             
             {error && (
-                <div className="error-alert">
+                <div className="review-error-alert">
                     {error}
                 </div>
             )}
             
             {savingError && (
-                <div className="error-alert">
+                <div className="review-error-alert">
                     {savingError}
                 </div>
             )}
             
             {/* Character Summary Header */}
-            <div className="character-header">
-                <div className="character-name-container">
-                    <h3 className="character-name">{characterData.characterName || "Unnamed Character"}</h3>
-                    <div className="character-subtitle">
+            <div className="review-character-header">
+                <div className="review-character-name-container">
+                    <h3 className="review-character-name">{characterData.characterName || "Unnamed Character"}</h3>
+                    <div className="review-character-subtitle">
                         {characterData.raceName} {characterData.subraceName && `(${characterData.subraceName})`} {characterData.className}
                     </div>
-                    <div className="character-background">
+                    <div className="review-character-background">
                         {characterData.backgroundName} Background
                     </div>
                 </div>
                 
-                <div className="vital-stats-container">
-                    <div className="vital-stat">
-                        <div className="stat-value">{calculatedStats.hitPoints}</div>
-                        <div className="stat-label">Hit Points</div>
+                <div className="review-vital-stats-container">
+                    <div className="review-vital-stat">
+                        <div className="review-stat-value">{calculatedStats.hitPoints}</div>
+                        <div className="review-stat-label">Hit Points</div>
                     </div>
                     
-                    <div className="vital-stat">
-                        <div className="stat-value">{calculatedStats.armorClass}</div>
-                        <div className="stat-label">Armor Class</div>
+                    <div className="review-vital-stat">
+                        <div className="review-stat-value">{calculatedStats.armorClass}</div>
+                        <div className="review-stat-label">Armor Class</div>
                     </div>
                     
-                    <div className="vital-stat">
-                        <div className="stat-value">{getModifier(characterData.finalAbilityScores?.dexterity)}</div>
-                        <div className="stat-label">Initiative</div>
+                    <div className="review-vital-stat">
+                        <div className="review-stat-value">{getModifier(characterData.finalAbilityScores?.dexterity)}</div>
+                        <div className="review-stat-label">Initiative</div>
                     </div>
                     
-                    <div className="vital-stat">
-                        <div className="stat-value">+{calculatedStats.proficiencyBonus}</div>
-                        <div className="stat-label">Proficiency</div>
+                    <div className="review-vital-stat">
+                        <div className="review-stat-value">+{calculatedStats.proficiencyBonus}</div>
+                        <div className="review-stat-label">Proficiency</div>
                     </div>
                     
-                    <div className="vital-stat">
-                        <div className="stat-value">{calculatedStats.speed}</div>
-                        <div className="stat-label">Speed</div>
+                    <div className="review-vital-stat">
+                        <div className="review-stat-value">{calculatedStats.speed}</div>
+                        <div className="review-stat-label">Speed</div>
                     </div>
                 </div>
             </div>
             
             {/* Main content sections */}
-            <div className="character-details-grid">
+            <div className="review-character-details-grid">
                 {/* Left Column */}
-                <div className="details-column">
+                <div className="review-details-column">
                     {/* Ability Scores */}
-                    <div className="details-section">
-                        <h3 className="section-title">Ability Scores</h3>
-                        <div className="ability-scores-container">
+                    <div className="review-details-section">
+                        <h3 className="review-section-title">Ability Scores</h3>
+                        <div className="review-ability-scores-container">
                             {characterData.finalAbilityScores && Object.entries(characterData.finalAbilityScores).map(([ability, score]) => (
-                                <div key={ability} className="ability-score-box">
-                                    <div className="ability-name">{ability.substring(0, 3).toUpperCase()}</div>
-                                    <div className="ability-value">{score}</div>
-                                    <div className="ability-modifier">{getModifier(score)}</div>
+                                <div key={ability} className="review-ability-score-box">
+                                    <div className="review-ability-name">{ability.substring(0, 3).toUpperCase()}</div>
+                                    <div className="review-ability-value">{score}</div>
+                                    <div className="review-ability-modifier">{getModifier(score)}</div>
                                 </div>
                             ))}
                         </div>
                     </div>
                     
                     {/* Proficiencies */}
-                    <div className="details-section">
-                        <h3 className="section-title">Proficiencies</h3>
-                        <div className="proficiencies-list">
+                    <div className="review-details-section">
+                        <h3 className="review-section-title">Proficiencies</h3>
+                        <div className="review-proficiencies-list">
                             {characterData.proficiencies?.skills?.map((skill, index) => (
-                                <div key={index} className="proficiency-item">
+                                <div key={index} className="review-proficiency-item">
                                     <i className="bi bi-check-circle-fill"></i> {skill}
                                 </div>
                             ))}
                             {(!characterData.proficiencies?.skills || characterData.proficiencies.skills.length === 0) && (
-                                <div className="empty-message">No proficiencies selected</div>
+                                <div className="review-empty-message">No proficiencies selected</div>
                             )}
                         </div>
                     </div>
                     
                     {/* Class Features */}
-                    <div className="details-section">
-                        <h3 className="section-title">Class Features</h3>
-                        <div className="features-list">
+                    <div className="review-details-section">
+                        <h3 className="review-section-title">Class Features</h3>
+                        <div className="review-features-list">
                             {/* Standard Features */}
                             {characterData.classFeatures?.standard?.map((feature, index) => (
-                                <div key={index} className="feature-item">
-                                    <div className="feature-name">{feature}</div>
+                                <div key={index} className="review-feature-item">
+                                    <div className="review-feature-name">{feature}</div>
                                 </div>
                             ))}
                             
                             {/* Choices */}
                             {characterData.classFeatures?.choices && Object.entries(characterData.classFeatures.choices).map(([featureName, choiceId], index) => (
-                                <div key={index} className="feature-item choice">
-                                    <div className="feature-name">{featureName}: {choiceId}</div>
+                                <div key={index} className="review-feature-item choice">
+                                    <div className="review-feature-name">{featureName}: {choiceId}</div>
                                 </div>
                             ))}
                             
                             {(!characterData.classFeatures?.standard && !characterData.classFeatures?.choices) && (
-                                <div className="empty-message">No class features</div>
+                                <div className="review-empty-message">No class features</div>
                             )}
                         </div>
                     </div>
                     
                     {/* Equipment */}
-                    <div className="details-section">
-                        <h3 className="section-title">Equipment</h3>
-                        <div className="equipment-list">
+                    <div className="review-details-section">
+                        <h3 className="review-section-title">Equipment</h3>
+                        <div className="review-equipment-list">
                             {characterData.equipment?.equipped?.map((item, index) => (
-                                <div key={index} className="equipment-item">
-                                    <div className="item-name">
+                                <div key={index} className="review-equipment-item">
+                                    <div className="review-item-name">
                                         {typeof item === 'string' ? item : item.item}
                                     </div>
-                                    {item.type && <div className="item-type">{item.type}</div>}
+                                    {item.type && <div className="review-item-type">{item.type}</div>}
                                 </div>
                             ))}
                             {(!characterData.equipment?.equipped || characterData.equipment.equipped.length === 0) && (
-                                <div className="empty-message">No equipment selected</div>
+                                <div className="review-empty-message">No equipment selected</div>
                             )}
                         </div>
                     </div>
                 </div>
                 
                 {/* Right Column */}
-                <div className="details-column">
+                <div className="review-details-column">
                     {/* Character Info */}
-                    <div className="details-section">
-                        <h3 className="section-title">Character Information</h3>
-                        <div className="character-info-container">
-                            <div className="info-row">
-                                <div className="info-label">World:</div>
-                                <div className="info-value">{characterData.worldName}</div>
+                    <div className="review-details-section">
+                        <h3 className="review-section-title">Character Information</h3>
+                        <div className="review-character-info-container">
+                            <div className="review-info-row">
+                                <div className="review-info-label">World:</div>
+                                <div className="review-info-value">{characterData.worldName}</div>
                             </div>
                             
-                            <div className="info-row">
-                                <div className="info-label">Campaign:</div>
-                                <div className="info-value">{characterData.campaignName}</div>
+                            <div className="review-info-row">
+                                <div className="review-info-label">Campaign:</div>
+                                <div className="review-info-value">{characterData.campaignName}</div>
                             </div>
                             
-                            <div className="info-row">
-                                <div className="info-label">Race:</div>
-                                <div className="info-value">
+                            <div className="review-info-row">
+                                <div className="review-info-label">Race:</div>
+                                <div className="review-info-value">
                                     {characterData.raceName} {characterData.subraceName && `(${characterData.subraceName})`}
                                 </div>
                             </div>
                             
-                            <div className="info-row">
-                                <div className="info-label">Class:</div>
-                                <div className="info-value">{characterData.className}</div>
+                            <div className="review-info-row">
+                                <div className="review-info-label">Class:</div>
+                                <div className="review-info-value">{characterData.className}</div>
                             </div>
                             
-                            <div className="info-row">
-                                <div className="info-label">Background:</div>
-                                <div className="info-value">{characterData.backgroundName}</div>
+                            <div className="review-info-row">
+                                <div className="review-info-label">Background:</div>
+                                <div className="review-info-value">{characterData.backgroundName}</div>
                             </div>
                             
-                            <div className="info-row">
-                                <div className="info-label">Gender:</div>
-                                <div className="info-value">{characterData.gender}</div>
+                            <div className="review-info-row">
+                                <div className="review-info-label">Gender:</div>
+                                <div className="review-info-value">{characterData.gender}</div>
                             </div>
                             
-                            <div className="info-row">
-                                <div className="info-label">Level:</div>
-                                <div className="info-value">1</div>
+                            <div className="review-info-row">
+                                <div className="review-info-label">Level:</div>
+                                <div className="review-info-value">1</div>
                             </div>
                         </div>
                     </div>
                     
                     {/* Spells Section - only shown for spellcasters */}
                     {characterData.spells && characterData.spells.hasSpellcasting && (
-                        <div className="details-section">
-                            <h3 className="section-title">Spells</h3>
+                        <div className="review-details-section">
+                            <h3 className="review-section-title">Spells</h3>
                             
                             {/* Cantrips */}
                             {characterData.spells.cantrips && characterData.spells.cantrips.length > 0 && (
-                                <div className="spell-group">
-                                    <h4 className="spell-level-title">Cantrips</h4>
-                                    <div className="spell-list">
+                                <div className="review-spell-group">
+                                    <h4 className="review-spell-level-title">Cantrips</h4>
+                                    <div className="review-spell-list">
                                         {characterData.spells.cantrips.map((spell, index) => (
-                                            <div key={index} className="spell-item">
-                                                <div className="spell-name">{spell.name}</div>
-                                                <div className="spell-school">{spell.school}</div>
+                                            <div key={index} className="review-spell-item">
+                                                <div className="review-spell-name">{spell.name}</div>
+                                                <div className="review-spell-school">{spell.school}</div>
                                             </div>
                                         ))}
                                     </div>
@@ -368,13 +368,13 @@ function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, 
                             
                             {/* 1st Level Spells */}
                             {characterData.spells.level1 && characterData.spells.level1.length > 0 && (
-                                <div className="spell-group">
-                                    <h4 className="spell-level-title">1st Level Spells</h4>
-                                    <div className="spell-list">
+                                <div className="review-spell-group">
+                                    <h4 className="review-spell-level-title">1st Level Spells</h4>
+                                    <div className="review-spell-list">
                                         {characterData.spells.level1.map((spell, index) => (
-                                            <div key={index} className="spell-item">
-                                                <div className="spell-name">{spell.name}</div>
-                                                <div className="spell-school">{spell.school}</div>
+                                            <div key={index} className="review-spell-item">
+                                                <div className="review-spell-name">{spell.name}</div>
+                                                <div className="review-spell-school">{spell.school}</div>
                                             </div>
                                         ))}
                                     </div>
@@ -383,19 +383,19 @@ function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, 
                             
                             {(!characterData.spells.cantrips || characterData.spells.cantrips.length === 0) && 
                              (!characterData.spells.level1 || characterData.spells.level1.length === 0) && (
-                                <div className="empty-message">No spells selected</div>
+                                <div className="review-empty-message">No spells selected</div>
                             )}
                         </div>
                     )}
                     
                     {/* Racial Traits */}
-                    <div className="details-section">
-                        <h3 className="section-title">Racial Traits</h3>
-                        <div className="traits-list">
+                    <div className="review-details-section">
+                        <h3 className="review-section-title">Racial Traits</h3>
+                        <div className="review-traits-list">
                             {characterData.raceData?.traits?.map((trait, index) => (
-                                <div key={index} className="trait-item">
-                                    <div className="trait-name">{trait.name}</div>
-                                    <div className="trait-description">{trait.description}</div>
+                                <div key={index} className="review-trait-item">
+                                    <div className="review-feature-name">{trait.name}</div>
+                                    <div className="review-trait-description">{trait.description}</div>
                                 </div>
                             ))}
                             
@@ -403,9 +403,9 @@ function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, 
                             {characterData.raceData?.subraces?.map(subrace => {
                                 if (subrace.id === characterData.subraceId && subrace.traits) {
                                     return subrace.traits.map((trait, index) => (
-                                        <div key={`subrace-${index}`} className="trait-item subrace">
-                                            <div className="trait-name">{trait.name}</div>
-                                            <div className="trait-description">{trait.description}</div>
+                                        <div key={`subrace-${index}`} className="review-trait-item subrace">
+                                            <div className="review-feature-name">{trait.name}</div>
+                                            <div className="review-trait-description">{trait.description}</div>
                                         </div>
                                     ));
                                 }
@@ -413,22 +413,22 @@ function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, 
                             })}
                             
                             {(!characterData.raceData?.traits || characterData.raceData.traits.length === 0) && (
-                                <div className="empty-message">No racial traits</div>
+                                <div className="review-empty-message">No racial traits</div>
                             )}
                         </div>
                     </div>
                     
                     {/* Background Features */}
-                    <div className="details-section">
-                        <h3 className="section-title">Background Feature</h3>
-                        <div className="background-feature">
+                    <div className="review-details-section">
+                        <h3 className="review-section-title">Background Feature</h3>
+                        <div className="review-background-feature">
                             {characterData.backgroundFeature ? (
                                 <>
-                                    <div className="feature-name">{characterData.backgroundFeature.name}</div>
-                                    <div className="feature-description">{characterData.backgroundFeature.description}</div>
+                                    <div className="review-feature-name">{characterData.backgroundFeature.name}</div>
+                                    <div className="review-feature-description">{characterData.backgroundFeature.description}</div>
                                 </>
                             ) : (
-                                <div className="empty-message">No background feature</div>
+                                <div className="review-empty-message">No background feature</div>
                             )}
                         </div>
                     </div>
@@ -437,13 +437,13 @@ function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, 
             
             {/* Action Buttons */}
             <div className="step11-navigation">
-                <button className="back-button" onClick={prevStep}>
+                <button className="review-back-button" onClick={prevStep}>
                     <i className="bi bi-arrow-left"></i> Back to Alignment
                 </button>
                 
-                <div className="finalize-buttons">
+                <div className="review-finalize-buttons">
                     <button 
-                        className="save-play-button" 
+                        className="review-save-play-button" 
                         onClick={() => handleSaveCharacter(true)}
                         disabled={isSaving}
                     >
@@ -455,7 +455,7 @@ function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, 
                     </button>
                     
                     <button 
-                        className="save-button" 
+                        className="review-save-button" 
                         onClick={() => handleSaveCharacter(false)}
                         disabled={isSaving}
                     >
