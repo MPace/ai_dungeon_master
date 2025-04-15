@@ -1,484 +1,474 @@
-// File: frontend/src/components/steps/Step11_CharacterReview.jsx
+// File: frontend/src/components/steps/Step10_ReviewFinalize.jsx
 
 import React, { useState, useEffect } from 'react';
 import './Step11_CharacterReview.css';
 
-function Step11_CharacterReview({ characterData, updateCharacterData, prevStep }) {
+function Step11_ReviewFinalize({ characterData, updateCharacterData, nextStep, prevStep }) {
     const [isLoading, setIsLoading] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState(null);
-    const [successMessage, setSuccessMessage] = useState(null);
-    
-    // Calculate derived stats based on character data
-    const [derivedStats, setDerivedStats] = useState({
-        armorClass: 10,
+    const [isSaving, setIsSaving] = useState(false);
+    const [savingSuccess, setSavingSuccess] = useState(false);
+    const [savingError, setSavingError] = useState(null);
+    const [calculatedStats, setCalculatedStats] = useState({
         hitPoints: 0,
-        initiative: 0
+        armorClass: 10,
+        initiative: 0,
+        proficiencyBonus: 2, // At level 1
+        speed: 30 // Default
     });
-    
-    // Calculate vital stats based on character data
+
+    // Calculate derived statistics like Hit Points and Armor Class
     useEffect(() => {
-        // Calculate armor class
-        let baseAC = 10;
-        const dexModifier = calculateModifier(characterData.finalAbilityScores?.dexterity || 10);
-        
-        // Check for armor in equipment
-        if (characterData.equipment && characterData.equipment.equipped) {
-            // Find armor items
-            const armorItems = characterData.equipment.equipped.filter(item => 
-                item.type === 'armor' || item.type === 'shield'
-            );
-            
-            // Apply armor bonuses
-            armorItems.forEach(item => {
-                if (item.details && item.details.armor_class) {
-                    baseAC = item.details.armor_class;
-                    
-                    // Apply dex modifier with potential cap for medium/heavy armor
-                    if (item.details.max_dex_bonus !== undefined) {
-                        baseAC += Math.min(dexModifier, item.details.max_dex_bonus);
-                    } else {
-                        baseAC += dexModifier;
+        if (!characterData) return;
+
+        try {
+            // Calculate Hit Points based on class
+            let hitPoints = 0;
+            const constitutionModifier = Math.floor((characterData.finalAbilityScores?.constitution - 10) / 2) || 0;
+
+            // Different classes have different hit dice
+            switch (characterData.classId) {
+                case 'barbarian':
+                    hitPoints = 12 + constitutionModifier;
+                    break;
+                case 'fighter':
+                case 'paladin':
+                case 'ranger':
+                    hitPoints = 10 + constitutionModifier;
+                    break;
+                case 'bard':
+                case 'cleric':
+                case 'druid':
+                case 'monk':
+                case 'rogue':
+                case 'warlock':
+                    hitPoints = 8 + constitutionModifier;
+                    break;
+                case 'sorcerer':
+                case 'wizard':
+                    hitPoints = 6 + constitutionModifier;
+                    break;
+                default:
+                    hitPoints = 8 + constitutionModifier; // Default
+            }
+
+            // Get character speed from race data
+            let speed = 30; // Default speed
+            if (characterData.raceData && characterData.raceData.traits) {
+                const speedTrait = characterData.raceData.traits.find(trait => 
+                    trait.name.toLowerCase().includes('speed'));
+                
+                if (speedTrait) {
+                    // Extract the number from the trait description using regex
+                    const speedMatch = speedTrait.description.match(/(\d+)\s*feet/);
+                    if (speedMatch && speedMatch[1]) {
+                        speed = parseInt(speedMatch[1]);
                     }
                 }
+            }
+
+            // Calculate base Armor Class
+            let armorClass = 10 + Math.floor((characterData.finalAbilityScores?.dexterity - 10) / 2);
+
+            // Check equipped armor
+            if (characterData.equipment && characterData.equipment.equipped) {
+                // Check if character has armor equipped
+                const armor = characterData.equipment.equipped.find(item => 
+                    item.type && item.type.toLowerCase().includes('armor'));
                 
-                // Apply shield bonus
-                if (item.details && item.details.armor_class_bonus) {
-                    baseAC += item.details.armor_class_bonus;
+                // Check if character has a shield
+                const shield = characterData.equipment.equipped.find(item => 
+                    item.item && item.item.toLowerCase().includes('shield'));
+                
+                // Apply armor bonus if found
+                if (armor) {
+                    // This is simplified - would need to check armor type and handle specific rules
+                    armorClass = 12 + Math.min(2, Math.floor((characterData.finalAbilityScores?.dexterity - 10) / 2));
                 }
+                
+                // Apply shield bonus if found
+                if (shield) {
+                    armorClass += 2; // Standard shield bonus
+                }
+            }
+
+            // Calculate Initiative (DEX modifier)
+            const initiative = Math.floor((characterData.finalAbilityScores?.dexterity - 10) / 2);
+
+            setCalculatedStats({
+                hitPoints,
+                armorClass,
+                initiative,
+                proficiencyBonus: 2,
+                speed
             });
-        } else {
-            // No armor found, just use 10 + dex modifier
-            baseAC += dexModifier;
+        } catch (err) {
+            console.error("Error calculating character statistics:", err);
+            setError("Could not calculate character statistics. Please check your selections.");
         }
-        
-        // Calculate hit points
-        let baseHP = 0;
-        
-        // Get hit die from class data
-        const hitDie = characterData.classData?.hitDie || 'd8';
-        const hitDieValue = parseInt(hitDie.replace('d', ''));
-        
-        // At 1st level, characters get maximum hit points from their hit die
-        baseHP = hitDieValue;
-        
-        // Add Constitution modifier
-        const conModifier = calculateModifier(characterData.finalAbilityScores?.constitution || 10);
-        baseHP += conModifier;
-        
-        // Ensure minimum of 1 hit point
-        baseHP = Math.max(1, baseHP);
-        
-        // Calculate initiative (just Dex modifier)
-        const initiative = dexModifier;
-        
-        setDerivedStats({
-            armorClass: baseAC,
-            hitPoints: baseHP,
-            initiative: initiative
-        });
     }, [characterData]);
-    
-    // Helper function to calculate ability modifier
-    const calculateModifier = (score) => {
-        return Math.floor((score - 10) / 2);
-    };
-    
-    // Format ability modifier with + or - sign
-    const formatModifier = (score) => {
-        const modifier = calculateModifier(score);
+
+    // Get ability modifier with sign
+    const getModifier = (abilityScore) => {
+        if (!abilityScore) return "+0";
+        const modifier = Math.floor((abilityScore - 10) / 2);
         return modifier >= 0 ? `+${modifier}` : `${modifier}`;
     };
-    
-    // Handle saving the character
-    const handleSaveCharacter = async () => {
-        setIsSaving(true);
-        setError(null);
-        
-        try {
-            // Add submission ID to prevent duplicate saves
-            const submissionId = Date.now().toString();
-            
-            const characterToSave = {
-                ...characterData,
-                submissionId,
-                isDraft: false, // Mark as complete (not a draft)
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                completedAt: new Date().toISOString()
-            };
-            
-            // Send the request
-            const response = await fetch('/characters/api/save-character', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify(characterToSave)
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                setSuccessMessage('Character saved successfully!');
-                
-                // Wait a moment before redirecting
-                setTimeout(() => {
-                    window.location.href = '/characters/dashboard';
-                }, 1500);
-            } else {
-                throw new Error(data.error || 'Failed to save character');
-            }
-        } catch (err) {
-            console.error('Error saving character:', err);
-            setError(`Error: ${err.message}`);
-        } finally {
-            setIsSaving(false);
-        }
-    };
-    
-    // Handle play button (save and start game)
-    const handlePlayNow = async () => {
-        setIsSaving(true);
-        setError(null);
-        
-        try {
-            // Add submission ID to prevent duplicate saves
-            const submissionId = Date.now().toString();
-            
-            const characterToSave = {
-                ...characterData,
-                submissionId,
-                isDraft: false, // Mark as complete (not a draft)
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                completedAt: new Date().toISOString()
-            };
-            
-            // Send the request
-            const response = await fetch('/characters/api/save-character', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify(characterToSave)
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                setSuccessMessage('Character saved! Starting game...');
-                
-                // Wait a moment before redirecting to play
-                setTimeout(() => {
-                    window.location.href = `/game/play/${data.character_id}`;
-                }, 1500);
-            } else {
-                throw new Error(data.error || 'Failed to save character');
-            }
-        } catch (err) {
-            console.error('Error saving character for play:', err);
-            setError(`Error: ${err.message}`);
-        } finally {
-            setIsSaving(false);
-        }
-    };
-    
-    if (isLoading) {
-        return (
-            <div className="loading-container">
-                <div className="spinner-border" role="status"></div>
-                <div>Loading Character Data...</div>
-            </div>
-        );
-    }
 
-    if (error) {
-        return (
-            <div className="error-container">
-                <p>{error}</p>
-                <button className="back-button" onClick={prevStep}>
-                    <i className="bi bi-arrow-left"></i> Go Back
-                </button>
-            </div>
-        );
-    }
+    // Handle finalize and save character
+    const handleSaveCharacter = async (andPlay = false) => {
+        if (isSaving) return;
+        
+        setIsSaving(true);
+        setSavingError(null);
+        
+        try {
+            // Prepare character data
+            const finalCharacterData = {
+                ...characterData,
+                isDraft: false,
+                completedAt: new Date().toISOString(),
+                submissionId: Math.random().toString(36).substring(2) + Date.now().toString(36), // Generate unique ID
+                calculatedStats
+            };
+            
+            // Send to API
+            const response = await fetch('/characters/api/save-character', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Get CSRF token from meta tag
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(finalCharacterData)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                console.log("Character saved successfully:", data);
+                setSavingSuccess(true);
+                
+                // If player wants to play immediately
+                if (andPlay) {
+                    // Redirect to game page
+                    window.location.href = `/game/play/${data.character_id}`;
+                } else {
+                    // Redirect to dashboard
+                    window.location.href = '/game/dashboard';
+                }
+            } else {
+                setSavingError(data.error || "Failed to save character. Please try again.");
+            }
+        } catch (err) {
+            console.error("Error saving character:", err);
+            setSavingError("Network error. Please check your connection and try again.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     return (
-        <div className="step11-outer-container">
+        <div className="step10-outer-container">
             {/* Title */}
-            <h2 className="step11-title">Character Review</h2>
+            <h2 className="step10-title">Review Your Character</h2>
             
-            {/* Loading overlay when saving */}
-            {isSaving && (
-                <div className="loading-overlay">
-                    <div className="loading-spinner"></div>
-                    <div className="loading-text">
-                        {successMessage || 'Saving your character...'}
-                    </div>
+            {error && (
+                <div className="error-alert">
+                    {error}
                 </div>
             )}
             
-            {/* Character Name and Basic Info */}
-            <div className="vital-stats-container">
-                <h1 className="character-name-display">{characterData.characterName || 'Unnamed Character'}</h1>
-                
-                <div className="character-subtitle">
-                    Level 1 {characterData.raceName} {characterData.className} • {characterData.backgroundName} • {characterData.alignmentName}
+            {savingError && (
+                <div className="error-alert">
+                    {savingError}
+                </div>
+            )}
+            
+            {/* Character Summary Header */}
+            <div className="character-header">
+                <div className="character-name-container">
+                    <h3 className="character-name">{characterData.characterName || "Unnamed Character"}</h3>
+                    <div className="character-subtitle">
+                        {characterData.raceName} {characterData.subraceName && `(${characterData.subraceName})`} {characterData.className}
+                    </div>
+                    <div className="character-background">
+                        {characterData.backgroundName} Background
+                    </div>
                 </div>
                 
-                {/* Vital Stats Display */}
-                <div className="vital-stats-grid">
-                    {/* Hit Points */}
-                    <div className="hit-points-container">
-                        <div className="hit-points-heart">
-                            <span className="hit-points-value">{derivedStats.hitPoints}</span>
-                        </div>
-                        <div className="hit-points-label">Hit Points</div>
+                <div className="vital-stats-container">
+                    <div className="vital-stat">
+                        <div className="stat-value">{calculatedStats.hitPoints}</div>
+                        <div className="stat-label">Hit Points</div>
                     </div>
                     
-                    {/* Armor Class */}
-                    <div className="armor-class-container">
-                        <div className="armor-class-shield">
-                            <span className="armor-class-value">{derivedStats.armorClass}</span>
-                        </div>
-                        <div className="armor-class-label">Armor Class</div>
+                    <div className="vital-stat">
+                        <div className="stat-value">{calculatedStats.armorClass}</div>
+                        <div className="stat-label">Armor Class</div>
                     </div>
                     
-                    {/* Initiative */}
-                    <div className="initiative-container">
-                        <div className="initiative-circle">
-                            <span className="initiative-value">
-                                {derivedStats.initiative >= 0 ? `+${derivedStats.initiative}` : derivedStats.initiative}
-                            </span>
-                        </div>
-                        <div className="initiative-label">Initiative</div>
+                    <div className="vital-stat">
+                        <div className="stat-value">{getModifier(characterData.finalAbilityScores?.dexterity)}</div>
+                        <div className="stat-label">Initiative</div>
+                    </div>
+                    
+                    <div className="vital-stat">
+                        <div className="stat-value">+{calculatedStats.proficiencyBonus}</div>
+                        <div className="stat-label">Proficiency</div>
+                    </div>
+                    
+                    <div className="vital-stat">
+                        <div className="stat-value">{calculatedStats.speed}</div>
+                        <div className="stat-label">Speed</div>
                     </div>
                 </div>
             </div>
             
-            {/* Ability Scores */}
-            <div className="ability-scores-container">
-                <h3 className="section-title">Ability Scores</h3>
+            {/* Main content sections */}
+            <div className="character-details-grid">
+                {/* Left Column */}
+                <div className="details-column">
+                    {/* Ability Scores */}
+                    <div className="details-section">
+                        <h3 className="section-title">Ability Scores</h3>
+                        <div className="ability-scores-container">
+                            {characterData.finalAbilityScores && Object.entries(characterData.finalAbilityScores).map(([ability, score]) => (
+                                <div key={ability} className="ability-score-box">
+                                    <div className="ability-name">{ability.substring(0, 3).toUpperCase()}</div>
+                                    <div className="ability-value">{score}</div>
+                                    <div className="ability-modifier">{getModifier(score)}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Proficiencies */}
+                    <div className="details-section">
+                        <h3 className="section-title">Proficiencies</h3>
+                        <div className="proficiencies-list">
+                            {characterData.proficiencies?.skills?.map((skill, index) => (
+                                <div key={index} className="proficiency-item">
+                                    <i className="bi bi-check-circle-fill"></i> {skill}
+                                </div>
+                            ))}
+                            {(!characterData.proficiencies?.skills || characterData.proficiencies.skills.length === 0) && (
+                                <div className="empty-message">No proficiencies selected</div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Class Features */}
+                    <div className="details-section">
+                        <h3 className="section-title">Class Features</h3>
+                        <div className="features-list">
+                            {/* Standard Features */}
+                            {characterData.classFeatures?.standard?.map((feature, index) => (
+                                <div key={index} className="feature-item">
+                                    <div className="feature-name">{feature}</div>
+                                </div>
+                            ))}
+                            
+                            {/* Choices */}
+                            {characterData.classFeatures?.choices && Object.entries(characterData.classFeatures.choices).map(([featureName, choiceId], index) => (
+                                <div key={index} className="feature-item choice">
+                                    <div className="feature-name">{featureName}: {choiceId}</div>
+                                </div>
+                            ))}
+                            
+                            {(!characterData.classFeatures?.standard && !characterData.classFeatures?.choices) && (
+                                <div className="empty-message">No class features</div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Equipment */}
+                    <div className="details-section">
+                        <h3 className="section-title">Equipment</h3>
+                        <div className="equipment-list">
+                            {characterData.equipment?.equipped?.map((item, index) => (
+                                <div key={index} className="equipment-item">
+                                    <div className="item-name">
+                                        {typeof item === 'string' ? item : item.item}
+                                    </div>
+                                    {item.type && <div className="item-type">{item.type}</div>}
+                                </div>
+                            ))}
+                            {(!characterData.equipment?.equipped || characterData.equipment.equipped.length === 0) && (
+                                <div className="empty-message">No equipment selected</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
                 
-                <div className="abilities-grid">
-                    {characterData.finalAbilityScores && Object.entries(characterData.finalAbilityScores).map(([ability, score]) => {
-                        const modifier = calculateModifier(score);
-                        return (
-                            <div className="ability-box" key={ability}>
-                                <div className="ability-name">{ability.charAt(0).toUpperCase() + ability.slice(1)}</div>
-                                <div className="ability-score">{score}</div>
-                                <div className={`ability-modifier ${modifier < 0 ? 'negative' : ''}`}>
-                                    {formatModifier(score)}
+                {/* Right Column */}
+                <div className="details-column">
+                    {/* Character Info */}
+                    <div className="details-section">
+                        <h3 className="section-title">Character Information</h3>
+                        <div className="character-info-container">
+                            <div className="info-row">
+                                <div className="info-label">World:</div>
+                                <div className="info-value">{characterData.worldName}</div>
+                            </div>
+                            
+                            <div className="info-row">
+                                <div className="info-label">Campaign:</div>
+                                <div className="info-value">{characterData.campaignName}</div>
+                            </div>
+                            
+                            <div className="info-row">
+                                <div className="info-label">Race:</div>
+                                <div className="info-value">
+                                    {characterData.raceName} {characterData.subraceName && `(${characterData.subraceName})`}
                                 </div>
                             </div>
-                        );
-                    })}
-                </div>
-            </div>
-            
-            {/* Character Details */}
-            <div className="character-details-container">
-                <h3 className="section-title">Character Details</h3>
-                
-                <div className="details-grid">
-                    {/* World */}
-                    <div className="detail-card">
-                        <div className="detail-title">World</div>
-                        <div className="detail-value">{characterData.worldName || 'Unknown'}</div>
-                    </div>
-                    
-                    {/* Campaign */}
-                    <div className="detail-card">
-                        <div className="detail-title">Campaign</div>
-                        <div className="detail-value">{characterData.campaignName || 'Custom Campaign'}</div>
-                    </div>
-                    
-                    {/* Alignment */}
-                    <div className="detail-card">
-                        <div className="detail-title">Alignment</div>
-                        <div className="detail-value">{characterData.alignmentName || 'Unaligned'}</div>
-                    </div>
-                    
-                    {/* Class */}
-                    <div className="detail-card">
-                        <div className="detail-title">Class</div>
-                        <div className="detail-value">{characterData.className || 'Unknown'}</div>
-                    </div>
-                    
-                    {/* Race */}
-                    <div className="detail-card">
-                        <div className="detail-title">Race</div>
-                        <div className="detail-value">
-                            {characterData.raceName || 'Unknown'}
-                            {characterData.subraceName && ` (${characterData.subraceName})`}
+                            
+                            <div className="info-row">
+                                <div className="info-label">Class:</div>
+                                <div className="info-value">{characterData.className}</div>
+                            </div>
+                            
+                            <div className="info-row">
+                                <div className="info-label">Background:</div>
+                                <div className="info-value">{characterData.backgroundName}</div>
+                            </div>
+                            
+                            <div className="info-row">
+                                <div className="info-label">Gender:</div>
+                                <div className="info-value">{characterData.gender}</div>
+                            </div>
+                            
+                            <div className="info-row">
+                                <div className="info-label">Level:</div>
+                                <div className="info-value">1</div>
+                            </div>
                         </div>
                     </div>
                     
-                    {/* Background */}
-                    <div className="detail-card">
-                        <div className="detail-title">Background</div>
-                        <div className="detail-value">{characterData.backgroundName || 'Unknown'}</div>
-                    </div>
-                </div>
-            </div>
-            
-            {/* Secondary Details (Features, Equipment, etc.) */}
-            <div className="secondary-details-container">
-                {/* Class Features */}
-                <div className="features-container">
-                    <h3 className="section-title">Class Features</h3>
-                    
-                    <div className="features-list">
-                        {/* Standard Features */}
-                        {characterData.classFeatures?.standard && (
-                            <>
-                                <h4 className="section-subtitle">Standard Features</h4>
-                                {characterData.classFeatures.standard.map((feature, index) => (
-                                    <div className="feature-item" key={index}>
-                                        <div className="feature-name">{feature}</div>
-                                    </div>
-                                ))}
-                            </>
-                        )}
-                        
-                        {/* Choice Features */}
-                        {characterData.classFeatures?.choices && Object.entries(characterData.classFeatures.choices).length > 0 && (
-                            <>
-                                <h4 className="section-subtitle">Selected Features</h4>
-                                {Object.entries(characterData.classFeatures.choices).map(([feature, choiceId], index) => (
-                                    <div className="feature-item" key={index}>
-                                        <div className="feature-name">{feature}: {choiceId}</div>
-                                    </div>
-                                ))}
-                            </>
-                        )}
-                        
-                        {/* If no features */}
-                        {(!characterData.classFeatures?.standard || characterData.classFeatures.standard.length === 0) && 
-                         (!characterData.classFeatures?.choices || Object.entries(characterData.classFeatures.choices).length === 0) && (
-                            <div className="feature-item">
-                                <div className="feature-name">No class features available</div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                
-                {/* Equipment */}
-                <div className="equipment-container">
-                    <h3 className="section-title">Equipment</h3>
-                    
-                    <div className="equipment-list">
-                        {characterData.equipment?.equipped && characterData.equipment.equipped.length > 0 ? (
-                            characterData.equipment.equipped.map((item, index) => (
-                                <div className="equipment-item" key={index}>
-                                    <div className="equipment-name">
-                                        {item.item || item.name || "Unknown Item"}
-                                    </div>
-                                    {item.type && (
-                                        <div className="equipment-type">{item.type}</div>
-                                    )}
-                                </div>
-                            ))
-                        ) : (
-                            <div className="equipment-item">
-                                <div className="equipment-name">No equipment available</div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                
-                {/* Proficiencies */}
-                <div className="proficiencies-container">
-                    <h3 className="section-title">Proficiencies</h3>
-                    
-                    <div className="proficiencies-list">
-                        {/* Skills */}
-                        {characterData.proficiencies?.skills && characterData.proficiencies.skills.length > 0 && (
-                            <>
-                                <h4 className="section-subtitle">Skills</h4>
-                                {characterData.proficiencies.skills.map((skill, index) => (
-                                    <div className="proficiency-item" key={index}>
-                                        <div className="proficiency-name">{skill}</div>
-                                    </div>
-                                ))}
-                            </>
-                        )}
-                        
-                        {/* If no proficiencies */}
-                        {(!characterData.proficiencies?.skills || characterData.proficiencies.skills.length === 0) && (
-                            <div className="proficiency-item">
-                                <div className="proficiency-name">No proficiencies available</div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                
-                {/* Spells (if applicable) */}
-                {characterData.spells?.hasSpellcasting && (
-                    <div className="spells-container">
-                        <h3 className="section-title">Spells</h3>
-                        
-                        <div className="spells-list">
+                    {/* Spells Section - only shown for spellcasters */}
+                    {characterData.spells && characterData.spells.hasSpellcasting && (
+                        <div className="details-section">
+                            <h3 className="section-title">Spells</h3>
+                            
                             {/* Cantrips */}
                             {characterData.spells.cantrips && characterData.spells.cantrips.length > 0 && (
-                                <>
-                                    <h4 className="section-subtitle">Cantrips</h4>
-                                    {characterData.spells.cantrips.map((spell, index) => (
-                                        <div className="spell-item" key={index}>
-                                            <div className="spell-name">{spell.name}</div>
-                                            <div className="spell-level">Cantrip</div>
-                                        </div>
-                                    ))}
-                                </>
+                                <div className="spell-group">
+                                    <h4 className="spell-level-title">Cantrips</h4>
+                                    <div className="spell-list">
+                                        {characterData.spells.cantrips.map((spell, index) => (
+                                            <div key={index} className="spell-item">
+                                                <div className="spell-name">{spell.name}</div>
+                                                <div className="spell-school">{spell.school}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             )}
                             
                             {/* 1st Level Spells */}
                             {characterData.spells.level1 && characterData.spells.level1.length > 0 && (
-                                <>
-                                    <h4 className="section-subtitle">1st Level Spells</h4>
-                                    {characterData.spells.level1.map((spell, index) => (
-                                        <div className="spell-item" key={index}>
-                                            <div className="spell-name">{spell.name}</div>
-                                            <div className="spell-level">1st Level</div>
-                                        </div>
-                                    ))}
-                                </>
+                                <div className="spell-group">
+                                    <h4 className="spell-level-title">1st Level Spells</h4>
+                                    <div className="spell-list">
+                                        {characterData.spells.level1.map((spell, index) => (
+                                            <div key={index} className="spell-item">
+                                                <div className="spell-name">{spell.name}</div>
+                                                <div className="spell-school">{spell.school}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             )}
                             
-                            {/* If no spells */}
                             {(!characterData.spells.cantrips || characterData.spells.cantrips.length === 0) && 
                              (!characterData.spells.level1 || characterData.spells.level1.length === 0) && (
-                                <div className="spell-item">
-                                    <div className="spell-name">No spells available</div>
+                                <div className="empty-message">No spells selected</div>
+                            )}
+                        </div>
+                    )}
+                    
+                    {/* Racial Traits */}
+                    <div className="details-section">
+                        <h3 className="section-title">Racial Traits</h3>
+                        <div className="traits-list">
+                            {characterData.raceData?.traits?.map((trait, index) => (
+                                <div key={index} className="trait-item">
+                                    <div className="trait-name">{trait.name}</div>
+                                    <div className="trait-description">{trait.description}</div>
                                 </div>
+                            ))}
+                            
+                            {/* Subrace traits if available */}
+                            {characterData.raceData?.subraces?.map(subrace => {
+                                if (subrace.id === characterData.subraceId && subrace.traits) {
+                                    return subrace.traits.map((trait, index) => (
+                                        <div key={`subrace-${index}`} className="trait-item subrace">
+                                            <div className="trait-name">{trait.name}</div>
+                                            <div className="trait-description">{trait.description}</div>
+                                        </div>
+                                    ));
+                                }
+                                return null;
+                            })}
+                            
+                            {(!characterData.raceData?.traits || characterData.raceData.traits.length === 0) && (
+                                <div className="empty-message">No racial traits</div>
                             )}
                         </div>
                     </div>
-                )}
+                    
+                    {/* Background Features */}
+                    <div className="details-section">
+                        <h3 className="section-title">Background Feature</h3>
+                        <div className="background-feature">
+                            {characterData.backgroundFeature ? (
+                                <>
+                                    <div className="feature-name">{characterData.backgroundFeature.name}</div>
+                                    <div className="feature-description">{characterData.backgroundFeature.description}</div>
+                                </>
+                            ) : (
+                                <div className="empty-message">No background feature</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
             </div>
             
             {/* Action Buttons */}
-            <div className="action-buttons-container">
-                <button className="save-button" onClick={handleSaveCharacter} disabled={isSaving}>
-                    <i className="bi bi-save"></i> Save Character
+            <div className="step10-navigation">
+                <button className="back-button" onClick={prevStep}>
+                    <i className="bi bi-arrow-left"></i> Back to Equipment
                 </button>
                 
-                <button className="play-button" onClick={handlePlayNow} disabled={isSaving}>
-                    <i className="bi bi-play-fill"></i> Save & Play Now
-                </button>
-            </div>
-            
-            {/* Back Button */}
-            <div className="step11-navigation">
-                <button className="back-button" onClick={prevStep}>
-                    <i className="bi bi-arrow-left"></i> Back to Alignment
-                </button>
+                <div className="finalize-buttons">
+                    <button 
+                        className="save-play-button" 
+                        onClick={() => handleSaveCharacter(true)}
+                        disabled={isSaving}
+                    >
+                        {isSaving ? (
+                            <><span className="spinner-border spinner-border-sm"></span> Saving...</>
+                        ) : (
+                            <><i className="bi bi-play-fill"></i> Save & Play</>
+                        )}
+                    </button>
+                    
+                    <button 
+                        className="save-button" 
+                        onClick={() => handleSaveCharacter(false)}
+                        disabled={isSaving}
+                    >
+                        {isSaving ? (
+                            <><span className="spinner-border spinner-border-sm"></span> Saving...</>
+                        ) : (
+                            <><i className="bi bi-save"></i> Save & Return to Dashboard</>
+                        )}
+                    </button>
+                </div>
             </div>
         </div>
     );
 }
 
-export default Step11_CharacterReview;
+export default Step11_ReviewFinalize;
