@@ -1,9 +1,9 @@
-// File: frontend/src/components/steps/Step10_ReviewFinalize.jsx
+// File: frontend/src/components/steps/Step11_CharacterReview.jsx
 
 import React, { useState, useEffect } from 'react';
-import './Step10_ReviewFinalize.css';
+import './Step11_CharacterReview.css';
 
-function Step10_ReviewFinalize({ characterData, updateCharacterData, nextStep, prevStep }) {
+function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, prevStep }) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -169,9 +169,9 @@ function Step10_ReviewFinalize({ characterData, updateCharacterData, nextStep, p
     };
 
     return (
-        <div className="step10-outer-container">
+        <div className="step11-outer-container">
             {/* Title */}
-            <h2 className="step10-title">Review Your Character</h2>
+            <h2 className="step11-title">Review Your Character</h2>
             
             {error && (
                 <div className="error-alert">
@@ -436,9 +436,9 @@ function Step10_ReviewFinalize({ characterData, updateCharacterData, nextStep, p
             </div>
             
             {/* Action Buttons */}
-            <div className="step10-navigation">
+            <div className="step11-navigation">
                 <button className="back-button" onClick={prevStep}>
-                    <i className="bi bi-arrow-left"></i> Back to Equipment
+                    <i className="bi bi-arrow-left"></i> Back to Alignment
                 </button>
                 
                 <div className="finalize-buttons">
@@ -471,4 +471,4 @@ function Step10_ReviewFinalize({ characterData, updateCharacterData, nextStep, p
     );
 }
 
-export default Step10_ReviewFinalize;
+export default Step11_CharacterReview;

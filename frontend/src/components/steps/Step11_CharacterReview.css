@@ -1,7 +1,7 @@
-/* File: frontend/src/components/steps/Step10_ReviewFinalize.css */
+/* File: frontend/src/components/steps/Step11_CharacterReview.css */
 
 /* Overall container */
-.step10-outer-container {
+.step11-outer-container {
     width: 100%;
     max-width: 100%;
     margin-left: auto;
@@ -10,7 +10,7 @@
 }
 
 /* Title Style */
-.step10-title {
+.step11-title {
     text-align: center;
     font-family: 'Cinzel', serif;
     color: #a24a2c;
@@ -20,7 +20,7 @@
     position: relative;
 }
 
-.step10-title::after {
+.step11-title::after {
     content: "";
     position: absolute;
     width: 120px;
@@ -379,7 +379,7 @@
 }
 
 /* Navigation Buttons */
-.step10-navigation {
+.step11-navigation {
     width: 100%;
     max-width: 1200px;
     padding: 30px 0 20px;
@@ -516,7 +516,7 @@
         flex-wrap: wrap;
     }
     
-    .step10-title {
+    .step11-title {
         font-size: 2.2rem;
     }
     
@@ -554,7 +554,7 @@
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
     
-    .step10-navigation {
+    .step11-navigation {
         flex-direction: column;
         gap: 15px;
     }
@@ -576,7 +576,7 @@
 }
 
 @media (max-width: 576px) {
-    .step10-title {
+    .step11-title {
         font-size: 1.8rem;
     }
     
