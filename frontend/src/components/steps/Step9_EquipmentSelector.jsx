@@ -732,7 +732,7 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
                     onClick={handleContinue}
                     disabled={!validateSelections().valid}
                 >
-                    Continue to Finish <i className="bi bi-arrow-right"></i>
+                    Continue to Alignment <i className="bi bi-arrow-right"></i>
                 </button>
             </div>
         </div>

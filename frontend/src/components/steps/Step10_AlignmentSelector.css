@@ -38,7 +38,6 @@
     padding: 25px;
     margin-bottom: 30px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    text-align: center;
 }
 
 .alignment-explanation h3 {
@@ -46,12 +45,14 @@
     color: #e0e0e0;
     margin-bottom: 15px;
     font-size: 1.5rem;
+    text-align: center;
 }
 
 .alignment-explanation p {
     color: #cccccc;
     line-height: 1.6;
     margin-bottom: 0;
+    text-align: center;
 }
 
 /* Alignment Grid Container */
@@ -63,160 +64,85 @@
     margin-bottom: 30px;
 }
 
-/* Alignment Card */
+/* Simple Alignment Card styling - same as other selection cards */
 .alignment-card {
-    background-color: rgba(40, 40, 50, 0.7);
+    background-color: rgba(31, 31, 41, 0.7);
     border-radius: 12px;
     padding: 20px;
-    border: 2px solid rgba(60, 60, 70, 0.6);
-    transition: all 0.3s ease;
+    border: 2px solid #3a3a3a;
     cursor: pointer;
+    transition: all 0.3s ease;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    height: 100%;
-    min-height: 180px;
-    position: relative;
-    overflow: hidden;
 }
 
 .alignment-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(255, 100, 0, 0.2);
-    border-color: rgba(162, 74, 44, 0.6);
+    box-shadow: 0 5px 15px rgba(255, 100, 0, 0.2);
+    border-color: #6c8bac;
 }
 
 .alignment-card.selected {
-    border-color: #a24a2c;
-    box-shadow: 0 0 20px rgba(255, 100, 0, 0.3);
-    animation: pulse 2s infinite;
+    border-color: #ff6400;
+    box-shadow: 0 0 15px rgba(255, 100, 0, 0.5);
+    transform: translateY(-5px);
 }
 
-.alignment-card.lawful {
-    border-left: 4px solid #6c8bac;
-}
-
-.alignment-card.neutral-axis {
-    border-left: 4px solid #a991ff;
-}
-
-.alignment-card.chaotic {
-    border-left: 4px solid #ac6d6c;
-}
-
-.alignment-card.good {
-    border-top: 4px solid #7eac6c;
-}
-
-.alignment-card.neutral-morality {
-    border-top: 4px solid #a991ff;
-}
-
-.alignment-card.evil {
-    border-top: 4px solid #ac6d6c;
-}
-
-/* Alignment Name */
 .alignment-name {
     font-family: 'Cinzel', serif;
-    color: #e0e0e0;
+    color: #ff6400;
     font-size: 1.4rem;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     text-align: center;
-    position: relative;
+    border-bottom: 1px solid #3a3a3a;
+    padding-bottom: 8px;
 }
 
-.alignment-name::after {
-    content: "";
-    position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.2);
-    transition: all 0.3s ease;
-}
-
-.alignment-card:hover .alignment-name::after {
-    width: 80px;
-    background: rgba(162, 74, 44, 0.6);
-}
-
-.alignment-card.selected .alignment-name::after {
-    width: 90px;
-    background: #a24a2c;
-}
-
-/* Alignment Description */
 .alignment-description {
     color: #aaaaaa;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     line-height: 1.5;
+    margin-bottom: 15px;
     flex-grow: 1;
-    text-align: center;
 }
 
-/* Alignment Examples */
 .alignment-example {
     color: #cccccc;
     font-size: 0.9rem;
     font-style: italic;
-    margin-top: 10px;
-    text-align: center;
+    margin-top: auto;
     padding-top: 10px;
-    border-top: 1px dotted rgba(255, 255, 255, 0.1);
+    border-top: 1px dashed #3a3a3a;
 }
 
-/* Selected Indicator */
-.selected-indicator {
-    position: absolute;
-    bottom: 15px;
-    right: 15px;
-    color: #a24a2c;
+.alignment-card .selected-indicator {
+    color: #ff6400;
+    text-align: center;
+    font-weight: bold;
     display: none;
 }
 
 .alignment-card.selected .selected-indicator {
     display: block;
+    animation: pulse 1.5s infinite;
 }
 
-/* Details Button */
-.alignment-details-button {
-    background-color: rgba(31, 31, 41, 0.7);
-    border: 1px solid rgba(162, 74, 44, 0.4);
-    color: #e0e0e0;
-    border-radius: 5px;
-    padding: 5px 10px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-top: 15px;
-    text-align: center;
-    display: block;
-    width: 100%;
-}
-
-.alignment-details-button:hover {
-    background-color: rgba(162, 74, 44, 0.2);
-    border-color: #a24a2c;
-}
-
-/* Alignment Details Modal */
+/* Modal styling */
 .alignment-details-overlay {
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
     background-color: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(4px);
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     z-index: 1000;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.4s ease;
+    transition: all 0.3s ease;
 }
 
 .alignment-details-overlay.active {
@@ -228,70 +154,37 @@
     width: 90%;
     max-width: 600px;
     max-height: 80vh;
-    background-color: #1a1a20;
+    background-color: #171717;
     border-radius: 15px;
-    border: 3px solid #a24a2c;
     overflow: hidden;
-    transform: translateY(30px) scale(0.95);
-    opacity: 0;
-    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-    position: relative;
-}
-
-.alignment-details-overlay.active .alignment-details-modal {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-}
-
-.alignment-details-modal .close-button {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    width: 36px;
-    height: 36px;
-    background: rgba(0, 0, 0, 0.3);
-    border: none;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: #ffffff;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    z-index: 10;
-}
-
-.alignment-details-modal .close-button:hover {
-    background-color: #a24a2c;
-    transform: rotate(90deg);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s;
 }
 
 .alignment-details-header {
-    background-color: rgba(31, 31, 41, 0.8);
-    padding: 25px 20px;
-    border-bottom: 1px solid rgba(162, 74, 44, 0.3);
-    text-align: center;
+    background-color: #1f1f1f;
+    padding: 20px;
+    border-bottom: 1px solid #3a3a3a;
 }
 
 .alignment-details-title {
     font-family: 'Cinzel', serif;
-    color: #a24a2c;
-    font-size: 2rem;
+    color: #ff6400;
+    font-size: 1.8rem;
     margin: 0;
+    text-align: center;
 }
 
 .alignment-details-content {
-    padding: 25px;
+    padding: 20px;
     overflow-y: auto;
-    max-height: calc(80vh - 100px);
+    max-height: calc(80vh - 80px);
 }
 
 .alignment-details-description {
     color: #e0e0e0;
-    font-size: 1rem;
-    line-height: 1.6;
     margin-bottom: 20px;
+    line-height: 1.6;
 }
 
 .alignment-details-section {
@@ -300,27 +193,21 @@
 
 .alignment-details-section h4 {
     font-family: 'Cinzel', serif;
-    color: #a24a2c;
-    border-bottom: 1px solid rgba(162, 74, 44, 0.3);
-    padding-bottom: 8px;
-    margin-bottom: 12px;
+    color: #ff6400;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #3a3a3a;
+    padding-bottom: 5px;
 }
 
 .alignment-details-example {
-    background-color: rgba(40, 40, 50, 0.7);
-    border-radius: 8px;
+    background-color: rgba(41, 41, 51, 0.6);
     padding: 15px;
+    border-radius: 5px;
     margin-bottom: 15px;
 }
 
-.example-title {
-    font-weight: bold;
-    color: #cccccc;
-    margin-bottom: 8px;
-}
-
 .example-text {
-    color: #aaaaaa;
+    color: #cccccc;
     font-style: italic;
 }
 
@@ -328,16 +215,57 @@
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-top: 10px;
 }
 
 .character-tag {
-    background-color: rgba(31, 31, 41, 0.8);
-    border: 1px solid rgba(162, 74, 44, 0.3);
-    border-radius: 20px;
-    padding: 5px 15px;
+    background-color: rgba(41, 41, 51, 0.6);
+    padding: 5px 10px;
+    border-radius: 5px;
     color: #cccccc;
     font-size: 0.9rem;
+}
+
+.close-button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.close-button:hover {
+    background-color: #ff6400;
+}
+
+/* Details button */
+.alignment-details-button {
+    background-color: rgba(60, 60, 70, 0.6);
+    color: #cccccc;
+    border: 1px solid rgba(60, 60, 70, 0.8);
+    border-radius: 15px;
+    padding: 5px 10px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-block;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.alignment-details-button:hover {
+    background-color: rgba(162, 74, 44, 0.3);
+    color: #ffffff;
+    border-color: #a24a2c;
 }
 
 /* Navigation Buttons */
@@ -400,68 +328,17 @@
     box-shadow: 0 5px 15px rgba(255, 100, 0, 0.2);
 }
 
-/* Loading and Error States */
-.loading-container, 
-.error-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 300px;
-    width: 100%;
-    color: #ccc;
-    gap: 20px;
-}
-
-.loading-container .spinner-border {
-    width: 3rem;
-    height: 3rem;
-    color: #a24a2c;
-}
-
-.error-container {
-    color: #dc3545;
-    text-align: center;
-    max-width: 600px;
-    margin: 0 auto;
-    background-color: rgba(220, 53, 69, 0.1);
-    border: 1px solid rgba(220, 53, 69, 0.3);
-    border-radius: 8px;
-    padding: 30px;
-}
-
 /* Animations */
 @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(255, 100, 0, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(255, 100, 0, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 100, 0, 0); }
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
 }
 
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
 }
-
-@keyframes slideUp {
-    from { transform: translateY(30px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.alignment-card {
-    animation: fadeIn 0.5s ease-out, slideUp 0.5s ease-out;
-    animation-fill-mode: both;
-}
-
-/* Staggered animation */
-.alignment-card:nth-child(1) { animation-delay: 0.05s; }
-.alignment-card:nth-child(2) { animation-delay: 0.1s; }
-.alignment-card:nth-child(3) { animation-delay: 0.15s; }
-.alignment-card:nth-child(4) { animation-delay: 0.2s; }
-.alignment-card:nth-child(5) { animation-delay: 0.25s; }
-.alignment-card:nth-child(6) { animation-delay: 0.3s; }
-.alignment-card:nth-child(7) { animation-delay: 0.35s; }
-.alignment-card:nth-child(8) { animation-delay: 0.4s; }
-.alignment-card:nth-child(9) { animation-delay: 0.45s; }
 
 /* Responsive styles */
 @media (max-width: 768px) {
