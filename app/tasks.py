@@ -5,6 +5,8 @@ from app.celery_config import celery
 import logging
 from flask import current_app
 from flask import Flask
+from app.services.ai_service import AIService
+from app.services.game_service import GameService
 
 logger = logging.getLogger(__name__)
 logger.info("Tasks module loading...")
@@ -14,26 +16,65 @@ def get_flask_app():
     return create_app()
 
 
-@celery.task(name='tasks.process_dm_message', bind=True)
-def process_dm_message(self, message, session_id, character_data, user_id):
-    """Process a message from the player asynchronously"""
+@celery.task
+def process_dm_message(message, session_id, character_data, user_id):
+    """
+    Process a message from a player to the AI Dungeon Master.
+    This task runs asynchronously and returns the AI's response.
+    
+    Args:
+        message (str): The player's message
+        session_id (str): Current session ID or None for new session
+        character_data (dict): Character data
+        user_id (str): User ID
+        
+    Returns:
+        dict: Response data containing AI's response and session info
+    """
+    logger.info(f"Processing DM message task for user {user_id}, session {session_id}")
+    
     try:
+        # For a new session, we need to initialize everything
+        if not session_id:
+            logger.info("New session request")
+            
+            # Create a new game session
+            if character_data.get('character_id'):
+                result = GameService.create_session(character_data.get('character_id'), user_id)
+                if result.get('success'):
+                    session = result.get('session')
+                    session_id = session.session_id
+                    logger.info(f"Created new session: {session_id}")
+                else:
+                    error = result.get('error', 'Unknown error')
+                    logger.error(f"Failed to create session: {error}")
+                    return {'error': error}
+            else:
+                logger.error("No character_id provided for new session")
+                return {'error': 'No character ID provided'}
         
-        app = get_flask_app()
-        with app.app_context():
-            from app.services.game_service import GameService    
-            # Process the message
-            result = GameService.send_message(session_id, message, user_id)
+        # Process the message using the game service
+        logger.info(f"Sending message to GameService: '{message[:50]}...' for session {session_id}")
+        result = GameService.send_message(session_id, message, user_id)
         
-            logger.info(f"Task {self.request.id} completed successfully")
-            return result
+        # Check result
+        if result.get('success'):
+            logger.info(f"Successfully processed message for session {session_id}")
+            return {
+                'response': result.get('response'),
+                'session_id': result.get('session_id'),
+                'game_state': result.get('game_state', 'intro')
+            }
+        else:
+            error = result.get('error', 'Unknown error')
+            logger.error(f"Error processing message: {error}")
+            return {'error': error}
+            
     except Exception as e:
-        logger.error(f"Error in task {self.request.id}: {str(e)}")
+        logger.error(f"Unhandled exception in process_dm_message: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
-        
-        # Re-raise the exception to mark the task as failed
-        raise
+        return {'error': f'Server error: {str(e)}'}
 
 @celery.task(name='tasks.generate_memory_summary', bind=True)
 def generate_memory_summary(self, session_id, user_id):
