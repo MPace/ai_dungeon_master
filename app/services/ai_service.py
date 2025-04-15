@@ -222,8 +222,48 @@ class AIService:
             )
         elif self.use_langchain and self.chain_orchestrator:
             logger.info("Using Langchain for response generation")
-            # [Existing Langchain code]
-            # ...
+            result = self.chain_orchestrator.process_message(
+                     player_message,
+                     character_dict,
+                     game_state,
+                     conversation_history
+                 )
+                 
+            # Parse result based on return type
+            if isinstance(result, dict) and 'response' in result:
+                response_text = result['response']
+            elif isinstance(result, str):
+                response_text = result
+            else:
+                logger.warning(f"Unexpected result type from chain_orchestrator: {type(result)}")
+                logger.warning("Falling back to standard API implementation")
+                return self._generate_standard_response(
+                    player_message, conversation_history, character_dict, game_state
+                )
+            
+            # Create AIResponse object
+            ai_response = AIResponse(
+                response_text=response_text,
+                session_id=session_id,
+                character_id=character_id,
+                user_id=user_id,
+                prompt=player_message,
+                model_used=self.model
+            )
+            
+            # Process and store the AI response in memory system
+            self._process_memory_lifecycle(
+                player_message,
+                response_text,
+                session_id,
+                character_id,
+                user_id
+            )
+            
+            # Cache the response
+            self._cache_response(cache_key, ai_response)
+            
+            return ai_response
         else:
             logger.info("Using standard API for response generation")
             return self._generate_standard_response(

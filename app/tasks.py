@@ -34,47 +34,94 @@ def process_dm_message(message, session_id, character_data, user_id):
     logger.info(f"Processing DM message task for user {user_id}, session {session_id}")
     
     try:
-        # For a new session, we need to initialize everything
-        if not session_id:
-            logger.info("New session request")
-            
-            # Create a new game session
-            if character_data.get('character_id'):
-                result = GameService.create_session(character_data.get('character_id'), user_id)
-                if result.get('success'):
-                    session = result.get('session')
-                    session_id = session.session_id
-                    logger.info(f"Created new session: {session_id}")
-                else:
-                    error = result.get('error', 'Unknown error')
-                    logger.error(f"Failed to create session: {error}")
-                    return {'error': error}
+    # Initialize services
+        from app.services.ai_service import AIService
+        from app.services.game_service import GameService
+        
+        ai_service = AIService()
+        
+        # Get or create a session
+        if session_id:
+            session_result = GameService.get_session(session_id, user_id)
+            if session_result.get('success', False):
+                session = session_result['session']
             else:
-                logger.error("No character_id provided for new session")
-                return {'error': 'No character ID provided'}
-        
-        # Process the message using the game service
-        logger.info(f"Sending message to GameService: '{message[:50]}...' for session {session_id}")
-        result = GameService.send_message(session_id, message, user_id)
-        
-        # Check result
-        if result.get('success'):
-            logger.info(f"Successfully processed message for session {session_id}")
-            return {
-                'response': result.get('response'),
-                'session_id': result.get('session_id'),
-                'game_state': result.get('game_state', 'intro')
-            }
+                # Create new session
+                logger.warning(f"Session not found, creating new: {session_id}")
+                session_result = GameService.create_session(character_data.get('character_id'), user_id)
+                if not session_result.get('success', False):
+                    return {
+                        'success': False,
+                        'error': session_result.get('error', 'Failed to create session')
+                    }
+                session = session_result['session']
         else:
-            error = result.get('error', 'Unknown error')
-            logger.error(f"Error processing message: {error}")
-            return {'error': error}
-            
+            # Create new session
+            logger.info(f"Creating new session for user {user_id}")
+            session_result = GameService.create_session(character_data.get('character_id'), user_id)
+            if not session_result.get('success', False):
+                return {
+                    'success': False,
+                    'error': session_result.get('error', 'Failed to create session')
+                }
+            session = session_result['session']
+        
+        # Get character
+        if hasattr(character_data, 'character_id'):
+            character_id = character_data.character_id
+        else:
+            character_id = character_data.get('character_id')
+        
+        # Add player message to session
+        session.add_message('player', message)
+        
+        # Generate AI response
+        ai_response = ai_service.generate_response(
+            message, 
+            session.history, 
+            character_data, 
+            session.game_state
+        )
+        
+        # Ensure valid response text
+        response_text = "The Dungeon Master pauses, thinking about your request."
+        if ai_response and hasattr(ai_response, 'response_text') and ai_response.response_text:
+            response_text = ai_response.response_text
+        
+        # Add AI response to session
+        session.add_message('dm', response_text)
+        
+        # Update game state based on content
+        GameService._update_game_state(session, message, response_text)
+        
+        # Update session in database
+        from app.extensions import get_db
+        db = get_db()
+        if db is not None:
+            db.sessions.update_one(
+                {'session_id': session.session_id},
+                {'$set': session.to_dict()}
+            )
+        
+        # Return result
+        return {
+            'success': True,
+            'response': response_text,
+            'session_id': session.session_id,
+            'game_state': session.game_state
+        }
     except Exception as e:
-        logger.error(f"Unhandled exception in process_dm_message: {str(e)}")
+        logger.error(f"Error in process_dm_message task: {e}")
         import traceback
         logger.error(traceback.format_exc())
-        return {'error': f'Server error: {str(e)}'}
+        
+        # Return a fallback response
+        return {
+            'success': True,  # Still return success to prevent frontend errors
+            'response': f"The Dungeon Master seems momentarily distracted. (Error: {str(e)})",
+            'session_id': session_id
+        }
+               
 
 @celery.task(name='tasks.generate_memory_summary', bind=True)
 def generate_memory_summary(self, session_id, user_id):
