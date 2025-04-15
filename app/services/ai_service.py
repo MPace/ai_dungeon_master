@@ -117,6 +117,65 @@ class AIService:
             "Accept": "application/json"
         }
     
+    def normalize_character_data(character_data):
+        """
+        Normalize character data to ensure compatibility with AI service.
+        Handles both Character objects and dictionaries from different sources.
+        
+        Args:
+            character_data: Character object or dictionary
+            
+        Returns:
+            dict: Normalized character data dictionary
+        """
+        # Convert Character object to dictionary if needed
+        if hasattr(character_data, 'to_dict'):
+            char_dict = character_data.to_dict()
+        else:
+            char_dict = character_data.copy() if character_data else {}
+        
+        # Ensure all required fields are present with proper naming
+        normalized = {
+            'name': char_dict.get('name') or char_dict.get('characterName') or 'Unknown',
+            'race': char_dict.get('race') or char_dict.get('raceName') or 'Unknown',
+            'class': char_dict.get('class') or char_dict.get('character_class') or char_dict.get('className') or 'Fighter',
+            'background': char_dict.get('background') or char_dict.get('backgroundName') or 'Acolyte',
+            'level': char_dict.get('level', 1),
+            'abilities': char_dict.get('abilities') or char_dict.get('finalAbilityScores') or {
+                'strength': 10,
+                'dexterity': 10,
+                'constitution': 10,
+                'intelligence': 10,
+                'wisdom': 10,
+                'charisma': 10
+            },
+            'skills': [],
+            'character_id': char_dict.get('character_id') or char_dict.get('characterId'),
+            'user_id': char_dict.get('user_id'),
+            'description': char_dict.get('description') or ''
+        }
+        
+        # Extract skills from different possible locations
+        if 'skills' in char_dict and isinstance(char_dict['skills'], list):
+            normalized['skills'] = char_dict['skills']
+        elif 'proficiencies' in char_dict and isinstance(char_dict['proficiencies'], dict):
+            if 'skills' in char_dict['proficiencies'] and isinstance(char_dict['proficiencies']['skills'], list):
+                normalized['skills'] = char_dict['proficiencies']['skills']
+        
+        # Ensure hit points are correctly mapped
+        normalized['hit_points'] = char_dict.get('hit_points') or char_dict.get('hitPoints') or {}
+        if not normalized['hit_points'] and 'calculatedStats' in char_dict:
+            hp_value = char_dict['calculatedStats'].get('hitPoints')
+            if hp_value:
+                normalized['hit_points'] = {'max': hp_value, 'current': hp_value}
+        
+        # Add any other fields from the original data
+        for key, value in char_dict.items():
+            if key not in normalized:
+                normalized[key] = value
+        
+        return normalized
+    
     def generate_response(self, player_message, conversation_history, character_data, game_state="intro"):
         """
         Generate a response from the AI based on the player's message and context
@@ -130,6 +189,9 @@ class AIService:
         Returns:
             AIResponse: The AI-generated response
         """
+        # Normalize character data
+        character_dict = self.normalize_character_data(character_data)
+
         # Handle character_data being either a Character object or a dictionary
         if hasattr(character_data, 'to_dict'):
             # It's a Character object

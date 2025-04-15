@@ -190,18 +190,20 @@ def save_character_route():
         character_data['isDraft'] = False
         character_data['completedAt'] = datetime.utcnow().isoformat()
         
-        # Get the character_id
-        character_id = character_data.get('character_id')
+        # Get the character_id - try camelCase and snake_case
+        character_id = character_data.get('character_id') or character_data.get('characterId')
         
         if character_id is None:
             # Generate a new ID if none exists
             character_id = str(uuid.uuid4())
             character_data['character_id'] = character_id
+            character_data['characterId'] = character_id  # Add both for consistency
         
         # Check if character already exists
         existing_result = CharacterService.get_character(character_id, user_id)
         existing_character = existing_result.get('character') if existing_result.get('success', False) else None
         
+        # Handle existing character that is not a draft
         if existing_character is not None and not existing_character.is_draft:
             # This character already exists as a completed character
             # Log this submission to prevent future duplicates
@@ -248,6 +250,8 @@ def save_character_route():
             'success': False,
             'error': str(e)
         }), 500
+                
+       
 
 @characters_bp.route('/api/save-character-draft', methods=['POST'])
 @login_required
