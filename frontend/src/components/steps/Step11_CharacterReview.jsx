@@ -108,6 +108,29 @@ function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, 
         }
     }, [characterData]);
 
+    // Transform character data for backend
+    const transformCharacterForBackend = (reactCharacterData) => {
+        return {
+            name: reactCharacterData.characterName || '',
+            race: reactCharacterData.raceName || '',
+            class: reactCharacterData.className || '',
+            character_class: reactCharacterData.className || '', // Include both for compatibility
+            background: reactCharacterData.backgroundName || '',
+            level: reactCharacterData.level || 1,
+            abilities: reactCharacterData.finalAbilityScores || {},
+            skills: reactCharacterData.proficiencies?.skills || [],
+            equipment: reactCharacterData.equipment || {},
+            features: reactCharacterData.classFeatures || {},
+            spellcasting: reactCharacterData.spells || {},
+            hitPoints: reactCharacterData.calculatedStats?.hitPoints || 0,
+            description: reactCharacterData.description || '',
+            // Keep metadata fields
+            character_id: reactCharacterData.character_id,
+            isDraft: reactCharacterData.isDraft || false,
+            submissionId: reactCharacterData.submissionId
+        };
+    };
+
     // Get ability modifier with sign
     const getModifier = (abilityScore) => {
         if (!abilityScore) return "+0";
@@ -123,14 +146,20 @@ function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, 
         setSavingError(null);
         
         try {
-            // Prepare character data
-            const finalCharacterData = {
+            // Prepare character data with our transform function
+            const submissionId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+            
+            // First, create a complete character object with all React data
+            const completeReactData = {
                 ...characterData,
                 isDraft: false,
                 completedAt: new Date().toISOString(),
-                submissionId: Math.random().toString(36).substring(2) + Date.now().toString(36), // Generate unique ID
+                submissionId,
                 calculatedStats
             };
+            
+            // Then transform it to the format the backend expects
+            const backendCharacterData = transformCharacterForBackend(completeReactData);
             
             // Send to API
             const response = await fetch('/characters/api/save-character', {
@@ -140,7 +169,7 @@ function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, 
                     // Get CSRF token from meta tag
                     'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
                 },
-                body: JSON.stringify(finalCharacterData)
+                body: JSON.stringify(backendCharacterData)
             });
             
             const data = await response.json();

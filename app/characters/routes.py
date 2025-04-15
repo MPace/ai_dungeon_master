@@ -145,7 +145,9 @@ def create():
         username=session.get('username', 'User')
     )
 
-
+@characters_bp.route('/api/save-character', methods=['POST'])
+@login_required
+def save_character_route():
     try:
         # Get character data from request
         character_data = request.json
@@ -219,126 +221,6 @@ def create():
         
         # Now save the character
         result = CharacterService.create_character(character_data, user_id)
-        
-        if result['success']:
-            # Get the character_id from the result
-            saved_id = result['character'].character_id if hasattr(result['character'], 'character_id') else character_id
-            
-            # Log this submission to prevent future duplicates
-            if submission_id is not None:
-                CharacterService.log_submission(submission_id, saved_id, user_id)
-            
-            return jsonify({
-                'success': True,
-                'character_id': saved_id,
-                'message': 'Character saved successfully'
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'error': result.get('error', 'Failed to save character')
-            }), 500
-    
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-@characters_bp.route('/api/save-character', methods=['POST'])
-@login_required
-def save_character_route():
-    try:
-        # Get character data from request
-        character_data = request.json
-        
-        if character_data is None:
-            return jsonify({
-                'success': False,
-                'error': 'No character data provided'
-            }), 400
-        
-        # Get user_id from session
-        user_id = session.get('user_id')
-        
-        if user_id is None:
-            return jsonify({
-                'success': False,
-                'error': 'User not logged in'
-            }), 401
-        
-        # Check for submission ID to prevent duplicate saves
-        submission_id = character_data.get('submissionId')
-        
-        if submission_id is not None:
-            # Check if we've seen this submission before
-            recent_submission = CharacterService.check_submission(submission_id, user_id)
-            
-            if recent_submission is not None:
-                # This is a duplicate submission
-                return jsonify({
-                    'success': True,
-                    'character_id': recent_submission.get('character_id'),
-                    'message': 'Character already saved (duplicate submission)',
-                    'isDuplicate': True
-                })
-        
-        # Transform frontend data structure to match Character model
-        transformed_data = {
-            'name': character_data.get('characterName', ''),
-            'race': character_data.get('raceName', ''),
-            'character_class': character_data.get('className', ''),
-            'background': character_data.get('backgroundName', ''),
-            'level': character_data.get('level', 1),
-            'abilities': character_data.get('finalAbilityScores', {}),
-            'skills': character_data.get('proficiencies', {}).get('skills', []),
-            'equipment': character_data.get('equipment', {}),
-            'features': character_data.get('classFeatures', {}),
-            'spellcasting': character_data.get('spells', {}),
-            'hit_points': character_data.get('calculatedStats', {}).get('hitPoints', 0),
-            'description': character_data.get('description', ''),
-            'user_id': user_id,
-            'character_id': character_data.get('character_id'),
-            'is_draft': character_data.get('isDraft', False),
-            'completed_at': datetime.utcnow().isoformat()
-        }
-        
-        # Add user_id to character data
-        transformed_data['user_id'] = user_id
-        
-        # Get the character_id
-        character_id = transformed_data.get('character_id')
-        
-        if character_id is None:
-            # Generate a new ID if none exists
-            character_id = str(uuid.uuid4())
-            transformed_data['character_id'] = character_id
-        
-        # Check if character already exists
-        existing_result = CharacterService.get_character(character_id, user_id)
-        existing_character = existing_result.get('character') if existing_result.get('success', False) else None
-        
-        if existing_character is not None and not existing_character.is_draft:
-            # This character already exists as a completed character
-            # Log this submission to prevent future duplicates
-            if submission_id is not None:
-                CharacterService.log_submission(submission_id, character_id, user_id)
-            
-            # Return success but don't save again
-            return jsonify({
-                'success': True,
-                'character_id': character_id,
-                'message': 'Character already exists',
-                'alreadyExists': True
-            })
-        
-        # Delete any existing drafts with this ID
-        CharacterService.delete_character_draft(character_id, user_id)
-        
-        # Now save the character with transformed data
-        result = CharacterService.create_character(transformed_data, user_id)
         
         if result['success']:
             # Get the character_id from the result
