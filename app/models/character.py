@@ -4,6 +4,10 @@ Character model
 from datetime import datetime
 import uuid
 from bson.objectid import ObjectId
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class Character:
     """Character model representing a player character"""
