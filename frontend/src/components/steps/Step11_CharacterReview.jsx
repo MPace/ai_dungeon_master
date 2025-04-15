@@ -1,7 +1,7 @@
 // File: frontend/src/components/steps/Step10_ReviewFinalize.jsx
 
 import React, { useState, useEffect } from 'react';
-import './Step11_CharacterReview.css';
+import styles from './Step11_CharacterReview.module.css';
 
 function Step11_ReviewFinalize({ characterData, updateCharacterData, nextStep, prevStep }) {
     const [isLoading, setIsLoading] = useState(false);
@@ -169,197 +169,197 @@ function Step11_ReviewFinalize({ characterData, updateCharacterData, nextStep, p
     };
 
     return (
-        <div className="step11-step11-outer-container">
+        <div className={styles.step11Step10-outer-container}>
             {/* Title */}
-            <h2 className="step11-step11-title">Review Your Character</h2>
+            <h2 className={styles.step11Step10-title}>Review Your Character</h2>
             
             {error && (
-                <div className="step11-error-alert">
+                <div className={styles.step11Error-alert}>
                     {error}
                 </div>
             )}
             
             {savingError && (
-                <div className="step11-error-alert">
+                <div className={styles.step11Error-alert}>
                     {savingError}
                 </div>
             )}
             
             {/* Character Summary Header */}
-            <div className="step11-character-header">
-                <div className="step11-character-name-container">
-                    <h3 className="step11-character-name">{characterData.characterName || "Unnamed Character"}</h3>
-                    <div className="step11-character-subtitle">
+            <div className={styles.step11Character-header}>
+                <div className={styles.step11Character-name-container}>
+                    <h3 className={styles.step11Character-name}>{characterData.characterName || "Unnamed Character"}</h3>
+                    <div className={styles.step11Character-subtitle}>
                         {characterData.raceName} {characterData.subraceName && `(${characterData.subraceName})`} {characterData.className}
                     </div>
-                    <div className="step11-character-background">
+                    <div className={styles.step11Character-background}>
                         {characterData.backgroundName} Background
                     </div>
                 </div>
                 
-                <div className="step11-vital-stats-container">
-                    <div className="step11-vital-stat">
-                        <div className="step11-stat-value">{calculatedStats.hitPoints}</div>
-                        <div className="step11-stat-label">Hit Points</div>
+                <div className={styles.step11Vital-stats-container}>
+                    <div className={styles.step11Vital-stat}>
+                        <div className={styles.step11Stat-value}>{calculatedStats.hitPoints}</div>
+                        <div className={styles.step11Stat-label}>Hit Points</div>
                     </div>
                     
-                    <div className="step11-vital-stat">
-                        <div className="step11-stat-value">{calculatedStats.armorClass}</div>
-                        <div className="step11-stat-label">Armor Class</div>
+                    <div className={styles.step11Vital-stat}>
+                        <div className={styles.step11Stat-value}>{calculatedStats.armorClass}</div>
+                        <div className={styles.step11Stat-label}>Armor Class</div>
                     </div>
                     
-                    <div className="step11-vital-stat">
-                        <div className="step11-stat-value">{getModifier(characterData.finalAbilityScores?.dexterity)}</div>
-                        <div className="step11-stat-label">Initiative</div>
+                    <div className={styles.step11Vital-stat}>
+                        <div className={styles.step11Stat-value}>{getModifier(characterData.finalAbilityScores?.dexterity)}</div>
+                        <div className={styles.step11Stat-label}>Initiative</div>
                     </div>
                     
-                    <div className="step11-vital-stat">
-                        <div className="step11-stat-value">+{calculatedStats.proficiencyBonus}</div>
-                        <div className="step11-stat-label">Proficiency</div>
+                    <div className={styles.step11Vital-stat}>
+                        <div className={styles.step11Stat-value}>+{calculatedStats.proficiencyBonus}</div>
+                        <div className={styles.step11Stat-label}>Proficiency</div>
                     </div>
                     
-                    <div className="step11-vital-stat">
-                        <div className="step11-stat-value">{calculatedStats.speed}</div>
-                        <div className="step11-stat-label">Speed</div>
+                    <div className={styles.step11Vital-stat}>
+                        <div className={styles.step11Stat-value}>{calculatedStats.speed}</div>
+                        <div className={styles.step11Stat-label}>Speed</div>
                     </div>
                 </div>
             </div>
             
             {/* Main content sections */}
-            <div className="step11-character-details-grid">
+            <div className={styles.step11Character-details-grid}>
                 {/* Left Column */}
-                <div className="step11-details-column">
+                <div className={styles.step11Details-column}>
                     {/* Ability Scores */}
-                    <div className="step11-details-section">
-                        <h3 className="step11-section-title">Ability Scores</h3>
-                        <div className="step11-ability-scores-container">
+                    <div className={styles.step11Details-section}>
+                        <h3 className={styles.step11Section-title}>Ability Scores</h3>
+                        <div className={styles.step11Ability-scores-container}>
                             {characterData.finalAbilityScores && Object.entries(characterData.finalAbilityScores).map(([ability, score]) => (
-                                <div key={ability} className="step11-ability-score-box">
-                                    <div className="step11-ability-name">{ability.substring(0, 3).toUpperCase()}</div>
-                                    <div className="step11-ability-value">{score}</div>
-                                    <div className="step11-ability-modifier">{getModifier(score)}</div>
+                                <div key={ability} className={styles.step11Ability-score-box}>
+                                    <div className={styles.step11Ability-name}>{ability.substring(0, 3).toUpperCase()}</div>
+                                    <div className={styles.step11Ability-value}>{score}</div>
+                                    <div className={styles.step11Ability-modifier}>{getModifier(score)}</div>
                                 </div>
                             ))}
                         </div>
                     </div>
                     
                     {/* Proficiencies */}
-                    <div className="step11-details-section">
-                        <h3 className="step11-section-title">Proficiencies</h3>
-                        <div className="step11-proficiencies-list">
+                    <div className={styles.step11Details-section}>
+                        <h3 className={styles.step11Section-title}>Proficiencies</h3>
+                        <div className={styles.step11Proficiencies-list}>
                             {characterData.proficiencies?.skills?.map((skill, index) => (
-                                <div key={index} className="step11-proficiency-item">
+                                <div key={index} className={styles.step11Proficiency-item}>
                                     <i className="bi bi-check-circle-fill"></i> {skill}
                                 </div>
                             ))}
                             {(!characterData.proficiencies?.skills || characterData.proficiencies.skills.length === 0) && (
-                                <div className="step11-empty-message">No proficiencies selected</div>
+                                <div className={styles.step11Empty-message}>No proficiencies selected</div>
                             )}
                         </div>
                     </div>
                     
                     {/* Class Features */}
-                    <div className="step11-details-section">
-                        <h3 className="step11-section-title">Class Features</h3>
-                        <div className="step11-features-list">
+                    <div className={styles.step11Details-section}>
+                        <h3 className={styles.step11Section-title}>Class Features</h3>
+                        <div className={styles.step11Features-list}>
                             {/* Standard Features */}
                             {characterData.classFeatures?.standard?.map((feature, index) => (
-                                <div key={index} className="step11-feature-item">
-                                    <div className="step11-feature-name">{feature}</div>
+                                <div key={index} className={styles.step11Feature-item}>
+                                    <div className={styles.step11Feature-name}>{feature}</div>
                                 </div>
                             ))}
                             
                             {/* Choices */}
                             {characterData.classFeatures?.choices && Object.entries(characterData.classFeatures.choices).map(([featureName, choiceId], index) => (
                                 <div key={index} className="feature-item choice">
-                                    <div className="step11-feature-name">{featureName}: {choiceId}</div>
+                                    <div className={styles.step11Feature-name}>{featureName}: {choiceId}</div>
                                 </div>
                             ))}
                             
                             {(!characterData.classFeatures?.standard && !characterData.classFeatures?.choices) && (
-                                <div className="step11-empty-message">No class features</div>
+                                <div className={styles.step11Empty-message}>No class features</div>
                             )}
                         </div>
                     </div>
                     
                     {/* Equipment */}
-                    <div className="step11-details-section">
-                        <h3 className="step11-section-title">Equipment</h3>
-                        <div className="step11-equipment-list">
+                    <div className={styles.step11Details-section}>
+                        <h3 className={styles.step11Section-title}>Equipment</h3>
+                        <div className={styles.step11Equipment-list}>
                             {characterData.equipment?.equipped?.map((item, index) => (
-                                <div key={index} className="step11-equipment-item">
-                                    <div className="step11-item-name">
+                                <div key={index} className={styles.step11Equipment-item}>
+                                    <div className={styles.step11Item-name}>
                                         {typeof item === 'string' ? item : item.item}
                                     </div>
-                                    {item.type && <div className="step11-item-type">{item.type}</div>}
+                                    {item.type && <div className={styles.step11Item-type}>{item.type}</div>}
                                 </div>
                             ))}
                             {(!characterData.equipment?.equipped || characterData.equipment.equipped.length === 0) && (
-                                <div className="step11-empty-message">No equipment selected</div>
+                                <div className={styles.step11Empty-message}>No equipment selected</div>
                             )}
                         </div>
                     </div>
                 </div>
                 
                 {/* Right Column */}
-                <div className="step11-details-column">
+                <div className={styles.step11Details-column}>
                     {/* Character Info */}
-                    <div className="step11-details-section">
-                        <h3 className="step11-section-title">Character Information</h3>
-                        <div className="step11-character-info-container">
-                            <div className="step11-info-row">
-                                <div className="step11-info-label">World:</div>
-                                <div className="step11-info-value">{characterData.worldName}</div>
+                    <div className={styles.step11Details-section}>
+                        <h3 className={styles.step11Section-title}>Character Information</h3>
+                        <div className={styles.step11Character-info-container}>
+                            <div className={styles.step11Info-row}>
+                                <div className={styles.step11Info-label}>World:</div>
+                                <div className={styles.step11Info-value}>{characterData.worldName}</div>
                             </div>
                             
-                            <div className="step11-info-row">
-                                <div className="step11-info-label">Campaign:</div>
-                                <div className="step11-info-value">{characterData.campaignName}</div>
+                            <div className={styles.step11Info-row}>
+                                <div className={styles.step11Info-label}>Campaign:</div>
+                                <div className={styles.step11Info-value}>{characterData.campaignName}</div>
                             </div>
                             
-                            <div className="step11-info-row">
-                                <div className="step11-info-label">Race:</div>
-                                <div className="step11-info-value">
+                            <div className={styles.step11Info-row}>
+                                <div className={styles.step11Info-label}>Race:</div>
+                                <div className={styles.step11Info-value}>
                                     {characterData.raceName} {characterData.subraceName && `(${characterData.subraceName})`}
                                 </div>
                             </div>
                             
-                            <div className="step11-info-row">
-                                <div className="step11-info-label">Class:</div>
-                                <div className="step11-info-value">{characterData.className}</div>
+                            <div className={styles.step11Info-row}>
+                                <div className={styles.step11Info-label}>Class:</div>
+                                <div className={styles.step11Info-value}>{characterData.className}</div>
                             </div>
                             
-                            <div className="step11-info-row">
-                                <div className="step11-info-label">Background:</div>
-                                <div className="step11-info-value">{characterData.backgroundName}</div>
+                            <div className={styles.step11Info-row}>
+                                <div className={styles.step11Info-label}>Background:</div>
+                                <div className={styles.step11Info-value}>{characterData.backgroundName}</div>
                             </div>
                             
-                            <div className="step11-info-row">
-                                <div className="step11-info-label">Gender:</div>
-                                <div className="step11-info-value">{characterData.gender}</div>
+                            <div className={styles.step11Info-row}>
+                                <div className={styles.step11Info-label}>Gender:</div>
+                                <div className={styles.step11Info-value}>{characterData.gender}</div>
                             </div>
                             
-                            <div className="step11-info-row">
-                                <div className="step11-info-label">Level:</div>
-                                <div className="step11-info-value">1</div>
+                            <div className={styles.step11Info-row}>
+                                <div className={styles.step11Info-label}>Level:</div>
+                                <div className={styles.step11Info-value}>1</div>
                             </div>
                         </div>
                     </div>
                     
                     {/* Spells Section - only shown for spellcasters */}
                     {characterData.spells && characterData.spells.hasSpellcasting && (
-                        <div className="step11-details-section">
-                            <h3 className="step11-section-title">Spells</h3>
+                        <div className={styles.step11Details-section}>
+                            <h3 className={styles.step11Section-title}>Spells</h3>
                             
                             {/* Cantrips */}
                             {characterData.spells.cantrips && characterData.spells.cantrips.length > 0 && (
-                                <div className="step11-spell-group">
-                                    <h4 className="step11-spell-level-title">Cantrips</h4>
-                                    <div className="step11-spell-list">
+                                <div className={styles.step11Spell-group}>
+                                    <h4 className={styles.step11Spell-level-title}>Cantrips</h4>
+                                    <div className={styles.step11Spell-list}>
                                         {characterData.spells.cantrips.map((spell, index) => (
-                                            <div key={index} className="step11-spell-item">
-                                                <div className="step11-spell-name">{spell.name}</div>
-                                                <div className="step11-spell-school">{spell.school}</div>
+                                            <div key={index} className={styles.step11Spell-item}>
+                                                <div className={styles.step11Spell-name}>{spell.name}</div>
+                                                <div className={styles.step11Spell-school}>{spell.school}</div>
                                             </div>
                                         ))}
                                     </div>
@@ -368,13 +368,13 @@ function Step11_ReviewFinalize({ characterData, updateCharacterData, nextStep, p
                             
                             {/* 1st Level Spells */}
                             {characterData.spells.level1 && characterData.spells.level1.length > 0 && (
-                                <div className="step11-spell-group">
-                                    <h4 className="step11-spell-level-title">1st Level Spells</h4>
-                                    <div className="step11-spell-list">
+                                <div className={styles.step11Spell-group}>
+                                    <h4 className={styles.step11Spell-level-title}>1st Level Spells</h4>
+                                    <div className={styles.step11Spell-list}>
                                         {characterData.spells.level1.map((spell, index) => (
-                                            <div key={index} className="step11-spell-item">
-                                                <div className="step11-spell-name">{spell.name}</div>
-                                                <div className="step11-spell-school">{spell.school}</div>
+                                            <div key={index} className={styles.step11Spell-item}>
+                                                <div className={styles.step11Spell-name}>{spell.name}</div>
+                                                <div className={styles.step11Spell-school}>{spell.school}</div>
                                             </div>
                                         ))}
                                     </div>
@@ -383,19 +383,19 @@ function Step11_ReviewFinalize({ characterData, updateCharacterData, nextStep, p
                             
                             {(!characterData.spells.cantrips || characterData.spells.cantrips.length === 0) && 
                              (!characterData.spells.level1 || characterData.spells.level1.length === 0) && (
-                                <div className="step11-empty-message">No spells selected</div>
+                                <div className={styles.step11Empty-message}>No spells selected</div>
                             )}
                         </div>
                     )}
                     
                     {/* Racial Traits */}
-                    <div className="step11-details-section">
-                        <h3 className="step11-section-title">Racial Traits</h3>
-                        <div className="step11-traits-list">
+                    <div className={styles.step11Details-section}>
+                        <h3 className={styles.step11Section-title}>Racial Traits</h3>
+                        <div className={styles.step11Traits-list}>
                             {characterData.raceData?.traits?.map((trait, index) => (
-                                <div key={index} className="step11-trait-item">
-                                    <div className="step11-trait-name">{trait.name}</div>
-                                    <div className="step11-trait-description">{trait.description}</div>
+                                <div key={index} className={styles.step11Trait-item}>
+                                    <div className={styles.step11Trait-name}>{trait.name}</div>
+                                    <div className={styles.step11Trait-description}>{trait.description}</div>
                                 </div>
                             ))}
                             
@@ -404,8 +404,8 @@ function Step11_ReviewFinalize({ characterData, updateCharacterData, nextStep, p
                                 if (subrace.id === characterData.subraceId && subrace.traits) {
                                     return subrace.traits.map((trait, index) => (
                                         <div key={`subrace-${index}`} className="trait-item subrace">
-                                            <div className="step11-trait-name">{trait.name}</div>
-                                            <div className="step11-trait-description">{trait.description}</div>
+                                            <div className={styles.step11Trait-name}>{trait.name}</div>
+                                            <div className={styles.step11Trait-description}>{trait.description}</div>
                                         </div>
                                     ));
                                 }
@@ -413,22 +413,22 @@ function Step11_ReviewFinalize({ characterData, updateCharacterData, nextStep, p
                             })}
                             
                             {(!characterData.raceData?.traits || characterData.raceData.traits.length === 0) && (
-                                <div className="step11-empty-message">No racial traits</div>
+                                <div className={styles.step11Empty-message}>No racial traits</div>
                             )}
                         </div>
                     </div>
                     
                     {/* Background Features */}
-                    <div className="step11-details-section">
-                        <h3 className="step11-section-title">Background Feature</h3>
-                        <div className="step11-background-feature">
+                    <div className={styles.step11Details-section}>
+                        <h3 className={styles.step11Section-title}>Background Feature</h3>
+                        <div className={styles.step11Background-feature}>
                             {characterData.backgroundFeature ? (
                                 <>
-                                    <div className="step11-feature-name">{characterData.backgroundFeature.name}</div>
-                                    <div className="step11-feature-description">{characterData.backgroundFeature.description}</div>
+                                    <div className={styles.step11Feature-name}>{characterData.backgroundFeature.name}</div>
+                                    <div className={styles.step11Feature-description}>{characterData.backgroundFeature.description}</div>
                                 </>
                             ) : (
-                                <div className="step11-empty-message">No background feature</div>
+                                <div className={styles.step11Empty-message}>No background feature</div>
                             )}
                         </div>
                     </div>
@@ -436,14 +436,14 @@ function Step11_ReviewFinalize({ characterData, updateCharacterData, nextStep, p
             </div>
             
             {/* Action Buttons */}
-            <div className="step11-step11-navigation">
-                <button className="step11-back-button" onClick={prevStep}>
+            <div className={styles.step11Step10-navigation}>
+                <button className={styles.step11Back-button} onClick={prevStep}>
                     <i className="bi bi-arrow-left"></i> Back to Equipment
                 </button>
                 
-                <div className="step11-finalize-buttons">
+                <div className={styles.step11Finalize-buttons}>
                     <button 
-                        className="step11-save-play-button" 
+                        className={styles.step11Save-play-button} 
                         onClick={() => handleSaveCharacter(true)}
                         disabled={isSaving}
                     >
@@ -455,7 +455,7 @@ function Step11_ReviewFinalize({ characterData, updateCharacterData, nextStep, p
                     </button>
                     
                     <button 
-                        className="step11-save-button" 
+                        className={styles.step11Save-button} 
                         onClick={() => handleSaveCharacter(false)}
                         disabled={isSaving}
                     >
