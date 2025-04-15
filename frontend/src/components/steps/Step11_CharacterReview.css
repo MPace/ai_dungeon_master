@@ -1,6 +1,7 @@
+/* File: frontend/src/components/steps/Step10_ReviewFinalize.css */
 
 /* Overall container */
-.step11-outer-container {
+.step10-outer-container {
     width: 100%;
     max-width: 100%;
     margin-left: auto;
@@ -9,17 +10,17 @@
 }
 
 /* Title Style */
-.step11-title {
+.step10-title {
     text-align: center;
     font-family: 'Cinzel', serif;
     color: #a24a2c;
-    font-size: 2.step11-5rem;
-    text-shadow: 0 0 15px rgba(255, 100, 0, 0.step11-5);
+    font-size: 2.5rem;
+    text-shadow: 0 0 15px rgba(255, 100, 0, 0.5);
     margin-bottom: 40px;
     position: relative;
 }
 
-.step11-title::after {
+.step10-title::after {
     content: "";
     position: absolute;
     width: 120px;
@@ -31,335 +32,335 @@
 }
 
 /* Character header */
-.step11-character-header {
+.character-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: rgba(31, 31, 41, 0.step11-7);
+    background-color: rgba(31, 31, 41, 0.7);
     border-radius: 15px;
     padding: 20px 30px;
     margin-bottom: 30px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.step11-3);
-    border: 1px solid rgba(162, 74, 44, 0.step11-3);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(162, 74, 44, 0.3);
 }
 
-.step11-character-name-container {
+.character-name-container {
     display: flex;
     flex-direction: column;
 }
 
-.step11-character-name {
+.character-name {
     font-family: 'Cinzel', serif;
     color: #e0e0e0;
-    font-size: 2.step11-2rem;
+    font-size: 2.2rem;
     margin: 0;
-    text-shadow: 0 0 10px rgba(255, 100, 0, 0.step11-3);
+    text-shadow: 0 0 10px rgba(255, 100, 0, 0.3);
 }
 
-.step11-character-subtitle {
+.character-subtitle {
     color: #a24a2c;
-    font-size: 1.step11-2rem;
+    font-size: 1.2rem;
     margin-top: 5px;
 }
 
-.step11-character-background {
+.character-background {
     color: #aaaaaa;
     font-size: 1rem;
     margin-top: 5px;
     font-style: italic;
 }
 
-.step11-vital-stats-container {
+.vital-stats-container {
     display: flex;
     gap: 20px;
 }
 
-.step11-vital-stat {
+.vital-stat {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: rgba(41, 41, 51, 0.step11-7);
+    background-color: rgba(41, 41, 51, 0.7);
     border-radius: 10px;
     padding: 15px;
     min-width: 80px;
-    border: 1px solid rgba(60, 60, 70, 0.step11-6);
-    transition: transform 0.step11-3s ease, box-shadow 0.step11-3s ease;
+    border: 1px solid rgba(60, 60, 70, 0.6);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.step11-vital-stat:hover {
+.vital-stat:hover {
     transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.step11-3);
-    border-color: rgba(162, 74, 44, 0.step11-5);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border-color: rgba(162, 74, 44, 0.5);
 }
 
-.step11-stat-value {
-    font-size: 1.step11-8rem;
+.stat-value {
+    font-size: 1.8rem;
     font-weight: bold;
     color: #a24a2c;
 }
 
-.step11-stat-label {
-    font-size: 0.step11-85rem;
+.stat-label {
+    font-size: 0.85rem;
     color: #cccccc;
     margin-top: 5px;
 }
 
 /* Character details grid */
-.step11-character-details-grid {
+.character-details-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 30px;
     margin-bottom: 30px;
 }
 
-.step11-details-column {
+.details-column {
     display: flex;
     flex-direction: column;
     gap: 30px;
 }
 
-.step11-details-section {
-    background-color: rgba(31, 31, 41, 0.step11-7);
+.details-section {
+    background-color: rgba(31, 31, 41, 0.7);
     border-radius: 15px;
     padding: 20px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.step11-3);
-    border: 1px solid rgba(60, 60, 70, 0.step11-6);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(60, 60, 70, 0.6);
 }
 
-.step11-section-title {
+.section-title {
     font-family: 'Cinzel', serif;
     color: #a24a2c;
-    font-size: 1.step11-5rem;
+    font-size: 1.5rem;
     margin: 0 0 15px 0;
-    border-bottom: 1px solid rgba(162, 74, 44, 0.step11-3);
+    border-bottom: 1px solid rgba(162, 74, 44, 0.3);
     padding-bottom: 10px;
 }
 
 /* Ability scores */
-.step11-ability-scores-container {
+.ability-scores-container {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     gap: 15px;
 }
 
-.step11-ability-score-box {
+.ability-score-box {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: rgba(41, 41, 51, 0.step11-7);
+    background-color: rgba(41, 41, 51, 0.7);
     border-radius: 10px;
     padding: 10px;
-    border: 1px solid rgba(60, 60, 70, 0.step11-6);
-    transition: transform 0.step11-3s ease, box-shadow 0.step11-3s ease;
+    border: 1px solid rgba(60, 60, 70, 0.6);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.step11-ability-score-box:hover {
+.ability-score-box:hover {
     transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.step11-3);
-    border-color: rgba(162, 74, 44, 0.step11-5);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border-color: rgba(162, 74, 44, 0.5);
 }
 
-.step11-ability-name {
-    font-size: 1.step11-1rem;
+.ability-name {
+    font-size: 1.1rem;
     font-weight: bold;
     color: #a24a2c;
 }
 
-.step11-ability-value {
-    font-size: 1.step11-5rem;
+.ability-value {
+    font-size: 1.5rem;
     font-weight: bold;
     color: #e0e0e0;
     margin: 5px 0;
 }
 
-.step11-ability-modifier {
-    font-size: 1.step11-1rem;
+.ability-modifier {
+    font-size: 1.1rem;
     color: #cccccc;
 }
 
 /* Proficiencies section */
-.step11-proficiencies-list {
+.proficiencies-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 10px;
 }
 
-.step11-proficiency-item {
-    background-color: rgba(41, 41, 51, 0.step11-7);
+.proficiency-item {
+    background-color: rgba(41, 41, 51, 0.7);
     border-radius: 8px;
     padding: 10px 15px;
     color: #e0e0e0;
-    font-size: 0.step11-95rem;
+    font-size: 0.95rem;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.step11-proficiency-item i {
+.proficiency-item i {
     color: #a24a2c;
 }
 
 /* Features list */
-.step11-features-list {
+.features-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.step11-feature-item {
-    background-color: rgba(41, 41, 51, 0.step11-7);
+.feature-item {
+    background-color: rgba(41, 41, 51, 0.7);
     border-radius: 8px;
     padding: 10px 15px;
     color: #e0e0e0;
 }
 
-.step11-feature-item.step11-choice {
+.feature-item.choice {
     border-left: 3px solid #a24a2c;
 }
 
-.step11-feature-name {
+.feature-name {
     font-weight: bold;
     color: #e0e0e0;
 }
 
 /* Equipment list */
-.step11-equipment-list {
+.equipment-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 10px;
 }
 
-.step11-equipment-item {
-    background-color: rgba(41, 41, 51, 0.step11-7);
+.equipment-item {
+    background-color: rgba(41, 41, 51, 0.7);
     border-radius: 8px;
     padding: 10px 15px;
     color: #e0e0e0;
-    font-size: 0.step11-95rem;
+    font-size: 0.95rem;
     display: flex;
     flex-direction: column;
 }
 
-.step11-item-name {
+.item-name {
     font-weight: bold;
     color: #e0e0e0;
 }
 
-.step11-item-type {
-    font-size: 0.step11-85rem;
+.item-type {
+    font-size: 0.85rem;
     color: #aaaaaa;
     font-style: italic;
 }
 
 /* Character info section */
-.step11-character-info-container {
+.character-info-container {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.step11-info-row {
+.info-row {
     display: flex;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px dotted rgba(60, 60, 70, 0.step11-6);
+    border-bottom: 1px dotted rgba(60, 60, 70, 0.6);
 }
 
-.step11-info-row:last-child {
+.info-row:last-child {
     border-bottom: none;
 }
 
-.step11-info-label {
+.info-label {
     width: 120px;
     font-weight: bold;
     color: #a24a2c;
 }
 
-.step11-info-value {
+.info-value {
     flex: 1;
     color: #e0e0e0;
 }
 
 /* Spell section */
-.step11-spell-group {
+.spell-group {
     margin-bottom: 20px;
 }
 
-.step11-spell-level-title {
+.spell-level-title {
     font-family: 'Cinzel', serif;
     color: #a24a2c;
-    font-size: 1.step11-2rem;
+    font-size: 1.2rem;
     margin: 0 0 10px 0;
-    border-bottom: 1px dotted rgba(162, 74, 44, 0.step11-3);
+    border-bottom: 1px dotted rgba(162, 74, 44, 0.3);
     padding-bottom: 5px;
 }
 
-.step11-spell-list {
+.spell-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 10px;
 }
 
-.step11-spell-item {
-    background-color: rgba(41, 41, 51, 0.step11-7);
+.spell-item {
+    background-color: rgba(41, 41, 51, 0.7);
     border-radius: 8px;
     padding: 10px 15px;
     color: #e0e0e0;
-    font-size: 0.step11-95rem;
+    font-size: 0.95rem;
     display: flex;
     flex-direction: column;
 }
 
-.step11-spell-name {
+.spell-name {
     font-weight: bold;
     color: #e0e0e0;
 }
 
-.step11-spell-school {
-    font-size: 0.step11-85rem;
+.spell-school {
+    font-size: 0.85rem;
     color: #aaaaaa;
     font-style: italic;
 }
 
 /* Traits section */
-.step11-traits-list {
+.traits-list {
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
 
-.step11-trait-item {
-    background-color: rgba(41, 41, 51, 0.step11-7);
+.trait-item {
+    background-color: rgba(41, 41, 51, 0.7);
     border-radius: 8px;
     padding: 15px;
     color: #e0e0e0;
 }
 
-.step11-trait-item.step11-subrace {
+.trait-item.subrace {
     border-left: 3px solid #a24a2c;
 }
 
-.step11-trait-description {
-    font-size: 0.step11-95rem;
+.trait-description {
+    font-size: 0.95rem;
     color: #aaaaaa;
     margin-top: 5px;
 }
 
 /* Background feature */
-.step11-background-feature {
-    background-color: rgba(41, 41, 51, 0.step11-7);
+.background-feature {
+    background-color: rgba(41, 41, 51, 0.7);
     border-radius: 8px;
     padding: 15px;
     color: #e0e0e0;
 }
 
-.step11-feature-description {
-    font-size: 0.step11-95rem;
+.feature-description {
+    font-size: 0.95rem;
     color: #aaaaaa;
     margin-top: 5px;
 }
 
 /* Empty message for sections with no data */
-.step11-empty-message {
+.empty-message {
     color: #888888;
     font-style: italic;
     text-align: center;
@@ -367,9 +368,9 @@
 }
 
 /* Error alert */
-.step11-error-alert {
-    background-color: rgba(220, 53, 69, 0.step11-1);
-    border: 1px solid rgba(220, 53, 69, 0.step11-3);
+.error-alert {
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
     color: #dc3545;
     padding: 15px;
     border-radius: 8px;
@@ -385,12 +386,12 @@
     margin-top: 30px;
     display: flex;
     justify-content: space-between;
-    border-top: 1px solid rgba(80, 80, 90, 0.step11-3);
+    border-top: 1px solid rgba(80, 80, 90, 0.3);
     margin-left: auto;
     margin-right: auto;
 }
 
-.step11-back-button {
+.back-button {
     background-color: transparent;
     color: #cccccc;
     border: 1px solid #555;
@@ -398,58 +399,58 @@
     padding: 10px 20px;
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.step11-3s ease;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.step11-back-button:hover {
-    background-color: rgba(60, 60, 70, 0.step11-5);
+.back-button:hover {
+    background-color: rgba(60, 60, 70, 0.5);
     border-color: #777;
     color: #ffffff;
 }
 
-.step11-finalize-buttons {
+.finalize-buttons {
     display: flex;
     gap: 15px;
 }
 
-.step11-save-button, .step11-save-play-button {
+.save-button, .save-play-button {
     background-color: #863a20;
     color: white;
     border: none;
     border-radius: 30px;
     padding: 12px 25px;
     font-family: 'Cinzel', serif;
-    font-size: 1.step11-1rem;
+    font-size: 1.1rem;
     cursor: pointer;
-    transition: all 0.step11-3s ease;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.step11-3);
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.step11-save-button:hover, .step11-save-play-button:hover {
+.save-button:hover, .save-play-button:hover {
     background-color: #a24a2c;
     transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(255, 100, 0, 0.step11-3);
+    box-shadow: 0 8px 25px rgba(255, 100, 0, 0.3);
 }
 
-.step11-save-play-button {
+.save-play-button {
     background-color: #2c852c;
 }
 
-.step11-save-play-button:hover {
+.save-play-button:hover {
     background-color: #3aa53a;
 }
 
-.step11-save-button:disabled, .step11-save-play-button:disabled {
-    opacity: 0.step11-7;
+.save-button:disabled, .save-play-button:disabled {
+    opacity: 0.7;
     cursor: not-allowed;
     transform: translateY(0);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.step11-3);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* Animations */
@@ -463,93 +464,93 @@
     to { transform: translateY(0); opacity: 1; }
 }
 
-.step11-details-section {
-    animation: fadeIn 0.step11-5s ease-out, slideUp 0.step11-5s ease-out;
+.details-section {
+    animation: fadeIn 0.5s ease-out, slideUp 0.5s ease-out;
     animation-fill-mode: both;
 }
 
 /* Stagger animations for multiple sections */
-.step11-details-column:nth-child(1) .step11-details-section:nth-child(1) { animation-delay: 0.step11-05s; }
-.step11-details-column:nth-child(1) .step11-details-section:nth-child(2) { animation-delay: 0.step11-1s; }
-.step11-details-column:nth-child(1) .step11-details-section:nth-child(3) { animation-delay: 0.step11-15s; }
-.step11-details-column:nth-child(1) .step11-details-section:nth-child(4) { animation-delay: 0.step11-2s; }
-.step11-details-column:nth-child(2) .step11-details-section:nth-child(1) { animation-delay: 0.step11-1s; }
-.step11-details-column:nth-child(2) .step11-details-section:nth-child(2) { animation-delay: 0.step11-15s; }
-.step11-details-column:nth-child(2) .step11-details-section:nth-child(3) { animation-delay: 0.step11-2s; }
-.step11-details-column:nth-child(2) .step11-details-section:nth-child(4) { animation-delay: 0.step11-25s; }
+.details-column:nth-child(1) .details-section:nth-child(1) { animation-delay: 0.05s; }
+.details-column:nth-child(1) .details-section:nth-child(2) { animation-delay: 0.1s; }
+.details-column:nth-child(1) .details-section:nth-child(3) { animation-delay: 0.15s; }
+.details-column:nth-child(1) .details-section:nth-child(4) { animation-delay: 0.2s; }
+.details-column:nth-child(2) .details-section:nth-child(1) { animation-delay: 0.1s; }
+.details-column:nth-child(2) .details-section:nth-child(2) { animation-delay: 0.15s; }
+.details-column:nth-child(2) .details-section:nth-child(3) { animation-delay: 0.2s; }
+.details-column:nth-child(2) .details-section:nth-child(4) { animation-delay: 0.25s; }
 
 /* Responsive Adjustments */
 @media (max-width: 1200px) {
-    .step11-character-details-grid {
+    .character-details-grid {
         gap: 20px;
     }
     
-    .step11-details-column {
+    .details-column {
         gap: 20px;
     }
     
-    .step11-ability-scores-container {
+    .ability-scores-container {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 
 @media (max-width: 992px) {
-    .step11-character-header {
+    .character-header {
         flex-direction: column;
         gap: 20px;
         padding: 20px;
     }
     
-    .step11-character-name-container {
+    .character-name-container {
         text-align: center;
         width: 100%;
     }
     
-    .step11-character-name {
+    .character-name {
         font-size: 2rem;
     }
     
-    .step11-vital-stats-container {
+    .vital-stats-container {
         width: 100%;
         justify-content: center;
         flex-wrap: wrap;
     }
     
     .step10-title {
-        font-size: 2.step11-2rem;
+        font-size: 2.2rem;
     }
     
-    .step11-character-details-grid {
+    .character-details-grid {
         grid-template-columns: 1fr;
         gap: 20px;
     }
 }
 
 @media (max-width: 768px) {
-    .step11-section-title {
-        font-size: 1.step11-3rem;
+    .section-title {
+        font-size: 1.3rem;
     }
     
-    .step11-ability-scores-container {
+    .ability-scores-container {
         grid-template-columns: repeat(3, 1fr);
         gap: 10px;
     }
     
-    .step11-ability-name {
+    .ability-name {
         font-size: 1rem;
     }
     
-    .step11-ability-value {
-        font-size: 1.step11-3rem;
+    .ability-value {
+        font-size: 1.3rem;
     }
     
-    .step11-ability-modifier {
+    .ability-modifier {
         font-size: 1rem;
     }
     
-    .step11-proficiencies-list,
-    .step11-equipment-list,
-    .step11-spell-list {
+    .proficiencies-list,
+    .equipment-list,
+    .spell-list {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
     
@@ -558,50 +559,50 @@
         gap: 15px;
     }
     
-    .step11-back-button {
+    .back-button {
         width: 100%;
         justify-content: center;
     }
     
-    .step11-finalize-buttons {
+    .finalize-buttons {
         width: 100%;
         flex-direction: column;
     }
     
-    .step11-save-button, .step11-save-play-button {
+    .save-button, .save-play-button {
         width: 100%;
         justify-content: center;
     }
 }
 
 @media (max-width: 576px) {
-    .step11-title {
-        font-size: 1.step11-8rem;
+    .step10-title {
+        font-size: 1.8rem;
     }
     
-    .step11-character-name {
-        font-size: 1.step11-8rem;
+    .character-name {
+        font-size: 1.8rem;
     }
     
-    .step11-character-subtitle {
-        font-size: 1.step11-1rem;
+    .character-subtitle {
+        font-size: 1.1rem;
     }
     
-    .step11-ability-scores-container {
+    .ability-scores-container {
         grid-template-columns: repeat(2, 1fr);
     }
     
-    .step11-proficiencies-list,
-    .step11-equipment-list,
-    .step11-spell-list {
+    .proficiencies-list,
+    .equipment-list,
+    .spell-list {
         grid-template-columns: 1fr;
     }
     
-    .step11-stat-value {
-        font-size: 1.step11-5rem;
+    .stat-value {
+        font-size: 1.5rem;
     }
     
-    .step11-stat-label {
-        font-size: 0.step11-8rem;
+    .stat-label {
+        font-size: 0.8rem;
     }
 }
