@@ -122,7 +122,13 @@ function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, 
             equipment: reactCharacterData.equipment || {},
             features: reactCharacterData.classFeatures || {},
             spellcasting: reactCharacterData.spells || {},
-            hitPoints: reactCharacterData.calculatedStats?.hitPoints || 0,
+            hitPoints: {
+                current: reactCharacterData.calculatedStats?.hitPoints || 10,
+                max: reactCharacterData.calculatedStats?.hitPoints || 10,
+                hitDie: reactCharacterData.className?.toLowerCase() === 'barbarian' ? 'd12' : 
+                        ['fighter', 'paladin', 'ranger'].includes(reactCharacterData.className?.toLowerCase()) ? 'd10' :
+                        ['sorcerer', 'wizard'].includes(reactCharacterData.className?.toLowerCase()) ? 'd6' : 'd8'
+            },
             description: reactCharacterData.description || '',
             // Keep metadata fields
             character_id: reactCharacterData.character_id,
