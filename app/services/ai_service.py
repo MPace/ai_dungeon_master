@@ -117,7 +117,7 @@ class AIService:
             "Accept": "application/json"
         }
     
-    def normalize_character_data(character_data):
+    def normalize_character_data(self, character_data):
         """
         Normalize character data to ensure compatibility with AI service.
         Handles both Character objects and dictionaries from different sources.
