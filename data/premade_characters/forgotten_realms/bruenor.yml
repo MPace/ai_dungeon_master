@@ -41,16 +41,16 @@ proficiencies:
 
 classFeatures:
   standard:
-    - Fighting Style: Defense
-    - Second Wind
+    - "Fighting Style: Defense"
+    - "Second Wind"
   choices:
-    Fighting Style: Defense
+    "Fighting Style": "Defense"
 
 racialTraits:
   - Darkvision
   - Dwarven Resilience
   - Dwarven Combat Training
-  - Tool Proficiency: Smith's Tools
+  - "Tool Proficiency: Smith's Tools"
   - Stonecunning
   - Dwarven Toughness
 
