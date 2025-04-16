@@ -71,9 +71,58 @@ def login_required(f):
 
 def get_db():
     """Get database connection"""
-    if 'db' not in g:
-        g.db = mongo_db
-    return g.db
+    try:
+        # First try to access within Flask context
+        from flask import g, current_app
+        
+        # Check if we're in a Flask application context
+        if 'db' not in g:
+            try:
+                # Get database URI from config
+                mongo_uri = current_app.config.get('MONGO_URI')
+                if not mongo_uri:
+                    logger.error("MONGO_URI not configured in application")
+                    return None
+                
+                # Create client and connect to database
+                client = pymongo.MongoClient(
+                    mongo_uri,
+                    tlsAllowInvalidCertificates=True,
+                    serverSelectionTimeoutMS=5000
+                )
+                g.db = client.ai_dungeon_master
+                
+                logger.debug("Database connection established within Flask context")
+            except Exception as e:
+                logger.error(f"Error connecting to database within Flask context: {e}")
+                return None
+        
+        return g.db
+        
+    except RuntimeError:
+        # We're outside Flask context (e.g., in a Celery worker)
+        logger.debug("Working outside Flask context, using direct database connection")
+        try:
+            # Get database URI from environment
+            import os
+            mongo_uri = os.environ.get('MONGO_URI')
+            if not mongo_uri:
+                logger.error("MONGO_URI environment variable not set")
+                return None
+            
+            # Create client and connect to database
+            import pymongo
+            client = pymongo.MongoClient(
+                mongo_uri,
+                tlsAllowInvalidCertificates=True,
+                serverSelectionTimeoutMS=5000
+            )
+            
+            return client.ai_dungeon_master
+            
+        except Exception as e:
+            logger.error(f"Error connecting to database outside Flask context: {e}")
+            return None
 
 def close_db(e=None):
     """Close database connection"""
