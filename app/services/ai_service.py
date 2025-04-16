@@ -96,18 +96,18 @@ class AIService:
     def _get_api_key(self):
         """Get API key from app config"""
         try:
-            return current_app.config.get('AI_API_KEY')
+            return current_app.config.get('OPENAI_API_KEY')
         except RuntimeError:
             # For use outside of Flask context
-            return os.environ.get('AI_API_KEY')
+            return os.environ.get('OPENAI_API_KEY')
     
     def _get_model_name(self):
         """Get model name from app config"""
         try:
-            return current_app.config.get('AI_MODEL', 'gpt-4')
+            return current_app.config.get('OPENAI_MODEL', 'gpt-4')
         except RuntimeError:
             # For use outside of Flask context
-            return os.environ.get('AI_MODEL', 'gpt-4')
+            return os.environ.get('OPENAI_MODEL', 'gpt-4')
     
     def _create_headers(self):
         """Create API request headers"""
