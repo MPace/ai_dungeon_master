@@ -1,0 +1,148 @@
+/* File: frontend/src/components/steps/Step2_5_CharacterTypeSelector.css */
+
+.character-type-selector-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: calc(100vh - 150px);
+    padding: 40px 20px;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.character-type-title {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 2.5rem;
+    text-shadow: 0 0 15px rgba(255, 100, 0, 0.5);
+    margin-bottom: 20px;
+}
+
+.character-type-description {
+    text-align: center;
+    color: #e0e0e0;
+    font-size: 1.2rem;
+    max-width: 800px;
+    margin-bottom: 40px;
+}
+
+.character-type-options {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    width: 100%;
+    max-width: 1200px;
+}
+
+.character-type-card {
+    background-color: rgba(30, 30, 40, 0.7);
+    border: 3px solid #3a3a3a;
+    border-radius: 15px;
+    width: 400px;
+    max-width: 100%;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.character-type-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 40px rgba(255, 100, 0, 0.3);
+    border-color: #a24a2c;
+}
+
+.character-type-image-container {
+    height: 250px;
+    overflow: hidden;
+}
+
+.character-type-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.character-type-card:hover .character-type-image {
+    transform: scale(1.05);
+}
+
+.character-type-content {
+    padding: 20px;
+}
+
+.character-type-name {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.character-type-desc {
+    color: #cccccc;
+    font-size: 1rem;
+    line-height: 1.5;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.character-type-select-btn {
+    background-color: #863a20;
+    color: white;
+    text-align: center;
+    padding: 12px 0;
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    margin: 0 20px 20px;
+    border-radius: 5px;
+}
+
+.character-type-card:hover .character-type-select-btn {
+    background-color: #a24a2c;
+}
+
+.character-type-navigation {
+    margin-top: 40px;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 800px;
+}
+
+.back-button {
+    background-color: transparent;
+    color: #cccccc;
+    border: 1px solid #555;
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.back-button:hover {
+    background-color: rgba(60, 60, 70, 0.5);
+    border-color: #777;
+    color: #ffffff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .character-type-options {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .character-type-card {
+        width: 90%;
+        max-width: 500px;
+        margin-bottom: 20px;
+    }
+}

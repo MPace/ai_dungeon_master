@@ -4,6 +4,8 @@ import './CharacterCreator.css';
 // Import step components
 import Step1_WorldSelector from './steps/Step1_WorldSelector';
 import Step2_CampaignSelector from './steps/Step2_CampaignSelector';
+import Step2_5_CharacterTypeSelector from './steps/Step2_5_CharacterTypeSelector';
+import Step2_6_PremadeCharacterSelector from './steps/Step2_6_PremadeCharacterSelector';
 import Step3_ClassSelector from './steps/Step3_ClassSelector';
 import Step4_CharacterInfo from './steps/Step4_CharacterInfo';
 import Step5_AbilityScores from './steps/Step5_AbilityScores'; 
@@ -19,6 +21,9 @@ const initialCharacterData = {
     // Data structure as before
     worldId: null,
     worldName: null,
+    characterType: null,
+    isPremadeCharacter: false,
+    premadeCharacterId: null,
     // Rest of the structure
     isDraft: true,
     characterId: null,
@@ -32,20 +37,61 @@ function CharacterCreator() {
     const [error, setError] = useState(null);
 
     // Navigation functions
-    const nextStep = useCallback(() => {
+    const nextStep = useCallback((skipToReview = false) => {
         setCurrentStep(prevStep => {
-            const next = prevStep + 1;
+            let next;
+            
+            // Handle special flow for premade characters
+            if (skipToReview) {
+                if (prevStep === 2.5) {
+                    // If we're at the character type selection and chose premade, go to premade selector
+                    next = 2.6;
+                } else if (prevStep === 2.6) {
+                    // If we're at the premade selector and confirmed a character, skip to review
+                    next = 11;
+                } else {
+                    next = prevStep + 1;
+                }
+            } else {
+                // Regular progression
+                if (prevStep === 2.5) {
+                    // If we're at the character type selection and chose custom, go to class selection
+                    next = 3;
+                } else {
+                    next = prevStep + 1;
+                }
+            }
+            
+            // Update last completed step
             setCharacterData(prevData => ({
                 ...prevData,
                 lastStepCompleted: Math.max(prevData.lastStepCompleted, prevStep)
             }));
+            
             return next;
         });
     }, []);
 
     const prevStep = useCallback(() => {
-        setCurrentStep(prevStep => Math.max(1, prevStep - 1));
-    }, []);
+        setCurrentStep(prevStep => {
+            // Handle backwards navigation logic
+            if (prevStep === 3 && characterData.characterType === 'premade') {
+                // If we're going back from class selection and character type was premade, 
+                // go back to premade selector
+                return 2.6;
+            } else if (prevStep === 2.6) {
+                // If we're going back from premade selector, go back to character type
+                return 2.5;
+            } else if (prevStep === 11 && characterData.isPremadeCharacter) {
+                // If we're going back from review and using a premade character,
+                // go back to premade selector
+                return 2.6;
+            } else {
+                // Regular backwards navigation
+                return Math.max(1, prevStep - 1);
+            }
+        });
+    }, [characterData.characterType, characterData.isPremadeCharacter]);
 
     const goToStep = useCallback((step) => {
         if (step <= characterData.lastStepCompleted + 1 && step >= 1) {
@@ -78,6 +124,24 @@ function CharacterCreator() {
             case 2:
                 return (
                     <Step2_CampaignSelector
+                        characterData={characterData}
+                        updateCharacterData={updateCharacterData}
+                        nextStep={nextStep}
+                        prevStep={prevStep}
+                    />
+                )
+            case 2.5:
+                return (
+                    <Step2_5_CharacterTypeSelector
+                        characterData={characterData}
+                        updateCharacterData={updateCharacterData}
+                        nextStep={nextStep}
+                        prevStep={prevStep}
+                    />
+                )
+            case 2.6:
+                return (
+                    <Step2_6_PremadeCharacterSelector
                         characterData={characterData}
                         updateCharacterData={updateCharacterData}
                         nextStep={nextStep}

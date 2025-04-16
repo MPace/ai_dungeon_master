@@ -1,0 +1,91 @@
+id: bruenor_battlehammer
+name: Bruenor Battlehammer
+race: Mountain Dwarf
+class: Fighter
+level: 1
+background: Folk Hero
+alignment: Lawful Good
+gender: Male
+description: >
+  Bruenor is a sturdy mountain dwarf with a long beard and weathered features. 
+  His arms bear the scars of many battles, and his eyes hold the determination of 
+  someone who has faced great challenges. Though gruff on the outside, he has a 
+  heart of gold and values loyalty above all else.
+
+abilities:
+  strength: 15
+  dexterity: 10
+  constitution: 14
+  intelligence: 8
+  wisdom: 13
+  charisma: 12
+
+proficiencies:
+  skills:
+    - Athletics
+    - Insight
+    - Perception
+    - Survival
+    - Animal Handling
+  armor:
+    - Light armor
+    - Medium armor
+    - Heavy armor
+    - Shields
+  weapons:
+    - Simple weapons
+    - Martial weapons
+  languages:
+    - Common
+    - Dwarvish
+
+classFeatures:
+  standard:
+    - Fighting Style: Defense
+    - Second Wind
+  choices:
+    Fighting Style: Defense
+
+racialTraits:
+  - Darkvision
+  - Dwarven Resilience
+  - Dwarven Combat Training
+  - Tool Proficiency: Smith's Tools
+  - Stonecunning
+  - Dwarven Toughness
+
+backgroundFeature:
+  name: Rustic Hospitality
+  description: >
+    Since you come from the ranks of the common folk, you fit in among them with ease.
+    You can find a place to hide, rest, or recuperate among other commoners, unless
+    you have shown yourself to be a danger to them. They will shield you from the law
+    or anyone else searching for you, though they will not risk their lives for you.
+
+equipment:
+  equipped:
+    - item: Chain mail
+      type: armor
+    - item: Battleaxe
+      type: weapon
+    - item: Shield
+      type: armor
+    - item: Light crossbow
+      type: weapon
+    - item: 20 bolts
+      type: ammunition
+    - item: Explorer's pack
+      type: gear
+    - item: Smith's tools
+      type: tools
+    - item: Shovel
+      type: gear
+    - item: Iron pot
+      type: gear
+    - item: Belt pouch with 10 gold pieces
+      type: gear
+
+spells:
+  hasSpellcasting: false
+
+image: /images/premade/bruenor.jpg

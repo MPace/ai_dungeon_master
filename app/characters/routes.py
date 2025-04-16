@@ -826,6 +826,70 @@ def get_world_data(world_id):
         current_app.logger.error(traceback.format_exc())
         return jsonify({"success": False, "error": "Failed to retrieve creation data."}), 500
 
+@characters_bp.route('/api/premade-characters/<world_id>', methods=['GET'])
+@login_required
+def get_premade_characters(world_id):
+    """API endpoint to get premade characters for a specific world."""
+    
+    try:
+        premade_characters = []
+        
+        # Define path to premade characters for this world
+        world_premade_dir = os.path.join(DATA_DIR, 'premade_characters', world_id)
+        common_premade_dir = os.path.join(DATA_DIR, 'premade_characters', 'common')
+        
+        current_app.logger.info(f"Looking for premade characters in: {world_premade_dir} or {common_premade_dir}")
+        
+        # Check world-specific directory first
+        if os.path.exists(world_premade_dir) and os.path.isdir(world_premade_dir):
+            for filename in os.listdir(world_premade_dir):
+                if filename.endswith(('.yaml', '.yml')):
+                    file_path = os.path.join(world_premade_dir, filename)
+                    
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            character_data = yaml.safe_load(f)
+                            
+                            if character_data:
+                                # Add image prefix if it's a relative path
+                                if character_data.get('image') and not character_data['image'].startswith(('http://', 'https://')):
+                                    character_data['image'] = f"{VITE_BASE_URL}{character_data['image']}"
+                                
+                                premade_characters.append(character_data)
+                                current_app.logger.debug(f"Loaded premade character: {character_data.get('name')} from {filename}")
+                    except Exception as e:
+                        current_app.logger.error(f"Error loading premade character from {file_path}: {e}")
+        
+        # If no world-specific characters, check common directory
+        if len(premade_characters) == 0 and os.path.exists(common_premade_dir) and os.path.isdir(common_premade_dir):
+            for filename in os.listdir(common_premade_dir):
+                if filename.endswith(('.yaml', '.yml')):
+                    file_path = os.path.join(common_premade_dir, filename)
+                    
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            character_data = yaml.safe_load(f)
+                            
+                            if character_data:
+                                # Add image prefix if it's a relative path
+                                if character_data.get('image') and not character_data['image'].startswith(('http://', 'https://')):
+                                    character_data['image'] = f"{VITE_BASE_URL}{character_data['image']}"
+                                
+                                premade_characters.append(character_data)
+                                current_app.logger.debug(f"Loaded common premade character: {character_data.get('name')} from {filename}")
+                    except Exception as e:
+                        current_app.logger.error(f"Error loading premade character from {file_path}: {e}")
+        
+        current_app.logger.info(f"Found {len(premade_characters)} premade characters for world {world_id}")
+        return jsonify({"success": True, "characters": premade_characters})
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting premade characters: {e}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        return jsonify({"success": False, "error": f"Failed to retrieve premade characters: {str(e)}"}), 500
+
+
 @characters_bp.route('/api/campaigns/generate', methods=['POST'])
 @login_required
 def generate_campaign():

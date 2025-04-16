@@ -1,0 +1,602 @@
+/* File: frontend/src/components/steps/Step2_6_PremadeCharacterSelector.css */
+
+.premade-character-selector-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: calc(100vh - 150px);
+    padding: 40px 20px;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.premade-character-title {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 2.5rem;
+    text-shadow: 0 0 15px rgba(255, 100, 0, 0.5);
+    margin-bottom: 20px;
+}
+
+.premade-character-description {
+    text-align: center;
+    color: #e0e0e0;
+    font-size: 1.2rem;
+    max-width: 800px;
+    margin-bottom: 40px;
+}
+
+.premade-character-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 30px;
+    width: 100%;
+    max-width: 1200px;
+}
+
+.premade-character-card {
+    background-color: rgba(30, 30, 40, 0.7);
+    border: 3px solid #3a3a3a;
+    border-radius: 15px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.premade-character-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 40px rgba(255, 100, 0, 0.3);
+    border-color: #a24a2c;
+}
+
+.premade-character-card.selected {
+    border-color: #a24a2c;
+    box-shadow: 0 15px 35px rgba(255, 100, 0, 0.4), 0 0 20px rgba(255, 100, 0, 0.4);
+}
+
+.premade-character-image-container {
+    height: 200px;
+    overflow: hidden;
+}
+
+.premade-character-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.premade-character-card:hover .premade-character-image {
+    transform: scale(1.05);
+}
+
+.premade-character-info {
+    padding: 20px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.premade-character-name {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+}
+
+.premade-character-basics {
+    color: #999;
+    font-size: 0.9rem;
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.premade-character-short-desc {
+    color: #cccccc;
+    font-size: 1rem;
+    line-height: 1.5;
+    flex-grow: 1;
+}
+
+.premade-character-select-btn {
+    background-color: #863a20;
+    color: white;
+    text-align: center;
+    padding: 12px 0;
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    margin: 0 20px 20px;
+    border-radius: 5px;
+}
+
+.premade-character-card:hover .premade-character-select-btn {
+    background-color: #a24a2c;
+}
+
+.no-characters-message {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #999;
+    text-align: center;
+    border: 2px dashed #555;
+    border-radius: 10px;
+}
+
+.no-characters-message i {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+/* Character Details Modal */
+.character-details-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
+}
+
+.character-details-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.character-details-modal {
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh;
+    background-color: #1a1a20;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 100, 0, 0.2);
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    border: 3px solid #a24a2c;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.character-details-overlay.active .character-details-modal {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+.close-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    border: none;
+    outline: none;
+}
+
+.close-button:hover {
+    background-color: #a24a2c;
+    transform: rotate(90deg);
+}
+
+.character-details-content {
+    padding: 30px;
+    overflow-y: auto;
+    max-height: 90vh;
+}
+
+.character-details-header {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.character-portrait-container {
+    width: 200px;
+    height: 250px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
+}
+
+.character-portrait {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.character-details-identity {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.character-details-name {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.character-details-specs {
+    color: #aaa;
+    font-size: 1.1rem;
+    display: flex;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.character-details-alignment,
+.character-details-background {
+    color: #ccc;
+    font-size: 1.1rem;
+    margin-top: 5px;
+}
+
+.character-details-description,
+.character-details-abilities,
+.character-details-proficiencies,
+.character-details-features,
+.character-details-equipment {
+    margin-bottom: 30px;
+}
+
+.character-details-description h3,
+.character-details-abilities h3,
+.character-details-proficiencies h3,
+.character-details-features h3,
+.character-details-equipment h3 {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(162, 74, 44, 0.3);
+    padding-bottom: 5px;
+}
+
+.character-details-description p {
+    color: #e0e0e0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.ability-scores-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: space-around;
+}
+
+.ability-score-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80px;
+    height: 100px;
+    background-color: rgba(30, 30, 40, 0.5);
+    border-radius: 10px;
+    padding: 10px;
+    border: 1px solid #444;
+}
+
+.ability-name {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+}
+
+.ability-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+.ability-modifier {
+    font-size: 1.2rem;
+    color: #aaa;
+}
+
+.proficiency-group {
+    margin-bottom: 20px;
+}
+
+.proficiency-group h4 {
+    font-family: 'Cinzel', serif;
+    color: #ddd;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+
+.proficiency-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.proficiency-tag {
+    background-color: rgba(134, 58, 32, 0.2);
+    color: #ddd;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    border: 1px solid rgba(162, 74, 44, 0.3);
+}
+
+.feature-group {
+    margin-bottom: 25px;
+}
+
+.feature-group h4 {
+    font-family: 'Cinzel', serif;
+    color: #ddd;
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+
+.feature-list {
+    list-style-type: none;
+    padding-left: 5px;
+}
+
+.feature-list li {
+    color: #ccc;
+    margin-bottom: 8px;
+    position: relative;
+    padding-left: 20px;
+}
+
+.feature-list li:before {
+    content: "•";
+    color: #a24a2c;
+    font-size: 1.2rem;
+    position: absolute;
+    left: 0;
+    top: -2px;
+}
+
+.background-feature {
+    background-color: rgba(30, 30, 40, 0.5);
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #444;
+}
+
+.background-feature-name {
+    font-family: 'Cinzel', serif;
+    color: #a24a2c;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
+.background-feature p {
+    color: #ccc;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.equipment-list {
+    list-style-type: none;
+    padding-left: 5px;
+}
+
+.equipment-list li {
+    color: #ccc;
+    margin-bottom: 8px;
+    position: relative;
+    padding-left: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.equipment-list li:before {
+    content: "•";
+    color: #a24a2c;
+    font-size: 1.2rem;
+    position: absolute;
+    left: 0;
+    top: -2px;
+}
+
+.equipment-type {
+    color: #888;
+    font-size: 0.85rem;
+    padding: 2px 8px;
+    background-color: rgba(30, 30, 40, 0.7);
+    border-radius: 10px;
+    margin-left: 10px;
+}
+
+.choose-character-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.choose-character-btn {
+    background-color: #863a20;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 15px 45px;
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.choose-character-btn:hover {
+    background-color: #a24a2c;
+    box-shadow: 0 8px 25px rgba(255, 100, 0, 0.3);
+    transform: translateY(-3px);
+}
+
+.choose-character-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Navigation Buttons */
+.premade-character-navigation {
+    margin-top: 40px;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 800px;
+}
+
+.back-button {
+    background-color: transparent;
+    color: #cccccc;
+    border: 1px solid #555;
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.back-button:hover {
+    background-color: rgba(60, 60, 70, 0.5);
+    border-color: #777;
+    color: #ffffff;
+}
+
+.continue-button {
+    background-color: rgba(134, 58, 32, 0.2);
+    color: #888;
+    border: 1px solid rgba(134, 58, 32, 0.3);
+    border-radius: 30px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.continue-button.active {
+    background-color: #863a20;
+    color: white;
+    border-color: #863a20;
+    cursor: pointer;
+}
+
+.continue-button.active:hover {
+    background-color: #a24a2c;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(255, 100, 0, 0.2);
+}
+
+/* Loading and Error States */
+.loading-container, 
+.error-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    width: 100%;
+    color: #ccc;
+    gap: 20px;
+}
+
+.loading-container .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: #a24a2c;
+}
+
+.error-container {
+    color: #dc3545;
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 8px;
+    padding: 30px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .character-details-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .character-portrait-container {
+        width: 160px;
+        height: 200px;
+    }
+    
+    .ability-scores-container {
+        justify-content: center;
+    }
+    
+    .choose-character-btn {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .premade-character-title {
+        font-size: 2rem;
+    }
+    
+    .premade-character-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .ability-score-item {
+        width: 70px;
+        height: 90px;
+    }
+    
+    .ability-value {
+        font-size: 1.5rem;
+    }
+    
+    .character-details-name {
+        font-size: 2rem;
+    }
+}
