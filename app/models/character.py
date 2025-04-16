@@ -140,20 +140,37 @@ class Character:
                 extracted_data['spellcasting'] = {}
             
             # Extract hit points - critically important for game interface
+            hit_points_data = None
             if 'hitPoints' in working_data and working_data['hitPoints']:
-                extracted_data['hit_points'] = working_data['hitPoints']
+                hit_points_data = working_data['hitPoints']
             elif 'hit_points' in working_data and working_data['hit_points']:
-                extracted_data['hit_points'] = working_data['hit_points']
+                hit_points_data = working_data['hit_points']
             elif 'calculatedStats' in working_data and working_data['calculatedStats'] and 'hitPoints' in working_data['calculatedStats']:
-                # Extract from the calculated stats in React
-                hp_value = working_data['calculatedStats']['hitPoints']
-                extracted_data['hit_points'] = {
-                    'current': hp_value,
-                    'max': hp_value,
-                    'hitDie': cls._get_hit_die_for_class(extracted_data['character_class'])
-                }
+                hit_points_data = working_data['calculatedStats']['hitPoints']
+
+            if hit_points_data is not None:
+                if isinstance(hit_points_data, dict) and ('current' in hit_points_data or 'max' in hit_points_data):
+                    # It's already a dictionary with expected structure, fill in any missing fields
+                    extracted_data['hit_points'] = {
+                        'current': hit_points_data.get('current', hit_points_data.get('max', 10)),
+                        'max': hit_points_data.get('max', hit_points_data.get('current', 10)),
+                        'hitDie': hit_points_data.get('hitDie', cls._get_hit_die_for_class(extracted_data['character_class']))
+                    }
+                else:
+                    # It's a number or some other format, convert to dictionary
+                    try:
+                        hp_value = int(hit_points_data)
+                    except (ValueError, TypeError):
+                        # If it can't be converted to int, use default value
+                        hp_value = 10
+                        
+                    extracted_data['hit_points'] = {
+                        'current': hp_value,
+                        'max': hp_value,
+                        'hitDie': cls._get_hit_die_for_class(extracted_data['character_class'])
+                    }
             else:
-                # Compute based on class and constitution if possible
+                # No hit points data found, calculate based on class and constitution
                 extracted_data['hit_points'] = cls._calculate_hit_points(
                     extracted_data['character_class'], 
                     extracted_data['abilities'].get('constitution', 10)
