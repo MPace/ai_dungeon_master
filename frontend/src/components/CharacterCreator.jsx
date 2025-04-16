@@ -41,8 +41,12 @@ function CharacterCreator() {
         setCurrentStep(prevStep => {
             let next;
             
+            // Special case for step 2 to go to character type selection (2.5)
+            if (prevStep === 2) {
+                next = 2.5;
+            }
             // Handle special flow for premade characters
-            if (skipToReview) {
+            else if (skipToReview) {
                 if (prevStep === 2.5) {
                     // If we're at the character type selection and chose premade, go to premade selector
                     next = 2.6;
