@@ -594,3 +594,207 @@ class CharacterService:
             import traceback
             logger.error(traceback.format_exc())
             return {'success': False, 'error': str(e)}
+        
+    @staticmethod
+    def get_character_draft(draft_id, user_id):
+        """
+        Get a character draft by ID
+        
+        Args:
+            draft_id (str): Draft ID
+            user_id (str): User ID for permission check
+            
+        Returns:
+            dict: Result with success status and character draft
+        """
+        try:
+            db = get_db_for_service()
+            if db is None:
+                logger.error("Database connection failed when getting character draft")
+                return {'success': False, 'error': 'Database connection error'}
+            
+            # Build query
+            query = {'character_id': draft_id, 'user_id': user_id}
+            
+            logger.info(f"Querying for character draft with: {query}")
+            
+            # Find draft
+            draft_data = db.character_drafts.find_one(query)
+            
+            if not draft_data:
+                logger.warning(f"Character draft not found: {draft_id}")
+                return {'success': False, 'error': 'Character draft not found'}
+            
+            # Convert dictionary to Character object
+            draft = Character.from_dict(draft_data)
+            
+            if draft:
+                logger.info(f"Character draft found: {draft.name if hasattr(draft, 'name') else 'Unnamed'}")
+                return {'success': True, 'character': draft}
+            else:
+                logger.warning(f"Failed to create Character object from draft data: {draft_id}")
+                return {'success': False, 'error': 'Failed to create Character object from draft data'}
+                    
+        except Exception as e:
+            logger.error(f"Error getting character draft: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return {'success': False, 'error': str(e)}
+
+    @staticmethod
+    def get_world_info_for_characters(characters):
+        """
+        Enrich character objects with world and campaign information
+        
+        Args:
+            characters (list): List of character objects
+            
+        Returns:
+            list: Enriched character list
+        """
+        try:
+            # World information will be loaded from YAML files
+            worlds_dir = os.path.join(DATA_DIR, 'worlds')
+            
+            # Create a cache for worlds to avoid reading the same files multiple times
+            world_cache = {}
+            
+            for character in characters:
+                # Skip if character doesn't have worldId
+                if not hasattr(character, 'worldId') or not character.worldId:
+                    continue
+                    
+                world_id = character.worldId
+                
+                # Check if world is already in cache
+                if world_id not in world_cache:
+                    # Try to load world info from YAML file
+                    world_file = os.path.join(worlds_dir, f"{world_id}.yaml")
+                    if not os.path.exists(world_file):
+                        world_file = os.path.join(worlds_dir, f"{world_id}.yml")
+                    
+                    if os.path.exists(world_file):
+                        try:
+                            with open(world_file, 'r', encoding='utf-8') as f:
+                                world_data = yaml.safe_load(f)
+                                world_cache[world_id] = world_data
+                        except Exception as e:
+                            logger.error(f"Error loading world file {world_file}: {e}")
+                            world_cache[world_id] = None
+                    else:
+                        world_cache[world_id] = None
+                
+                # Add world info to character
+                world_data = world_cache.get(world_id)
+                if world_data:
+                    character.worldName = world_data.get('name', 'Unknown World')
+                    
+                    # Add campaign info if available
+                    if hasattr(character, 'campaignId') and character.campaignId:
+                        campaign_id = character.campaignId
+                        campaign_dir = os.path.join(DATA_DIR, 'campaigns', world_id)
+                        
+                        if os.path.exists(campaign_dir):
+                            campaign_file = os.path.join(campaign_dir, f"{campaign_id}.yaml")
+                            if not os.path.exists(campaign_file):
+                                campaign_file = os.path.join(campaign_dir, f"{campaign_id}.yml")
+                            
+                            if os.path.exists(campaign_file):
+                                try:
+                                    with open(campaign_file, 'r', encoding='utf-8') as f:
+                                        campaign_data = yaml.safe_load(f)
+                                        character.campaignName = campaign_data.get('name', 'Unknown Campaign')
+                                except Exception as e:
+                                    logger.error(f"Error loading campaign file {campaign_file}: {e}")
+            
+            return characters
+        except Exception as e:
+            logger.error(f"Error enriching characters with world info: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return characters
+
+    @staticmethod
+    def format_date_for_display(date_value):
+        """
+        Format a date value for display
+        
+        Args:
+            date_value: Date to format (datetime or string)
+            
+        Returns:
+            str: Formatted date string
+        """
+        if date_value is None:
+            return None
+            
+        try:
+            # Convert string to datetime if necessary
+            if isinstance(date_value, str):
+                try:
+                    date_value = datetime.fromisoformat(date_value.replace('Z', '+00:00'))
+                except ValueError:
+                    # If it's not a valid ISO format, return as is
+                    return date_value
+            
+            # Format the datetime
+            if isinstance(date_value, datetime):
+                return date_value.strftime("%d/%m/%y %H:%M")
+            
+            # Return original value if we can't format it
+            return date_value
+        except Exception as e:
+            logger.error(f"Error formatting date {date_value}: {e}")
+            return date_value
+
+    # Update the list_characters method to include world info
+    @staticmethod
+    def list_characters(user_id):
+        """
+        List characters for a user with enhanced information
+        
+        Args:
+            user_id (str): User ID
+            
+        Returns:
+            dict: Result with success status and characters list
+        """
+        try:
+            db = get_db_for_service()
+            if db is None:
+                logger.error("Database connection failed when listing characters")
+                return {'success': False, 'error': 'Database connection error'}
+            
+            # Get characters that are not drafts
+            characters_data = list(db.characters.find({
+                'user_id': user_id,
+                '$or': [
+                    {'isDraft': False},
+                    {'isDraft': {'$exists': False}}
+                ]
+            }).sort('last_played', -1))
+            
+            logger.info(f"Found {len(characters_data)} characters for user {user_id}")
+            
+            characters = []
+            for data in characters_data:
+                character = Character.from_dict(data)
+                if character is not None:  # Only include valid characters
+                    # Format last_played date for display
+                    if hasattr(character, 'last_played') and character.last_played:
+                        character.last_played_formatted = CharacterService.format_date_for_display(character.last_played)
+                    
+                    characters.append(character)
+            
+            logger.info(f"Converted {len(characters)} characters from database data")
+            
+            # Enrich characters with world and campaign info
+            characters = CharacterService.get_world_info_for_characters(characters)
+            
+            return {'success': True, 'characters': characters}
+            
+        except Exception as e:
+            logger.error(f"Error listing characters: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return {'success': False, 'error': str(e)}

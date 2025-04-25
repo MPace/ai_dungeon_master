@@ -44,10 +44,13 @@ def create_app(config_name='default'):
     from app.auth.routes import auth_bp
     from app.characters.routes import characters_bp
     from app.game.routes import game_bp
+    from app.dashboard.routes import dashboard_bp
+
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(characters_bp, url_prefix='/characters')
     app.register_blueprint(game_bp)  # No prefix to maintain compatibility with original URLs
+    app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
     
     # Add a route for the root URL to maintain backward compatibility
     @app.route('/')
