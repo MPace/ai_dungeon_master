@@ -5,6 +5,7 @@ from app.models.character import Character
 from datetime import datetime
 import logging
 import uuid
+import pymongo
 from flask import current_app, g
 
 logger = logging.getLogger(__name__)
@@ -13,34 +14,38 @@ def get_db_for_service():
     """Get database connection for service"""
     try:
         # Try Flask application context first
-        from flask import current_app, g
-        
-        # Check if we have a connection in the Flask app context
-        if hasattr(g, 'db'):
-            logger.debug("Using existing database connection from Flask context")
-            return g.db
+        try:
+            from flask import current_app, g
             
-        # If we have a current_app, use it to get the MongoDB instance
-        if current_app:
-            logger.debug("Getting database connection from Flask app context")
-            if 'mongodb' in current_app.extensions:
-                return current_app.extensions['mongodb']
-            # Fall back to check in extensions directly
-            from app.extensions import mongo_db
-            if mongo_db is not None:
-                logger.debug("Using mongo_db from extensions module")
-                return mongo_db
-    except RuntimeError:
-        # Working outside of Flask application context (e.g., in Celery worker)
-        logger.debug("Working outside Flask context, using direct database connection")
-    except Exception as e:
-        logger.warning(f"Error accessing Flask context: {e}")
+            # Check if we have a connection in the Flask app context
+            if hasattr(g, 'db'):
+                logger.debug("Using existing database connection from Flask context")
+                return g.db
+                
+            # If we have a current_app, use it to get the MongoDB instance
+            if current_app:
+                logger.debug("Getting database connection from Flask app context")
+                mongo_uri = current_app.config.get('MONGO_URI')
+                if not mongo_uri:
+                    logger.error("MONGO_URI not configured in application")
+                    return None
+                
+                # Create client and connect to database
+                client = pymongo.MongoClient(
+                    mongo_uri,
+                    tlsAllowInvalidCertificates=True,
+                    serverSelectionTimeoutMS=5000
+                )
+                g.db = client.ai_dungeon_master
+                
+                logger.debug("Database connection established within Flask context")
+                return g.db
+                
+        except (RuntimeError, ImportError) as e:
+            # Working outside of Flask application context (e.g., in Celery worker)
+            logger.debug(f"Not in Flask context or Flask import error: {e}")
     
-    try:
         # If we're outside Flask context, try to initialize a new connection
-        import os
-        import pymongo
-        
         mongo_uri = os.environ.get("MONGO_URI")
         if not mongo_uri:
             logger.error("MONGO_URI environment variable not set")
@@ -60,7 +65,7 @@ def get_db_for_service():
         import traceback
         logger.error(traceback.format_exc())
         return None
-
+    
 class CharacterService:
     """Service for handling character operations"""
     
