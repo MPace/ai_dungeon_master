@@ -344,7 +344,7 @@ const Dashboard = () => {
                                         </thead>
                                         <tbody>
                                             {filteredCharacters.map(character => (
-                                                <tr key={character.character_id} data-character-id={character.character_id}>
+                                                 <tr key={character.character_id} data-character-id={character.character_id}>
                                                     <td className="align-middle">{character.name}</td>
                                                     <td className="align-middle">{character.race}</td>
                                                     <td className="align-middle">{character.character_class}</td>
@@ -353,37 +353,21 @@ const Dashboard = () => {
                                                     <td className="align-middle">{character.campaignName || '-'}</td>
                                                     <td className="align-middle">{formatDate(character.last_played)}</td>
                                                     <td>
-                                                        <div className="btn-group">
+                                                        <div className="d-flex">
                                                             <button 
-                                                                className="btn btn-sm btn-success"
+                                                                className="btn btn-sm btn-success me-2"
                                                                 onClick={() => handlePlayCharacter(character.character_id)}
+                                                                title="Play character"
                                                             >
                                                                 <i className="bi bi-play-fill"></i> Play
                                                             </button>
                                                             <button 
-                                                                type="button" 
-                                                                className="btn btn-sm btn-secondary dropdown-toggle dropdown-toggle-split" 
-                                                                data-bs-toggle="dropdown"
-                                                            ></button>
-                                                            <ul className="dropdown-menu dropdown-menu-end">
-                                                                <li>
-                                                                    <a className="dropdown-item" href="#">
-                                                                        <i className="bi bi-pencil me-2"></i>Edit
-                                                                    </a>
-                                                                </li>
-                                                                <li><hr className="dropdown-divider" /></li>
-                                                                <li>
-                                                                    <button 
-                                                                        className="dropdown-item text-danger"
-                                                                        onClick={() => handleDeleteCharacter(
-                                                                            character.character_id, 
-                                                                            character.name
-                                                                        )}
-                                                                    >
-                                                                        <i className="bi bi-trash me-2"></i>Delete
-                                                                    </button>
-                                                                </li>
-                                                            </ul>
+                                                                className="btn btn-sm btn-danger"
+                                                                onClick={() => handleDeleteCharacter(character.character_id, character.name)}
+                                                                title="Delete character"
+                                                            >
+                                                                <i className="bi bi-trash"></i>
+                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -434,31 +418,21 @@ const Dashboard = () => {
                                                         {formatDate(draft.lastUpdated || draft.updated_at)}
                                                     </td>
                                                     <td>
-                                                        <div className="btn-group">
+                                                        <div className="d-flex">
                                                             <Link 
                                                                 to={`/characters/create?draft_id=${draft.character_id}`}
-                                                                className="btn btn-sm btn-warning text-dark"
+                                                                className="btn btn-sm btn-warning text-dark me-2"
+                                                                title="Continue draft"
                                                             >
                                                                 <i className="bi bi-pencil-fill"></i> Continue
                                                             </Link>
                                                             <button 
-                                                                type="button" 
-                                                                className="btn btn-sm btn-warning text-dark dropdown-toggle dropdown-toggle-split" 
-                                                                data-bs-toggle="dropdown"
-                                                            ></button>
-                                                            <ul className="dropdown-menu dropdown-menu-end">
-                                                                <li>
-                                                                    <button 
-                                                                        className="dropdown-item text-danger"
-                                                                        onClick={() => handleDeleteDraft(
-                                                                            draft.character_id,
-                                                                            draft.name || 'Unnamed draft'
-                                                                        )}
-                                                                    >
-                                                                        <i className="bi bi-trash me-2"></i>Delete
-                                                                    </button>
-                                                                </li>
-                                                            </ul>
+                                                                className="btn btn-sm btn-danger"
+                                                                onClick={() => handleDeleteDraft(draft.character_id, draft.name || 'Unnamed draft')}
+                                                                title="Delete draft"
+                                                            >
+                                                                <i className="bi bi-trash"></i>
+                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>
