@@ -34,39 +34,43 @@ def login_required(f):
 def dashboard():
     # Get user ID from session
     user_id = session.get('user_id')
-    
-    characters = []
-    drafts = []
 
-    try:
+    logger.info(f"Dashboard access redirecting to React dashboard for user ID: {user_id}")
+
+    return redirect(url_for('dashboard.index'))
+
+#    characters = []
+#    drafts = []
+
+#    try:
         # Get characters 
-        character_result = CharacterService.list_characters(user_id)
-        if character_result['success']:
-            characters = character_result['characters']
-        else:
-            error_msg = character_result.get('error', 'Unknown error')
-            logger.error(f"Error loading characters: {error_msg}")
-            flash(f"Error loading characters: {error_msg}", 'error')
+#        character_result = CharacterService.list_characters(user_id)
+#        if character_result['success']:
+#            characters = character_result['characters']
+#        else:
+#            error_msg = character_result.get('error', 'Unknown error')
+#            logger.error(f"Error loading characters: {error_msg}")
+#            flash(f"Error loading characters: {error_msg}", 'error')
 
          # Get drafts
-        drafts_result = CharacterService.list_character_drafts(user_id)
-        if drafts_result['success']:
-            drafts = drafts_result['drafts']
-            logger.info(f"Successfully loaded {len(drafts)} drafts")
-        else:
-            error_msg = drafts_result.get('error', 'Unknown error')
-            logger.error(f"Error loading drafts: {error_msg}")
-            flash(f'Error loading drafts: {error_msg}', 'error')
+#        drafts_result = CharacterService.list_character_drafts(user_id)
+#        if drafts_result['success']:
+#            drafts = drafts_result['drafts']
+#            logger.info(f"Successfully loaded {len(drafts)} drafts")
+#        else:
+#            error_msg = drafts_result.get('error', 'Unknown error')
+#            logger.error(f"Error loading drafts: {error_msg}")
+#            flash(f'Error loading drafts: {error_msg}', 'error')
     
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        flash('Error loading dashboard: ' + str(e), 'error')
+#    except Exception as e:
+#        import traceback
+#        traceback.print_exc()
+#        flash('Error loading dashboard: ' + str(e), 'error')
     
-    return render_template('user.html',
-                              username=session.get('username', 'User'),
-                              characters=characters,
-                              drafts=drafts)
+#    return render_template('user.html',
+#                              username=session.get('username', 'User'),
+#                              characters=characters,
+#                              drafts=drafts)
 
 @game_bp.route('/play/<character_id>')
 @login_required
