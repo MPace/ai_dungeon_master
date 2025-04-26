@@ -5,7 +5,6 @@ from app.models.character import Character
 from datetime import datetime
 import logging
 import uuid
-import pymongo
 from flask import current_app, g
 
 logger = logging.getLogger(__name__)
@@ -13,6 +12,12 @@ logger = logging.getLogger(__name__)
 def get_db_for_service():
     """Get database connection for service"""
     try:
+        # Import required modules
+        import pymongo
+        import os
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Try Flask application context first
         try:
             from flask import current_app, g
@@ -26,7 +31,7 @@ def get_db_for_service():
             if current_app:
                 logger.debug("Getting database connection from Flask app context")
                 mongo_uri = current_app.config.get('MONGO_URI')
-                if not mongo_uri:
+                if mongo_uri is None:
                     logger.error("MONGO_URI not configured in application")
                     return None
                 
@@ -47,7 +52,7 @@ def get_db_for_service():
     
         # If we're outside Flask context, try to initialize a new connection
         mongo_uri = os.environ.get("MONGO_URI")
-        if not mongo_uri:
+        if mongo_uri is None:
             logger.error("MONGO_URI environment variable not set")
             return None
             

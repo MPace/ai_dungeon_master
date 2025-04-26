@@ -71,44 +71,48 @@ def login_required(f):
 
 def get_db():
     """Get database connection"""
+    # Import pymongo here to ensure it's available in all code paths
+    import pymongo
+    import os
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
         # First try to access within Flask context
-        from flask import g, current_app
-        
-        # Check if we're in a Flask application context
-        if 'db' not in g:
-            try:
-                # Get database URI from config
-                mongo_uri = current_app.config.get('MONGO_URI')
-                if not mongo_uri:
-                    logger.error("MONGO_URI not configured in application")
-                    return None
-                
-                # Create client and connect to database
-                client = pymongo.MongoClient(
-                    mongo_uri,
-                    tlsAllowInvalidCertificates=True,
-                    serverSelectionTimeoutMS=5000
-                )
-                g.db = client.ai_dungeon_master
-                
-                logger.debug("Database connection established within Flask context")
-            except Exception as e:
-                logger.error(f"Error connecting to database within Flask context: {e}")
-                return None
-        
-        return g.db
-        
-    except RuntimeError:
-        # We're outside Flask context (e.g., in a Celery worker)
-        logger.debug("Working outside Flask context, using direct database connection")
         try:
-            # Get database URI from environment
-            import os
-            import pymongo  # Add this import here to make pymongo available in this scope
+            from flask import g, current_app
             
+            # Check if we're in a Flask application context
+            if 'db' not in g:
+                try:
+                    # Get database URI from config
+                    mongo_uri = current_app.config.get('MONGO_URI')
+                    if mongo_uri is None:
+                        logger.error("MONGO_URI not configured in application")
+                        return None
+                    
+                    # Create client and connect to database
+                    client = pymongo.MongoClient(
+                        mongo_uri,
+                        tlsAllowInvalidCertificates=True,
+                        serverSelectionTimeoutMS=5000
+                    )
+                    g.db = client.ai_dungeon_master
+                    
+                    logger.debug("Database connection established within Flask context")
+                except Exception as e:
+                    logger.error(f"Error connecting to database within Flask context: {e}")
+                    return None
+            
+            return g.db
+            
+        except RuntimeError:
+            # We're outside Flask context (e.g., in a Celery worker)
+            logger.debug("Working outside Flask context, using direct database connection")
+            
+            # Get database URI from environment
             mongo_uri = os.environ.get('MONGO_URI')
-            if not mongo_uri:
+            if mongo_uri is None:
                 logger.error("MONGO_URI environment variable not set")
                 return None
             
@@ -121,9 +125,9 @@ def get_db():
             
             return client.ai_dungeon_master
             
-        except Exception as e:
-            logger.error(f"Error connecting to database outside Flask context: {e}")
-            return None
+    except Exception as e:
+        logger.error(f"Error connecting to database: {e}")
+        return None
 
 def close_db(e=None):
     """Close database connection"""
