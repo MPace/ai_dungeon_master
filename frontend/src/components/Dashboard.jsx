@@ -53,7 +53,23 @@ const Dashboard = () => {
             // Fetch characters
             const charactersResponse = await getCharacters();
             if (charactersResponse.success) {
-                setCharacters(charactersResponse.characters || []);
+                // Process characters to ensure they have consistent properties
+                const processedCharacters = (charactersResponse.characters || []).map(character => {
+                    // Normalize the data structure by mapping properties
+                    return {
+                        ...character,
+                        // Ensure character_class is available (might be in class or character_class)
+                        character_class: character.character_class || character.class || character.className || '',
+                        // World info might be in worldId/worldName or in a nested structure
+                        worldName: character.worldName || 
+                                 (character.worldId ? `World ${character.worldId}` : '-'),
+                        // Campaign info might be in campaignId/campaignName or in a nested structure
+                        campaignName: character.campaignName || 
+                                    (character.campaignId ? `Campaign ${character.campaignId}` : '-')
+                    };
+                });
+                setCharacters(processedCharacters);
+                console.log("Processed characters:", processedCharacters);
             } else {
                 throw new Error(charactersResponse.error || 'Failed to load characters');
             }
@@ -61,7 +77,17 @@ const Dashboard = () => {
             // Fetch drafts
             const draftsResponse = await getDrafts();
             if (draftsResponse.success) {
-                setDrafts(draftsResponse.drafts || []);
+                // Process drafts to ensure they have consistent properties
+                const processedDrafts = (draftsResponse.drafts || []).map(draft => {
+                    return {
+                        ...draft,
+                        // Ensure character_class is available (might be in class or character_class)
+                        character_class: draft.character_class || draft.class || draft.className || '',
+                        // Ensure lastStepCompleted is available
+                        lastStepCompleted: draft.lastStepCompleted || draft.lastStep || 1
+                    };
+                });
+                setDrafts(processedDrafts);
             } else {
                 throw new Error(draftsResponse.error || 'Failed to load drafts');
             }
@@ -146,8 +172,8 @@ const Dashboard = () => {
             case 'character_class':
             case 'worldName':
             case 'campaignName':
-                valA = (a[sortField] || '').toLowerCase();
-                valB = (b[sortField] || '').toLowerCase();
+                valA = String(a[sortField] || '').toLowerCase();
+                valB = String(b[sortField] || '').toLowerCase();
                 break;
             case 'level':
                 valA = parseInt(a[sortField] || 0);
@@ -402,7 +428,7 @@ const Dashboard = () => {
                                                     <td className="align-middle">{draft.race || '-'}</td>
                                                     <td className="align-middle">{draft.character_class || '-'}</td>
                                                     <td className="align-middle">
-                                                        {draft.lastStepCompleted || draft.lastStep || 1}/10
+                                                        {draft.lastStepCompleted || 1}/10
                                                     </td>
                                                     <td className="align-middle">
                                                         {formatDate(draft.lastUpdated || draft.updated_at)}
