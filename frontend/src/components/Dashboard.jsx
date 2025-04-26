@@ -1,7 +1,7 @@
 // File: frontend/src/components/Dashboard.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
     getCharacters, 
     getDrafts, 
@@ -40,6 +40,8 @@ const Dashboard = () => {
     const [sortField, setSortField] = useState('last_played');
     const [sortDirection, setSortDirection] = useState('desc');
     const [filter, setFilter] = useState('');
+    
+    const navigate = useNavigate();
     
     // Get username from meta tag
     const username = document.querySelector('meta[name="username"]')?.getAttribute('content') || 'User';
@@ -128,6 +130,11 @@ const Dashboard = () => {
         }
     };
     
+    // Handle play button click
+    const handlePlayCharacter = (characterId) => {
+        window.location.href = `/game/play/${characterId}`;
+    };
+    
     // Sort characters
     const sortedCharacters = [...characters].sort((a, b) => {
         let valA, valB;
@@ -176,7 +183,7 @@ const Dashboard = () => {
         ];
         
         const lowerFilter = filter.toLowerCase();
-        return searchFields.some(field => field.toLowerCase().includes(lowerFilter));
+        return searchFields.some(field => String(field).toLowerCase().includes(lowerFilter));
     });
     
     // Handle sort change
@@ -321,12 +328,12 @@ const Dashboard = () => {
                                                     <td className="align-middle">{formatDate(character.last_played)}</td>
                                                     <td>
                                                         <div className="btn-group">
-                                                            <a 
-                                                                href={`/game/play/${character.character_id}`}
+                                                            <button 
                                                                 className="btn btn-sm btn-success"
+                                                                onClick={() => handlePlayCharacter(character.character_id)}
                                                             >
                                                                 <i className="bi bi-play-fill"></i> Play
-                                                            </a>
+                                                            </button>
                                                             <button 
                                                                 type="button" 
                                                                 className="btn btn-sm btn-secondary dropdown-toggle dropdown-toggle-split" 
