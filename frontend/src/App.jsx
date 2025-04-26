@@ -1,7 +1,6 @@
 // File: frontend/src/App.jsx
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import CharacterCreator from './components/CharacterCreator';
 import Dashboard from './components/Dashboard';
 
@@ -22,17 +21,13 @@ function App() {
     return <CharacterCreator />;
   }
   
-  // Only render the router if we're not handling a special case above
-  // This avoids React Router's base path issues when the app is mounted at a non-root URL
+  // If no route matches, show a simple message
   return (
-    <Router>
-      <div className="App">
-        <Routes>
-          {/* Default redirect to dashboard */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+    <div className="App">
+      <div style={{color: 'white', textAlign: 'center', marginTop: '100px'}}>
+        Unknown route. Please navigate to the dashboard.
       </div>
-    </Router>
+    </div>
   );
 }
 
