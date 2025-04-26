@@ -664,6 +664,11 @@ class CharacterService:
             list: Enriched character list
         """
         try:
+            import os
+            import yaml
+            # Define DATA_DIR (adjust path as needed)
+            DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'data'))
+            
             # World information will be loaded from YAML files
             worlds_dir = os.path.join(DATA_DIR, 'worlds')
             
