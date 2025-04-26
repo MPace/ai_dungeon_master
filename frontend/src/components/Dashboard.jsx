@@ -271,10 +271,10 @@ const Dashboard = () => {
                     {/* New Adventure Card */}
                     <div className="card dashboard-card mb-4">
                         <div className="card-header bg-dark text-light d-flex justify-content-between align-items-center">
-                            <h3 className="mb-0"><i className="bi bi-plus-circle me-2"></i>New Adventure</h3>
+                            <h3 className="mb-0"><i className="bi bi-plus-circle me-2"></i>New Campaign</h3>
                         </div>
                         <div className="card-body bg-dark text-light text-center py-5">
-                            <h4 className="mb-4">Begin a new quest with a fresh character</h4>
+                            <h4 className="mb-4">Begin a new campaign with a fresh character</h4>
                             <Link to="/characters/create" className="btn btn-lg btn-primary px-4 py-3">
                                 <i className="bi bi-person-plus me-2"></i>Create New Character
                             </Link>

@@ -1,4 +1,4 @@
-// File: frontend/src/components/steps/Step11_CharacterReview.jsx
+// File: frontend/src/components/steps/Step11_CharacterReview.jsx - Equipment rendering fix
 
 import React, { useState, useEffect } from 'react';
 import './Step11_CharacterReview.css';
@@ -142,6 +142,51 @@ function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, 
         if (!abilityScore) return "+0";
         const modifier = Math.floor((abilityScore - 10) / 2);
         return modifier >= 0 ? `+${modifier}` : `${modifier}`;
+    };
+
+    // Safely render an equipment item - handles various item formats
+    const renderEquipmentItem = (item, index) => {
+        // Early return for null/undefined
+        if (!item) {
+            console.warn("Encountered null or undefined equipment item");
+            return null;
+        }
+
+        // Determine the item name to display
+        let itemName = "";
+        let itemType = null;
+
+        if (typeof item === 'string') {
+            // If item is a plain string
+            itemName = item;
+        } else if (typeof item === 'object') {
+            // If item is an object, try to extract properties safely
+            if (item.item) {
+                itemName = item.item;
+            } else if (item.name) {
+                itemName = item.name;
+            } else if (item.id) {
+                itemName = item.id;
+            } else {
+                itemName = "Unknown Item";
+                console.warn("Equipment item missing name/item/id:", item);
+            }
+
+            // Get type if available
+            itemType = item.type;
+        } else {
+            // Fallback for unexpected types
+            itemName = "Unrecognized Item";
+            console.warn("Equipment item of unexpected type:", typeof item, item);
+        }
+
+        // Now render with the extracted name and type
+        return (
+            <div key={index} className="review-equipment-item">
+                <div className="review-item-name">{itemName}</div>
+                {itemType && <div className="review-item-type">{itemType}</div>}
+            </div>
+        );
     };
 
     // Handle finalize and save character
@@ -317,18 +362,11 @@ function Step11_CharacterReview({ characterData, updateCharacterData, nextStep, 
                         </div>
                     </div>
                     
-                    {/* Equipment */}
+                    {/* Equipment - with improved rendering */}
                     <div className="review-details-section">
                         <h3 className="review-section-title">Equipment</h3>
                         <div className="review-equipment-list">
-                            {characterData.equipment?.equipped?.map((item, index) => (
-                                <div key={index} className="review-equipment-item">
-                                    <div className="review-item-name">
-                                        {typeof item === 'string' ? item : item.item}
-                                    </div>
-                                    {item.type && <div className="review-item-type">{item.type}</div>}
-                                </div>
-                            ))}
+                            {characterData.equipment?.equipped?.map((item, index) => renderEquipmentItem(item, index))}
                             {(!characterData.equipment?.equipped || characterData.equipment.equipped.length === 0) && (
                                 <div className="review-empty-message">No equipment selected</div>
                             )}

@@ -221,7 +221,39 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
         
         return itemDetails;
     };       
+
+    // Helper function to normalize equipment items
+    const normalizeEquipmentItem = (item) => {
+        // If item is a string, convert to object with item property
+        if (typeof item === 'string') {
+            return { item: item, type: 'equipment' };
+        }
         
+        // If item is already an object
+        if (typeof item === 'object' && item !== null) {
+            // Make sure it has the item property
+            if (!item.item && item.name) {
+                // If it has name but no item, use name as item
+                return { ...item, item: item.name };
+            }
+            
+            // If it has neither item nor name, create a placeholder
+            if (!item.item && !item.name) {
+                console.warn("Found equipment item without name or item property:", item);
+                return { 
+                    item: item.id || "Unnamed Item",
+                    type: item.type || "equipment" 
+                };
+            }
+            
+            // If it already has item property, return as is
+            return item;
+        }
+        
+        // Fallback for any unexpected values
+        console.warn("Found unexpected equipment item format:", item);
+        return { item: "Unknown Item", type: "equipment" };
+    };
 
     // Handler for selecting equipment option
     const handleOptionSelect = (optionIndex, choiceIndex) => {
@@ -338,13 +370,23 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
                 if (Array.isArray(choice)) {
                     // If direct array of options
                     const selectedItem = choice[selectedChoice];
-                    equippedItems.push(selectedItem);
+                    if (selectedItem) {
+                        equippedItems.push(normalizeEquipmentItem(selectedItem));
+                    }
                 } else if (selectedChoice === 0 && optionGroup.group) {
                     // First option (group)
-                    equippedItems.push(...optionGroup.group);
+                    optionGroup.group.forEach(item => {
+                        if (item) {
+                            equippedItems.push(normalizeEquipmentItem(item));
+                        }
+                    });
                 } else if (selectedChoice === 1 && optionGroup.or) {
                     // Second option (or)
-                    equippedItems.push(...optionGroup.or);
+                    optionGroup.or.forEach(item => {
+                        if (item) {
+                            equippedItems.push(normalizeEquipmentItem(item));
+                        }
+                    });
                 }
             }
         });
@@ -352,11 +394,21 @@ function Step9_EquipmentSelector({ characterData, updateCharacterData, nextStep,
         // Add default equipment from class
         const selectedClass = characterData.classId;
         if (selectedClass && equipmentOptions.default) {
-            equippedItems.push(...equipmentOptions.default);
+            equipmentOptions.default.forEach(item => {
+                if (item) {
+                    equippedItems.push(normalizeEquipmentItem(item));
+                }
+            });
         }
         
         // Add background equipment
-        equippedItems.push(...backgroundEquipment);
+        backgroundEquipment.forEach(item => {
+            if (item) {
+                equippedItems.push(normalizeEquipmentItem(item));
+            }
+        });
+        
+        console.log("Final equipped items:", equippedItems);
         
         // Update character data with selected equipment
         updateCharacterData({
