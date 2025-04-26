@@ -34,24 +34,24 @@ const fetchWithErrorHandling = async (url, options = {}) => {
 };
 
 /**
- * Dashboard API functions
+ * Dashboard API functions - Updated to use dashboard blueprint
  */
 
 // Get all characters for the current user
 export const getCharacters = async () => {
-    return fetchWithErrorHandling('/api/characters');
+    return fetchWithErrorHandling('/dashboard/api/characters');
 };
 
 // Get all character drafts for the current user
 export const getDrafts = async () => {
-    return fetchWithErrorHandling('/api/character-drafts');
+    return fetchWithErrorHandling('/dashboard/api/character-drafts');
 };
 
 // Delete a character
 export const deleteCharacter = async (characterId) => {
     const csrfToken = getCsrfToken();
     
-    return fetchWithErrorHandling(`/api/delete-character/${characterId}`, {
+    return fetchWithErrorHandling(`/characters/api/delete-character/${characterId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -65,7 +65,7 @@ export const deleteCharacter = async (characterId) => {
 export const deleteDraft = async (draftId) => {
     const csrfToken = getCsrfToken();
     
-    return fetchWithErrorHandling(`/api/delete-draft/${draftId}`, {
+    return fetchWithErrorHandling(`/characters/api/delete-draft/${draftId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ export const deleteDraft = async (draftId) => {
 export const saveCharacter = async (characterData) => {
     const csrfToken = getCsrfToken();
     
-    return fetchWithErrorHandling('/api/save-character', {
+    return fetchWithErrorHandling('/characters/api/save-character', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -97,7 +97,7 @@ export const saveCharacter = async (characterData) => {
 export const saveCharacterDraft = async (characterData) => {
     const csrfToken = getCsrfToken();
     
-    return fetchWithErrorHandling('/api/save-character-draft', {
+    return fetchWithErrorHandling('/characters/api/save-character-draft', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -109,32 +109,32 @@ export const saveCharacterDraft = async (characterData) => {
 
 // Get a character by ID
 export const getCharacter = async (characterId) => {
-    return fetchWithErrorHandling(`/api/character/${characterId}`);
+    return fetchWithErrorHandling(`/dashboard/api/character/${characterId}`);
 };
 
 // Get a character draft by ID
 export const getCharacterDraft = async (draftId) => {
-    return fetchWithErrorHandling(`/api/character-draft/${draftId}`);
+    return fetchWithErrorHandling(`/dashboard/api/character-draft/${draftId}`);
 };
 
 // Get worlds
 export const getWorlds = async () => {
-    return fetchWithErrorHandling('/api/worlds');
+    return fetchWithErrorHandling('/characters/api/worlds');
 };
 
 // Get campaigns for a world
 export const getCampaigns = async (worldId) => {
-    return fetchWithErrorHandling(`/api/campaigns/${worldId}`);
+    return fetchWithErrorHandling(`/characters/api/campaigns/${worldId}`);
 };
 
 // Get creation data for a world (classes, races, etc.)
 export const getCreationData = async (worldId) => {
-    return fetchWithErrorHandling(`/api/creation-data/${worldId}`);
+    return fetchWithErrorHandling(`/characters/api/creation-data/${worldId}`);
 };
 
 // Get premade characters for a world
 export const getPremadeCharacters = async (worldId) => {
-    return fetchWithErrorHandling(`/api/premade-characters/${worldId}`);
+    return fetchWithErrorHandling(`/characters/api/premade-characters/${worldId}`);
 };
 
 /**
