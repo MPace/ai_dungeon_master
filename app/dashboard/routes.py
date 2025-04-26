@@ -2,11 +2,14 @@
 Dashboard routes
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import current_app, abort
 from app.services.character_service import CharacterService
 from app.extensions import login_required
 import logging
 from datetime import datetime
 import traceback
+import os
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +28,54 @@ def index():
         
         logger.info(f"Dashboard accessed by user: {username} (ID: {user_id})")
         
+        # Load Vite manifest
+        manifest = load_vite_manifest()
+        if manifest is None:
+            abort(500, description="Vite Manifest file is missing or invalid. Cannot load application assets.") 
+
+        entry_point_key = 'src/index.jsx'
+        if entry_point_key not in manifest:
+            current_app.logger.error(f"Entry point '{entry_point_key}' not found in Vite manifest.")
+            abort(500, description=f"Entry point '{entry_point_key}' not found in Vite manifest.")
+
+        manifest_entry = manifest[entry_point_key]
+        js_file = manifest_entry.get('file')
+        css_files = manifest_entry.get('css', [])
+        css_file = css_files[0] if css_files else None
+
+        if not js_file:
+            current_app.logger.error(f"JS file path not found for entry point '{entry_point_key}' in manifest.")
+            abort(500, description=f"JS file path missing in manifest for entry point '{entry_point_key}'.")
+
+        # Use the same base URL as used in character creation
+        VITE_BASE_URL = "https://staging.arcanedm.com:8443/static/build/"
+        
         return render_template('dashboard.html',
-                              username=username)
+                              username=username,
+                              react_js_file=f"{VITE_BASE_URL}{js_file}" if js_file else None,
+                              react_css_file=f"{VITE_BASE_URL}{css_file}" if css_file else None)
     except Exception as e:
         logger.error(f"Error rendering dashboard: {str(e)}")
         logger.error(traceback.format_exc())
         flash('Error loading dashboard', 'error')
         return redirect(url_for('auth.index'))
+        
+# Add the same helper function used in characters/routes.py
+def load_vite_manifest():
+    manifest_path = os.path.join(current_app.static_folder, 'build', '.vite', 'manifest.json')
+    try:
+        with open(manifest_path, 'r', encoding='utf-8') as f:
+            manifest = json.load(f)
+            current_app.logger.debug("Vite manifest loaded successfully")
+            return manifest
+    except FileNotFoundError:
+        current_app.logger.error(f"Vite manifest not found at {manifest_path}")
+        current_app.logger.error("Did you forget to run 'npm run build' in the frontend directory?")
+    except json.JSONDecodeError:
+        current_app.logger.error(f"Error decoding Vite manifest file: {manifest_path}")
+    except Exception as e:
+         current_app.logger.error(f"An unexpected error occurred loading manifest: {e}")
+    return None # Return None if manifest cannot be loaded/parsed
 
 @dashboard_bp.route('/api/characters')
 @login_required
