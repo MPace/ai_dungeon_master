@@ -13,11 +13,6 @@
     background-color: rgba(31, 31, 31, 0.9);
     border-radius: 15px;
     overflow: hidden;
-    transition: all 0.3s ease;
-}
-
-.dashboard-card:hover {
-    box-shadow: 0 0 40px rgba(255, 100, 0, 0.2);
 }
 
 .dashboard-card .card-header {
@@ -44,9 +39,9 @@
     color: #e0e0e0;
 }
 
-/* Table styling */
 .table {
     margin-bottom: 0;
+    width: 100%;
 }
 
 .table th {
@@ -75,7 +70,7 @@
 }
 
 .sortable:hover {
-    color: #ff6400;
+    color: #ffffff; /* Changed from orange to white for hover state */
 }
 
 .sortable i {
@@ -121,6 +116,12 @@
 
 .dropdown-item.text-danger:hover {
     background-color: rgba(220, 53, 69, 0.1);
+}
+
+.table-container {
+    width: 100%;
+    overflow-x: auto; /* Only horizontal scrolling if necessary */
+    overflow-y: visible; /* No vertical scrolling within the container */
 }
 
 /* Responsive adjustments */

@@ -314,7 +314,7 @@ const Dashboard = () => {
                             </div>
                             
                             {filteredCharacters.length > 0 ? (
-                                <div className="table-responsive">
+                                <div className="table-container">
                                     <table className="table table-dark table-hover mb-0 characters-table">
                                         <thead>
                                             <tr>
@@ -409,7 +409,7 @@ const Dashboard = () => {
                                 <span className="badge bg-warning text-dark">{drafts.length}</span>
                             </div>
                             <div className="card-body bg-dark text-light p-0">
-                                <div className="table-responsive">
+                                <div className="table-container">
                                     <table className="table table-dark table-hover mb-0 drafts-table">
                                         <thead>
                                             <tr>
