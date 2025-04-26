@@ -105,13 +105,14 @@ def get_db():
         try:
             # Get database URI from environment
             import os
+            import pymongo  # Add this import here to make pymongo available in this scope
+            
             mongo_uri = os.environ.get('MONGO_URI')
             if not mongo_uri:
                 logger.error("MONGO_URI environment variable not set")
                 return None
             
             # Create client and connect to database
-            import pymongo
             client = pymongo.MongoClient(
                 mongo_uri,
                 tlsAllowInvalidCertificates=True,
