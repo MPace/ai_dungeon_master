@@ -254,7 +254,7 @@ def init_collections(db):
                 [("embedding", "vector")],
                 {
                     "name": "vector_index",
-                    "vectorDimension": 384,  # Will match our embedding model dimension
+                    "vectorDimension": 768,  # Will match our embedding model dimension
                     "vectorDistanceMetric": "cosine"
                 }
             )
@@ -473,7 +473,7 @@ def init_extensions(app):
         qdrant_url = app.config.get('QDRANT_URL')
         qdrant_api_key = app.config.get('QDRANT_API_KEY')
         qdrant_collection = app.config.get('QDRANT_COLLECTION_NAME', 'memory_vectors')
-        vector_size = app.config.get('QDRANT_VECTOR_SIZE', 384)
+        vector_size = app.config.get('QDRANT_VECTOR_SIZE', 768)
         
         # Initialize Qdrant service
         qdrant_service = QdrantService(

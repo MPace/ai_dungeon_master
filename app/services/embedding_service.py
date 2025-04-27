@@ -25,7 +25,7 @@ class EmbeddingService:
         self.model_name = model_name
         self.model = None
         self.tokenizer = None
-        self.embedding_dim = 384  # Default for all-MiniLM-L6-v2
+        self.embedding_dim = 768  # Default for all-MiniLM-L6-v2
         self.max_sequence_length = 256
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.cache = {}
