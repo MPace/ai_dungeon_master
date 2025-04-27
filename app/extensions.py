@@ -38,6 +38,18 @@ mongo_db = None
 db = None
 login_manager = None
 
+# Get the embedding service
+def get_embedding_service():
+    """Get the embedding service"""
+    global embedding_service
+    return embedding_service
+
+
+# Get the Qdrant service
+def get_qdrant_service():
+    """Get the Qdrant service"""
+    global qdrant_service
+    return qdrant_service
 
 # Login manager functionality (simplified version of Flask-Login)
 def login_required(f):
@@ -483,15 +495,3 @@ def init_extensions(app):
     # Register close_db to be called when a request ends
     app.teardown_appcontext(close_db)
     
-# Get the embedding service
-def get_embedding_service():
-    """Get the embedding service"""
-    global embedding_service
-    return embedding_service
-
-
-# Get the Qdrant service
-def get_qdrant_service():
-    """Get the Qdrant service"""
-    global qdrant_service
-    return qdrant_service
