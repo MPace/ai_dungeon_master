@@ -1,14 +1,16 @@
+# app/services/game_service.py
 """
-Enhanced Game Service with Memory Management
+Enhanced Game Service with Memory Management using Qdrant
 """
 from app.models.game_session import GameSession
 from app.services.character_service import CharacterService
-from app.extensions import get_db
+from app.extensions import get_db, get_qdrant_service, get_embedding_service
 from datetime import datetime
 import uuid
 import logging
 import random
 from typing import List, Dict, Any, Optional
+from app.models.memory_vector import MemoryVector
 
 logger = logging.getLogger(__name__)
 
@@ -300,7 +302,7 @@ class GameService:
     @staticmethod
     def get_session_memories(session_id, user_id, limit=20, memory_type='all'):
         """
-        Get memories associated with a session
+        Get memories associated with a session from Qdrant
         
         Args:
             session_id (str): Session ID
@@ -317,21 +319,36 @@ class GameService:
             if not session_result['success']:
                 return {'success': False, 'error': 'Session not found or access denied'}
             
-            # Get memory service
-            from app.services.memory_service_enhanced import EnhancedMemoryService
-            memory_service = EnhancedMemoryService()
+            # Get Qdrant service
+            qdrant_service = get_qdrant_service()
+            if qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return {'success': False, 'error': 'Qdrant service not available'}
             
-            db = get_db()
-            if db is None:
-                return {'success': False, 'error': 'Database connection error'}
-            
-            # Build query
-            query = {'session_id': session_id}
+            # Build filters for Qdrant query
+            filters = {'session_id': session_id}
             if memory_type != 'all':
-                query['memory_type'] = memory_type
+                filters['memory_type'] = memory_type
             
-            # Sort by created_at descending (newest first)
-            memories = list(db.memory_vectors.find(query).sort('created_at', -1).limit(limit))
+            # Use dummy vector for search (we're filtering, not doing similarity search)
+            # This is a workaround since Qdrant requires a vector for search
+            embedding_service = get_embedding_service()
+            if embedding_service is None:
+                dummy_vector = [0] * 768  # Default embedding size
+            else:
+                # Use a meaningful vector - embed the session ID
+                dummy_vector = embedding_service.generate_embedding(f"Session {session_id}")
+            
+            # Query Qdrant
+            results = qdrant_service.find_similar_vectors(
+                query_vector=dummy_vector,
+                filters=filters,
+                limit=limit,
+                score_threshold=0  # No threshold since we're just filtering
+            )
+            
+            # Convert to memory vectors
+            memories = [MemoryVector.from_qdrant_result(result) for result in results]
             
             # Return memories
             return {'success': True, 'memories': memories}
@@ -363,6 +380,16 @@ class GameService:
             
             session = session_result['session']
             
+            # Get the memory from Qdrant to verify it exists
+            qdrant_service = get_qdrant_service()
+            if qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return {'success': False, 'error': 'Qdrant service not available'}
+                
+            memory_data = qdrant_service.get_vector(memory_id)
+            if memory_data is None:
+                return {'success': False, 'error': 'Memory not found in Qdrant'}
+            
             # Pin the memory
             session.pin_memory(memory_id, importance, note)
             
@@ -377,6 +404,13 @@ class GameService:
             )
             
             if result.acknowledged:
+                # Update memory importance in Qdrant if provided
+                if importance is not None:
+                    qdrant_service.update_vector_metadata(
+                        memory_id=memory_id,
+                        payload={'importance': importance}
+                    )
+                
                 return {'success': True, 'message': 'Memory pinned successfully'}
             else:
                 return {'success': False, 'error': 'Failed to pin memory'}
@@ -600,7 +634,7 @@ class GameService:
     @staticmethod
     def _initialize_session_memory(session_id, character_id, user_id):
         """
-        Initialize memory for a new session
+        Initialize memory for a new session with Qdrant
         
         Args:
             session_id (str): Session ID
@@ -611,61 +645,107 @@ class GameService:
             None
         """
         try:
-            from app.services.memory_service_enhanced import EnhancedMemoryService
-            memory_service = EnhancedMemoryService()
-            
             # Get character data
             character_result = CharacterService.get_character(character_id, user_id)
             if character_result is None:
                 logger.error(f"Character not found for memory initialization: {character_id}")
                 return
             
-            character = character_result
+            # Check for required services
+            embedding_service = get_embedding_service()
+            if embedding_service is None:
+                logger.error("Embedding service not available")
+                return
+                
+            qdrant_service = get_qdrant_service()
+            if qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return
+            
+            character = character_result.get('character')
             
             # Create initial memory entry with character info
             character_info = f"Character: {character.name}. A level {character.level} {character.race} {character.character_class}."
             if character.description:
                 character_info += f" Description: {character.description}"
             
-            memory_service.store_memory_with_text(
-                content=character_info,
-                memory_type='long_term',  # Store as long-term memory
+            # Generate embedding
+            character_info_embedding = embedding_service.generate_embedding(character_info)
+            
+            # Create memory
+            character_memory = MemoryVector(
                 session_id=session_id,
+                content=character_info,
+                embedding=character_info_embedding,
+                memory_type='long_term',
                 character_id=character_id,
                 user_id=user_id,
-                importance=10,  # Highest importance
+                importance=10,
                 metadata={'type': 'character_info', 'persistent': True}
             )
             
-            # Store any character abilities, skills, or features as semantic memories
-            if character.abilities:
+            # Store in Qdrant
+            qdrant_service.store_vector(
+                memory_id=character_memory.memory_id,
+                embedding=character_info_embedding,
+                payload=character_memory.to_qdrant_payload()
+            )
+            
+            # Store abilities if available
+            if hasattr(character, 'abilities') and character.abilities:
                 abilities_text = "Character abilities: "
                 for ability, score in character.abilities.items():
-                    modifier = (score - 10) // 2
-                    sign = "+" if modifier >= 0 else ""
-                    abilities_text += f"{ability.capitalize()}: {score} ({sign}{modifier}). "
+                    if isinstance(score, (int, float)):
+                        modifier = (score - 10) // 2
+                        sign = "+" if modifier >= 0 else ""
+                        abilities_text += f"{ability.capitalize()}: {score} ({sign}{modifier}). "
                 
-                memory_service.store_memory_with_text(
-                    content=abilities_text,
-                    memory_type='semantic',
+                # Generate embedding
+                abilities_embedding = embedding_service.generate_embedding(abilities_text)
+                
+                # Create memory
+                abilities_memory = MemoryVector(
                     session_id=session_id,
+                    content=abilities_text,
+                    embedding=abilities_embedding,
+                    memory_type='semantic',
                     character_id=character_id,
                     user_id=user_id,
                     importance=8,
                     metadata={'type': 'abilities', 'persistent': True}
                 )
+                
+                # Store in Qdrant
+                qdrant_service.store_vector(
+                    memory_id=abilities_memory.memory_id,
+                    embedding=abilities_embedding,
+                    payload=abilities_memory.to_qdrant_payload()
+                )
             
-            if character.skills and len(character.skills) > 0:
+            # Store skills if available
+            if hasattr(character, 'skills') and character.skills and len(character.skills) > 0:
                 skills_text = f"Character is proficient in: {', '.join(character.skills)}."
                 
-                memory_service.store_memory_with_text(
-                    content=skills_text,
-                    memory_type='semantic',
+                # Generate embedding
+                skills_embedding = embedding_service.generate_embedding(skills_text)
+                
+                # Create memory
+                skills_memory = MemoryVector(
                     session_id=session_id,
+                    content=skills_text,
+                    embedding=skills_embedding,
+                    memory_type='semantic',
                     character_id=character_id,
                     user_id=user_id,
                     importance=8,
                     metadata={'type': 'skills', 'persistent': True}
+                )
+                
+                # Store in Qdrant
+                qdrant_service.store_vector(
+                    memory_id=skills_memory.memory_id,
+                    embedding=skills_embedding,
+                    payload=skills_memory.to_qdrant_payload()
                 )
             
             logger.info(f"Initialized session memory for {session_id}")
@@ -826,6 +906,8 @@ class GameService:
             # Join messages into a single text
             full_text = " ".join(message_texts)
             
+            logger.info(f"Summarizing {len(message_texts)} messages for session {session.session_id}")
+            
             # Call the summarization service
             logger.debug(f"About to call summarize_text with text: {full_text[:100]}...")
             summary = summarization_service.summarize_text(
@@ -841,24 +923,44 @@ class GameService:
             logger.debug(f"Updated session summary: {summary}")
 
             
-            # Store summary as a memory for retrieval
+            # Store summary as a memory for retrieval in Qdrant
             try:
-                from app.services.memory_service_enhanced import EnhancedMemoryService
-                memory_service = EnhancedMemoryService()
+                # Get required services
+                embedding_service = get_embedding_service()
+                qdrant_service = get_qdrant_service()
                 
-                # Store as a special summary memory
-                memory_service.store_memory_with_text(
-                    content=summary,
-                    memory_type='summary',
+                if embedding_service is None or qdrant_service is None:
+                    logger.error("Required services not available for storing summary memory")
+                    return summary
+                
+                # Generate embedding for the summary
+                summary_embedding = embedding_service.generate_embedding(summary)
+                
+                # Create memory vector
+                summary_memory = MemoryVector(
                     session_id=session.session_id,
+                    content=summary,
+                    embedding=summary_embedding,
+                    memory_type='long_term',
                     character_id=session.character_id,
                     user_id=session.user_id,
                     importance=10,  # Maximum importance
                     metadata={
                         'type': 'session_summary',
+                        'is_summary': True,
                         'history_range': f"0-{len(session.history)}"
                     }
                 )
+                
+                # Store in Qdrant
+                qdrant_service.store_vector(
+                    memory_id=summary_memory.memory_id,
+                    embedding=summary_embedding,
+                    payload=summary_memory.to_qdrant_payload()
+                )
+                
+                logger.info(f"Stored session summary as memory: {summary_memory.memory_id}")
+                
             except Exception as memory_e:
                 logger.error(f"Error storing summary memory: {memory_e}")
             

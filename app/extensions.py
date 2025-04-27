@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 embedding_service = None
+qdrant_service = None
 
 # Setup logging
 logging.basicConfig(
@@ -36,6 +37,7 @@ mongo_client = None
 mongo_db = None
 db = None
 login_manager = None
+
 
 # Login manager functionality (simplified version of Flask-Login)
 def login_required(f):
@@ -436,7 +438,7 @@ def delete_character(character_id, user_id=None):
 
 def init_extensions(app):
     """Initialize extensions"""
-    global db, mongo_db, embedding_service
+    global db, mongo_db, embedding_service, qdrant_service
     # Initialize database
     with app.app_context():
         init_db()
@@ -452,6 +454,32 @@ def init_extensions(app):
         logger.warning("Application will run without embedding capabilities")
         embedding_service = None
 
+    try:
+        from app.services.qdrant_service import QdrantService
+        
+        # Get configuration from app
+        qdrant_url = app.config.get('QDRANT_URL')
+        qdrant_api_key = app.config.get('QDRANT_API_KEY')
+        qdrant_collection = app.config.get('QDRANT_COLLECTION_NAME', 'memory_vectors')
+        vector_size = app.config.get('QDRANT_VECTOR_SIZE', 768)
+        
+        # Initialize Qdrant service
+        qdrant_service = QdrantService(
+            url=qdrant_url,
+            api_key=qdrant_api_key, 
+            collection_name=qdrant_collection
+        )
+        
+        # Initialize collection with proper vector size
+        qdrant_service.init_collection_for_models(vector_size=vector_size)
+        
+        logger.info("Qdrant service initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing Qdrant service: {e}")
+        logger.warning("Application will run without vector database capabilities")
+        qdrant_service = None
+
+    
     # Register close_db to be called when a request ends
     app.teardown_appcontext(close_db)
     
@@ -460,3 +488,10 @@ def get_embedding_service():
     """Get the embedding service"""
     global embedding_service
     return embedding_service
+
+
+# Get the Qdrant service
+def get_qdrant_service():
+    """Get the Qdrant service"""
+    global qdrant_service
+    return qdrant_service

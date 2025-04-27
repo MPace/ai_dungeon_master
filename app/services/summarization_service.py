@@ -1,8 +1,9 @@
+# app/services/summarization_service.py
 """
-Summarization Service using Modal API
+Summarization Service using Modal API with Qdrant integration
 
 This service handles text summarization by using the Modal API
-instead of Hugging Face, significantly reducing resource requirements.
+and stores results in Qdrant.
 """
 from typing import List, Dict, Any, Optional
 import logging
@@ -10,8 +11,9 @@ import os
 import requests
 import json
 from datetime import datetime, timedelta
-from app.extensions import get_embedding_service, get_db
+from app.extensions import get_embedding_service, get_db, get_qdrant_service
 from app.services.memory_service import MemoryService
+from app.models.memory_vector import MemoryVector
 from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
@@ -40,6 +42,11 @@ class SummarizationService:
         
         if not self.api_token:
             logger.warning("No Modal API token provided. Summarization will not work.")
+        
+        # Initialize Qdrant service
+        self.qdrant_service = get_qdrant_service()
+        if self.qdrant_service is None:
+            logger.warning("Qdrant service not available. Memory summaries will not be stored properly.")
         
         logger.info(f"Summarization service initialized with Modal API")
     
@@ -96,8 +103,8 @@ class SummarizationService:
             logger.debug(f"Sending text to Modal API for summarization: {text[:100]}...")
             response = requests.post(self.api_url, headers=headers, json=payload, timeout=30)
             
-            logger.info("Response status", response.status_code)
-            logger.debug("Response body:", response.text)
+            logger.info(f"Response status: {response.status_code}")
+            logger.debug(f"Response body: {response.text}")
 
             # Check for successful response
             if response.status_code == 200:
@@ -138,33 +145,52 @@ class SummarizationService:
             dict: Result with success status and summary
         """
         try:
-            # Get database connection
-            db = get_db()
-            if db is None:
-                logger.error("Database connection failed")
-                return {'success': False, 'error': 'Database connection failed'}
-            
             if not self.api_url or not self.api_token:
                 logger.error("Modal API credentials not configured")
                 return {'success': False, 'error': 'Summarization service not properly configured'}
             
-            # Build query for memories to summarize
-            query = {
-                'session_id': session_id,
-                'memory_type': 'short_term'
-            }
+            if self.qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return {'success': False, 'error': 'Qdrant service not available'}
             
-            # Filter by memory IDs if provided
+            # Get memories to summarize - either specific IDs or recent memories
+            memories = []
+            
             if memory_ids:
-                query['memory_id'] = {'$in': memory_ids}
+                # Fetch specific memories by ID
+                for memory_id in memory_ids:
+                    result = self.qdrant_service.get_vector(memory_id=memory_id)
+                    if result:
+                        memories.append(result)
+            else:
+                # Fetch memories based on session and time filter
+                filters = {
+                    'session_id': session_id,
+                    'memory_type': 'short_term'
+                }
                 
-            # Filter by time window if provided
-            if time_window:
-                start_time = datetime.utcnow() - time_window
-                query['created_at'] = {'$gte': start_time}
+                # Note: We can't easily filter by time in Qdrant in a single query
+                # We'll fetch all and filter manually
+                results = self.qdrant_service.find_similar_vectors(
+                    query_vector=[0] * 768,  # Dummy vector for search
+                    filters=filters,
+                    limit=50,  # Get more memories to filter
+                    score_threshold=0  # No threshold since we're not doing similarity search
+                )
                 
-            # Get memories to summarize
-            memories = list(db.memory_vectors.find(query).sort('created_at', 1))
+                # Filter by time if needed
+                if time_window:
+                    cutoff_time = datetime.utcnow() - time_window
+                    memories = [
+                        m for m in results 
+                        if m.get('created_at') and (
+                            isinstance(m['created_at'], datetime) and m['created_at'] >= cutoff_time
+                            or 
+                            isinstance(m['created_at'], str) and datetime.fromisoformat(m['created_at'].replace('Z', '+00:00')) >= cutoff_time
+                        )
+                    ]
+                else:
+                    memories = results
             
             if not memories:
                 logger.info(f"No memories found for session {session_id}")
@@ -193,43 +219,45 @@ class SummarizationService:
             # Extract memory IDs
             summary_memory_ids = [memory.get('memory_id', '') for memory in memories if 'memory_id' in memory]
             
-            # Create a summary memory
-            summary_result = MemoryService.create_memory_summary(
-                memory_ids=summary_memory_ids,
-                summary_content=summary_text,
-                summary_embedding=summary_embedding,
+            # Create a new memory record in Qdrant to store the summary
+            memory = MemoryVector(
                 session_id=session_id,
+                content=summary_text,
+                embedding=summary_embedding,
+                memory_type='long_term',
                 character_id=memories[0].get('character_id') if memories else None,
-                user_id=memories[0].get('user_id') if memories else None
+                user_id=memories[0].get('user_id') if memories else None,
+                importance=8,  # Higher importance for summaries
+                metadata={
+                    'is_summary': True,
+                    'summary_type': 'session',
+                    'summarized_count': len(memories),
+                    'summary_of': summary_memory_ids
+                }
             )
             
-            if summary_result.get('success', False):
-                # Get the memory ID - handle both object and dictionary cases for test compatibility
-                memory_obj = summary_result.get('memory')
-                
-                # Determine how to get the memory_id based on the type of memory_obj
-                if hasattr(memory_obj, 'memory_id'):
-                    # It's an object with attributes
-                    summary_id = memory_obj.memory_id
-                elif isinstance(memory_obj, dict) and 'memory_id' in memory_obj:
-                    # It's a dictionary with a memory_id key
-                    summary_id = memory_obj['memory_id']
-                else:
-                    # Fallback - use a placeholder ID
-                    logger.warning("Could not determine memory ID from summary result")
-                    summary_id = "unknown"
-                
-                # Update the summarized memories to mark them as summarized
+            # Store in Qdrant
+            result = self.qdrant_service.store_vector(
+                memory_id=memory.memory_id,
+                embedding=summary_embedding,
+                payload=memory.to_qdrant_payload()
+            )
+            
+            if result:
+                # Mark the summarized memories as summarized by updating their metadata
                 for memory_id in summary_memory_ids:
-                    db.memory_vectors.update_one(
-                        {'memory_id': memory_id},
-                        {'$set': {'is_summarized': True, 'summary_id': summary_id}}
+                    self.qdrant_service.update_vector_metadata(
+                        memory_id=memory_id,
+                        payload={
+                            'is_summarized': True,
+                            'summary_id': memory.memory_id
+                        }
                     )
                 
-                logger.info(f"Successfully summarized {len(memories)} memories into summary ID: {summary_id}")
-                return {'success': True, 'summary': memory_obj}
+                logger.info(f"Successfully summarized {len(memories)} memories into summary ID: {memory.memory_id}")
+                return {'success': True, 'summary': memory}
             else:
-                logger.error(f"Failed to store summary memory: {summary_result.get('error', 'Unknown error')}")
+                logger.error(f"Failed to store summary memory in Qdrant")
                 return {'success': False, 'error': 'Failed to store summary memory'}
                 
         except Exception as e:
@@ -249,16 +277,17 @@ class SummarizationService:
             dict: Result with success status and message
         """
         try:
-            db = get_db()
-            if db is None:
-                return {'success': False, 'error': 'Database connection failed'}
+            if self.qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return {'success': False, 'error': 'Qdrant service not available'}
                 
             # Check volume-based trigger
-            memory_count = db.memory_vectors.count_documents({
+            filters = {
                 'session_id': session_id,
                 'memory_type': 'short_term',
-                'is_summarized': {'$ne': True}  # Only count non-summarized memories
-            })
+                'is_summarized': False
+            }
+            memory_count = self.qdrant_service.count_vectors(filters=filters)
             
             # Trigger summarization if we have enough memories
             if memory_count >= 10:

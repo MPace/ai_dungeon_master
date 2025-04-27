@@ -1,5 +1,6 @@
+# app/services/ai_service.py
 """
-AI Service with Langchain Integration and Model Context Protocol
+AI Service with Langchain Integration and Model Context Protocol using Qdrant
 """
 from app.models.ai_response import AIResponse
 import requests
@@ -10,7 +11,7 @@ from flask import current_app
 from datetime import datetime, timedelta
 import hashlib
 from concurrent.futures import ThreadPoolExecutor
-from app.extensions import get_db
+from app.extensions import get_db, get_embedding_service, get_qdrant_service
 
 # New MCP imports
 from app.mcp import get_orchestration_service
@@ -19,18 +20,15 @@ from app.mcp.transformers.ai_transformer import AIPromptTransformer
 
 logger = logging.getLogger(__name__)
 
-
-
 class AIService:
     """Service for handling AI interactions with integrated memory management"""
     
     def __init__(self, use_langchain=True):
-    # Initialize the AI service with memory support and MCP
+        # Initialize the AI service with memory support and MCP
         self.api_key = self._get_api_key()
         self.model = self._get_model_name()
         self.api_url = "https://api.openai.com/v1/chat/completions"
         self.headers = self._create_headers()
-        
         
         # Langchain integration
         self.use_langchain = use_langchain
@@ -41,6 +39,9 @@ class AIService:
         # MCP integration
         self.use_mcp = True  # Flag to enable/disable MCP
         self.context_orchestrator = None
+        
+        # Qdrant service
+        self.qdrant_service = get_qdrant_service()
         
         # Response cache
         self.response_cache = {}
@@ -450,8 +451,6 @@ class AIService:
                 json=payload,
                 timeout=30
             )
-        
-        # [Rest of the method remains the same...]
             
             # Check if the request was successful
             response.raise_for_status()
@@ -565,7 +564,7 @@ class AIService:
     
     def _retrieve_memory_context(self, current_message, session_id, character_id):
         """
-        Retrieve relevant memories for the current context
+        Retrieve relevant memories for the current context using Qdrant
         """
         if not session_id:
             return {"success": False, "error": "No session ID provided", "memory_context": ""}
@@ -581,25 +580,22 @@ class AIService:
         
         try:
             # Get embedding service
-            from app.extensions import get_embedding_service
             embedding_service = get_embedding_service()
             if embedding_service is None:
                 logger.error("Embedding service not available")
                 return {"success": False, "error": "Embedding service not available", "memory_context": ""}
             
+            if self.qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return {"success": False, "error": "Qdrant service not available", "memory_context": ""}
+            
             # Generate embedding for query
             query_embedding = embedding_service.generate_embedding(current_message)
             
-            # Direct vector retrieval - use embedding services directly
-            from app.extensions import get_db
-            db = get_db()
-            if db is None:
-                return {"success": False, "error": "Database connection failed", "memory_context": ""}
-                
             # Log vector retrieval attempt
             logger.info(f"Retrieving memories via vector similarity for session {session_id}")
             
-            # Explicitly use vector search
+            # Build memory context using EnhancedMemoryService
             memory_context = self.memory_service.build_memory_context(
                 current_message=current_message,
                 session_id=session_id,
@@ -688,22 +684,6 @@ class AIService:
                         GameService._update_session_summary_if_needed(session_obj)
         except Exception as e:
             logger.error(f"Error checking for summarization: {e}")
-        
-    
-    def _store_memory(self, content, memory_type, session_id, character_id, user_id, importance, metadata):
-        """Store a memory with the memory service"""
-        try:
-            self.memory_service.store_memory_with_text(
-                content=content,
-                memory_type=memory_type,
-                session_id=session_id,
-                character_id=character_id,
-                user_id=user_id,
-                importance=importance,
-                metadata=metadata
-            )
-        except Exception as e:
-            logger.error(f"Error storing memory: {e}")
     
     def _calculate_importance(self, text):
         """
@@ -752,21 +732,6 @@ class AIService:
         # Cap importance
         return min(10, importance)
     
-    def _check_for_summarization(self, session_id):
-        """Check if summarization is needed for this session"""
-        try:
-            # Import summarization service
-            from app.services.summarization_service import SummarizationService
-            
-            # Trigger summarization if needed
-            summarization_service = SummarizationService()
-            result = summarization_service.trigger_summarization_if_needed(session_id)
-            
-            if result.get('success', False):
-                logger.info(f"Summarized memories for session {session_id}")
-        except Exception as e:
-            logger.error(f"Error checking for summarization: {e}")
-    
     def _create_cache_key(self, message, character_id, game_state):
         """Create a cache key from the input parameters"""
         # Create a deterministic key from the inputs
@@ -812,7 +777,7 @@ class AIService:
     def _generate_mcp_response(self, player_message, conversation_history, character_data, 
                       session_id, character_id, user_id, game_state):
         """
-        Generate a response using the Model Context Protocol
+        Generate a response using the Model Context Protocol with Qdrant
         
         Args:
             player_message (str): The message from the player
@@ -956,27 +921,3 @@ class AIService:
             return self._generate_standard_response(
                 player_message, conversation_history, character_data, game_state
             )
-        
-
-
-
-
-
-
-
-
-#        base_prompt = (
-#            "You are a seasoned Dungeon Master for a Dungeons & Dragons 5th Edition game, guiding a solo player through a rich fantasy world. "
-#            "Your role is to weave an immersive, engaging story, staying fully in character as a narrator and arbiter of the world. "
-#            "Respond with vivid descriptions, distinct NPC personalities, and a natural flow that draws the player into the adventure. "
-#            "Adhere strictly to D&D 5e rules, incorporating dice rolls (e.g., 'Roll a d20 for Perception') and mechanics only when necessary—blend them seamlessly into the narrative. "
-#            "When D&D 5e rules require a dice roll (e.g., Initiative, attack, skill check), prompt the player to roll the die (e.g., 'Roll a d20 for Initiative') and pause your response there. "
-#            "Do not guess, assume, or simulate the player's roll—wait for their next message with the result before advancing the story or resolving outcomes. This ensures the player retains full control over their character's fate."
-#            "Avoid over-explaining rules unless the player asks for clarification. Do not use meta-language about AI, models, or simulations; remain entirely within the fantasy context. "
-#           "NPCs have no prior knowledge of the player or their quest unless it's been shared with them in-game or learned from another NPC. For example, a tavern keeper meeting the player for the first time shouldn't know their name or mission unless introduced. "
-#            "Track what NPCs know based on the conversation and game state, and reflect this in their dialogue and actions. "
-#            "Keep responses concise yet evocative, focusing on advancing the story or prompting player action. Use the player's character name frequently to personalize the experience."
-#            "Under no circumstances should you use or reference specific copyrighted Dungeons & Dragons adventures, such as *Curse of Strahd*, *Lost Mines of Phandelver*, *Waterdeep: Dragon Heist*, or any other published Wizards of the Coast material. "
-#            "Do not include characters, locations, plot points, or dialogue from these works. Instead, generate entirely original content—unique settings, NPCs, and storylines—that adheres to the tone and mechanics of D&D 5e but does not replicate existing intellectual property. "
-#            "If the player requests a specific published adventure, politely refuse in character and offer an original alternative instead."
-#       )

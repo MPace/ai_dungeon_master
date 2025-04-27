@@ -1,22 +1,23 @@
+# app/services/memory_service.py
 """
-Memory Service
+Memory Service using Qdrant for vector storage
 """
 from app.models.memory_vector import MemoryVector
-from app.extensions import get_db, get_embedding_service
+from app.extensions import get_db, get_embedding_service, get_qdrant_service
 from datetime import datetime
 import logging
-import numpy as np
+import uuid
 
 logger = logging.getLogger(__name__)
 
 class MemoryService:
-    """Service for handling memory vector operations"""
+    """Service for handling memory vector operations using Qdrant"""
     
     @staticmethod
     def store_memory(session_id, content, embedding, memory_type='short_term',
                      character_id=None, user_id=None, importance=5, metadata=None):
         """
-        Store a new memory with vector embedding
+        Store a new memory with vector embedding in Qdrant
         
         Args:
             session_id (str): Session ID
@@ -32,10 +33,11 @@ class MemoryService:
             dict: Result with success status and memory
         """
         try:
-            db = get_db()
-            if db is None:
-                logger.error("Database connection failed when storing memory")
-                return {'success': False, 'error': 'Database connection error'}
+            # Get Qdrant service
+            qdrant_service = get_qdrant_service()
+            if qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return {'success': False, 'error': 'Qdrant service not available'}
             
             # Create memory vector instance
             memory = MemoryVector(
@@ -49,15 +51,19 @@ class MemoryService:
                 metadata=metadata or {}
             )
             
-            # Save to database
-            result = db.memory_vectors.insert_one(memory.to_dict())
+            # Store in Qdrant
+            result = qdrant_service.store_vector(
+                memory_id=memory.memory_id,
+                embedding=embedding,
+                payload=memory.to_qdrant_payload()
+            )
             
-            if result.inserted_id:
-                logger.info(f"Memory stored: {memory.memory_id}")
+            if result:
+                logger.info(f"Memory stored in Qdrant: {memory.memory_id}")
                 return {'success': True, 'memory': memory}
             else:
-                logger.error("Failed to insert memory")
-                return {'success': False, 'error': 'Failed to store memory'}
+                logger.error("Failed to store memory in Qdrant")
+                return {'success': False, 'error': 'Failed to store memory in Qdrant'}
                 
         except Exception as e:
             logger.error(f"Error storing memory: {str(e)}")
@@ -69,7 +75,7 @@ class MemoryService:
     @staticmethod
     def find_similar_memories(embedding, session_id=None, limit=5, min_similarity=0.7):
         """
-        Find memories similar to the given embedding
+        Find memories similar to the given embedding using Qdrant
         
         Args:
             embedding (list): Query embedding vector
@@ -81,72 +87,34 @@ class MemoryService:
             dict: Result with success status and memories
         """
         try:
-            db = get_db()
-            if db is None:
-                logger.error("Database connection failed when finding memories")
-                return {'success': False, 'error': 'Database connection error'}
+            # Get Qdrant service
+            qdrant_service = get_qdrant_service()
+            if qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return {'success': False, 'error': 'Qdrant service not available'}
             
-            # Build query
-            query = {}
+            # Build filter
+            filters = {}
             if session_id:
-                query['session_id'] = session_id
+                filters['session_id'] = session_id
             
-            # Use MongoDB vector search if available
-            try:
-                pipeline = [
-                    {
-                        '$search': {
-                            'index': 'vector_index',
-                            'vectorSearch': {
-                                'queryVector': embedding,
-                                'path': 'embedding',
-                                'numCandidates': limit * 10,
-                                'limit': limit
-                            }
-                        }
-                    },
-                    {
-                        '$match': query
-                    },
-                    {
-                        '$addFields': {
-                            'similarity': {
-                                '$vectorDistance': ['$embedding', embedding, 'cosine']
-                            }
-                        }
-                    },
-                    {
-                        '$match': {
-                            'similarity': {'$gte': min_similarity}
-                        }
-                    },
-                    {
-                        '$sort': {
-                            'similarity': -1
-                        }
-                    },
-                    {
-                        '$limit': limit
-                    }
-                ]
-                
-                results = list(db.memory_vectors.aggregate(pipeline))
-                logger.info(f"Found {len(results)} similar memories using vector search")
-                
-            except Exception as vector_error:
-                logger.warning(f"Vector search failed: {vector_error}. Using fallback method.")
-                # Fallback to manual similarity calculation
-                results = MemoryService._fallback_similarity_search(db, embedding, query, limit, min_similarity)
-            
-            # Update lastAccessed timestamp for retrieved memories
-            for result in results:
-                db.memory_vectors.update_one(
-                    {'_id': result['_id']},
-                    {'$set': {'last_accessed': datetime.utcnow()}}
-                )
+            # Search for similar vectors
+            results = qdrant_service.find_similar_vectors(
+                query_vector=embedding,
+                filters=filters,
+                limit=limit,
+                score_threshold=min_similarity
+            )
             
             # Convert to MemoryVector objects
-            memories = [MemoryVector.from_dict(result) for result in results]
+            memories = [MemoryVector.from_qdrant_result(result) for result in results]
+            
+            # Update last_accessed time for each memory
+            for memory in memories:
+                qdrant_service.update_vector_metadata(
+                    memory_id=memory.memory_id,
+                    payload={'last_accessed': datetime.utcnow()}
+                )
             
             return {'success': True, 'memories': memories}
             
@@ -156,43 +124,6 @@ class MemoryService:
             logger.error(traceback.format_exc())
             
             return {'success': False, 'error': str(e)}
-    
-    @staticmethod
-    def _fallback_similarity_search(db, embedding, query, limit, min_similarity):
-        """Fallback method for similarity search without vector indexing"""
-        logger.warning("Using fallback similarity search - this is less efficient")
-        
-        # Get all memories matching the query
-        memories = list(db.memory_vectors.find(query))
-        
-        # Calculate cosine similarity manually
-        for memory in memories:
-            memory_embedding = memory.get('embedding', [])
-            memory['similarity'] = MemoryService._cosine_similarity(memory_embedding, embedding)
-        
-        # Filter by minimum similarity
-        memories = [m for m in memories if m.get('similarity', 0) >= min_similarity]
-        
-        # Sort by similarity and limit results
-        memories.sort(key=lambda x: x.get('similarity', 0), reverse=True)
-        return memories[:limit]
-    
-    @staticmethod
-    def _cosine_similarity(a, b):
-        """Calculate cosine similarity between two vectors"""
-        if not a or not b:
-            return 0
-            
-        a = np.array(a)
-        b = np.array(b)
-        
-        norm_a = np.linalg.norm(a)
-        norm_b = np.linalg.norm(b)
-        
-        if norm_a == 0 or norm_b == 0:
-            return 0
-            
-        return np.dot(a, b) / (norm_a * norm_b)
     
     @staticmethod
     def create_memory_summary(memory_ids, summary_content, summary_embedding, 
@@ -222,9 +153,9 @@ class MemoryService:
             metadata={
                 'summarized_count': len(memory_ids),
                 'is_summary': True,
-                'summary_type': 'session'
-            },
-            summary_of=memory_ids
+                'summary_type': 'session',
+                'summary_of': memory_ids
+            }
         )
     
     @staticmethod
@@ -308,6 +239,116 @@ class MemoryService:
         
         except Exception as e:
             logger.error(f"Error finding similar memories by text: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            
+            return {'success': False, 'error': str(e)}
+    
+    @staticmethod
+    def get_memory(memory_id):
+        """
+        Get a memory by ID from Qdrant
+        
+        Args:
+            memory_id (str): Memory ID
+            
+        Returns:
+            dict: Result with success status and memory
+        """
+        try:
+            # Get Qdrant service
+            qdrant_service = get_qdrant_service()
+            if qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return {'success': False, 'error': 'Qdrant service not available'}
+            
+            # Get vector from Qdrant
+            result = qdrant_service.get_vector(memory_id=memory_id)
+            
+            if result:
+                # Convert to MemoryVector
+                memory = MemoryVector.from_qdrant_result(result)
+                return {'success': True, 'memory': memory}
+            else:
+                logger.warning(f"Memory {memory_id} not found in Qdrant")
+                return {'success': False, 'error': 'Memory not found'}
+        
+        except Exception as e:
+            logger.error(f"Error getting memory: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            
+            return {'success': False, 'error': str(e)}
+    
+    @staticmethod
+    def delete_memory(memory_id):
+        """
+        Delete a memory from Qdrant
+        
+        Args:
+            memory_id (str): Memory ID
+            
+        Returns:
+            dict: Result with success status
+        """
+        try:
+            # Get Qdrant service
+            qdrant_service = get_qdrant_service()
+            if qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return {'success': False, 'error': 'Qdrant service not available'}
+            
+            # Delete from Qdrant
+            result = qdrant_service.delete_vector(memory_id=memory_id)
+            
+            if result:
+                logger.info(f"Memory {memory_id} deleted from Qdrant")
+                return {'success': True}
+            else:
+                logger.error(f"Failed to delete memory {memory_id} from Qdrant")
+                return {'success': False, 'error': 'Failed to delete memory'}
+        
+        except Exception as e:
+            logger.error(f"Error deleting memory: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            
+            return {'success': False, 'error': str(e)}
+    
+    @staticmethod
+    def update_memory_metadata(memory_id, metadata):
+        """
+        Update memory metadata in Qdrant
+        
+        Args:
+            memory_id (str): Memory ID
+            metadata (dict): New metadata
+            
+        Returns:
+            dict: Result with success status
+        """
+        try:
+            # Get Qdrant service
+            qdrant_service = get_qdrant_service()
+            if qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return {'success': False, 'error': 'Qdrant service not available'}
+            
+            # Update metadata in Qdrant
+            result = qdrant_service.update_vector_metadata(
+                memory_id=memory_id,
+                payload={'metadata': metadata}
+            )
+            
+            if result:
+                logger.info(f"Memory {memory_id} metadata updated in Qdrant")
+                return {'success': True}
+            else:
+                logger.error(f"Failed to update memory {memory_id} metadata in Qdrant")
+                return {'success': False, 'error': 'Failed to update memory metadata'}
+        
+        except Exception as e:
+            logger.error(f"Error updating memory metadata: {str(e)}")
             import traceback
             logger.error(traceback.format_exc())
             

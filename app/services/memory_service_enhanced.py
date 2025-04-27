@@ -1,9 +1,14 @@
-# memory_service_enhanced.py
+# app/services/memory_service_enhanced.py
+"""
+Enhanced Memory Service using Qdrant
+
+This service provides extended memory functionality using Qdrant for vector storage.
+"""
 from typing import List, Dict, Any, Optional, Union
 from datetime import datetime, timedelta
 import logging
 from app.models.memory_vector import MemoryVector
-from app.extensions import get_db, get_embedding_service
+from app.extensions import get_embedding_service, get_qdrant_service
 from app.services.memory_interfaces import ShortTermMemoryInterface, LongTermMemoryInterface, SemanticMemoryInterface
 
 logger = logging.getLogger(__name__)
@@ -12,9 +17,11 @@ class EnhancedMemoryService:
     """Enhanced service for memory management with extended functionality"""
     
     def __init__(self):
+        """Initialize memory interfaces"""
         self.short_term = ShortTermMemoryInterface()
         self.long_term = LongTermMemoryInterface()
         self.semantic = SemanticMemoryInterface()
+        self.qdrant_service = get_qdrant_service()
     
     def store_memory_with_text(self, content: str, memory_type: str = 'short_term', 
                            session_id: Optional[str] = None, 
@@ -43,7 +50,6 @@ class EnhancedMemoryService:
             
             return {'success': True, 'task_id': storage_task.id}
         else:
-
             # Generate embedding
             embedding = embedding_service.generate_embedding(content)
             
@@ -169,29 +175,14 @@ class EnhancedMemoryService:
             query_embedding = embedding_service.generate_embedding(current_message)
             logger.info(f"Generated query embedding with {len(query_embedding)} dimensions")
 
+            # Get pinned memories
+            pinned_memories = self._get_pinned_memories(session_id)
+            
+            # Get any summary if available
+            summary = self._get_session_summary(session_id)
 
-            # Get session summary if available
-            summary = ""
-            db = get_db()
-            if db is not None:
-                session_data = db.sessions.find_one({'session_id': session_id})
-                if session_data and 'session_summary' in session_data:
-                    summary = session_data['session_summary']
-
-            # Get any pinned memories
-            pinned_memories = []
-            if db is not None:
-                session_data = db.sessions.find_one({'session_id': session_id})
-                if session_data and 'pinned_memories' in session_data:
-                    pinned_memory_refs = session_data['pinned_memories']
-                    for ref in pinned_memory_refs:
-                        if 'memory_id' in ref:
-                            memory = db.memory_vectors.find_one({'memory_id': ref['memory_id']})
-                            if memory:
-                                pinned_memories.append(memory)
-
-            # Retrieve relevant memories
-            memories = self.retrieve_memories(
+            # Retrieve relevant memories using all memory types
+            memories_result = self.retrieve_memories(
                 query=current_message,
                 session_id=session_id,
                 character_id=character_id,
@@ -199,40 +190,36 @@ class EnhancedMemoryService:
                 limit_per_type=5
             )
         
-            if not memories['success']:
+            if not memories_result['success']:
                 return ""
             
-            combined_memories = memories['combined_results']
+            combined_memories = memories_result['combined_results']
             
             # Add pinned memories to combined memories, avoid duplicates by checking memory_id
-
-            existing_ids = {memory.get('memory_id') for memory in combined_memories if 'memory_id' in memory} 
+            existing_ids = {memory.get('memory_id') for memory in combined_memories if 'memory_id' in memory}
             for memory in pinned_memories:
                 if memory.get('memory_id') not in existing_ids:
                     combined_memories.append(memory)
-                    existing_ids(memory.get('memory_id'))
+                    existing_ids.add(memory.get('memory_id'))
 
             # Sort memories by relevance
             if recency_boost:
                 # Calculate scores with recency boost
                 for memory in combined_memories:
-                    if 'created_at' in memory:
-                        created_at = memory['created_at']
-                        if isinstance(created_at, str):
-                            try:
-                                created_at = datetime.fromisoformat(created_at)
-                            except ValueError:
-                                created_at = datetime.utcnow() - timedelta(days=7)  # Default to a week ago
-                        
-                        recency_score = ShortTermMemoryInterface.calculate_recency_score(created_at)
-                        similarity_score = memory.get('similarity', 0.5)
-                        importance_score = min(1.0, memory.get('importance', 5) / 10.0)
-                        
-                        memory['combined_score'] = ShortTermMemoryInterface.combine_relevance_scores(
-                            similarity_score, recency_score, importance_score
-                        )
-                    else:
-                        memory['combined_score'] = memory.get('similarity', 0.5)
+                    created_at = memory.get('created_at')
+                    if isinstance(created_at, str):
+                        try:
+                            created_at = datetime.fromisoformat(created_at)
+                        except ValueError:
+                            created_at = datetime.utcnow() - timedelta(days=7)  # Default to a week ago
+                    
+                    recency_score = self.short_term.calculate_recency_score(created_at)
+                    similarity_score = memory.get('similarity', 0.5)
+                    importance_score = min(1.0, memory.get('importance', 5) / 10.0)
+                    
+                    memory['combined_score'] = self.short_term.combine_relevance_scores(
+                        similarity_score, recency_score, importance_score
+                    )
                 
                 # Sort by combined score
                 combined_memories.sort(key=lambda x: x.get('combined_score', 0), reverse=True)
@@ -244,7 +231,7 @@ class EnhancedMemoryService:
             # Add summary first if available
             if summary:
                 summary_tokens = self._estimate_tokens(summary)
-                summary_max = max_tokens // 4
+                summary_max = max_tokens // 4  # Use up to 25% of the token budget for summary
 
                 if summary_tokens <= summary_max:
                     context_parts.append("## CAMPAIGN SUMMARY:\n" + summary)
@@ -266,12 +253,12 @@ class EnhancedMemoryService:
                         pinned_header_added = True
                         token_count += 3
 
-                memory_entry = f"PINNED: {memory_text}"
-                memory_tokens = self._estimate_tokens(memory_entry)
+                    memory_entry = f"PINNED: {memory_text}"
+                    memory_tokens = self._estimate_tokens(memory_entry)
 
-                if token_count + memory_tokens <= max_tokens:
-                    context_parts.append(memory_entry)
-                    token_count += memory_tokens
+                    if token_count + memory_tokens <= max_tokens:
+                        context_parts.append(memory_entry)
+                        token_count += memory_tokens
 
             # Add other memories based on relevance
             memory_header_added = False
@@ -321,134 +308,173 @@ class EnhancedMemoryService:
             import traceback
             logger.error(traceback.format_exc())
             return ""
-        
-    def _estimate_tokens(self, text):
+    
+    def _get_pinned_memories(self, session_id: str) -> List[Dict[str, Any]]:
+        """Get pinned memories for a session from Qdrant based on session metadata"""
+        try:
+            if self.qdrant_service is None:
+                return []
+                
+            # Get session data from MongoDB to find pinned memory IDs
+            from app.extensions import get_db
+            db = get_db()
+            if db is None:
+                return []
+                
+            session_data = db.sessions.find_one({'session_id': session_id})
+            if not session_data or 'pinned_memories' not in session_data:
+                return []
+                
+            pinned_refs = session_data['pinned_memories']
+            
+            # Extract memory IDs
+            memory_ids = [ref['memory_id'] for ref in pinned_refs if 'memory_id' in ref]
+            
+            # Retrieve each memory from Qdrant
+            pinned_memories = []
+            for memory_id in memory_ids:
+                result = self.qdrant_service.get_vector(memory_id)
+                if result:
+                    pinned_memories.append(result)
+            
+            return pinned_memories
+            
+        except Exception as e:
+            logger.error(f"Error getting pinned memories: {e}")
+            return []
+    
+    def _get_session_summary(self, session_id: str) -> str:
+        """Get the session summary from MongoDB"""
+        try:
+            from app.extensions import get_db
+            db = get_db()
+            if db is None:
+                return ""
+                
+            session_data = db.sessions.find_one({'session_id': session_id})
+            if not session_data or 'session_summary' not in session_data:
+                return ""
+                
+            return session_data['session_summary']
+            
+        except Exception as e:
+            logger.error(f"Error getting session summary: {e}")
+            return ""
+    
+    def _estimate_tokens(self, text: str) -> int:
+        """Estimate the number of tokens in a text"""
         if not text:
             return 0
         
+        # Simple estimation - about 4 chars per token on average
         return len(text) // 4
     
     def promote_to_long_term(self, memory_id: str) -> bool:
         """Promote a short-term memory to long-term"""
-        db = get_db()
-        if db is None:
-            return False
-            
         try:
-            # Find the short-term memory
-            memory = db.memory_vectors.find_one({
-                'memory_id': memory_id,
-                'memory_type': 'short_term'
-            })
-            
-            if not memory:
+            if self.qdrant_service is None:
+                logger.error("Qdrant service not available")
                 return False
                 
-            # Create a new memory with the same data but long-term type
-            memory_data = dict(memory)
-            del memory_data['_id']  # Remove MongoDB ID
-            memory_data['memory_type'] = 'long_term'
-            memory_data['created_at'] = datetime.utcnow()
-            memory_data['last_accessed'] = datetime.utcnow()
-            
-            # Insert as long-term memory
-            result = db.memory_vectors.insert_one(memory_data)
-            
-            if result.inserted_id:
-                # Delete the original short-term memory
-                db.memory_vectors.delete_one({'_id': memory['_id']})
-                return True
+            # Get the memory from Qdrant
+            result = self.qdrant_service.get_vector(memory_id)
+            if not result:
+                logger.error(f"Memory not found: {memory_id}")
+                return False
                 
-            return False
+            # Create memory vector object
+            memory = MemoryVector.from_qdrant_result(result)
+            
+            # Change memory type
+            memory.memory_type = 'long_term'
+            
+            # Store as long-term memory
+            success = self.qdrant_service.store_vector(
+                memory_id=memory.memory_id,
+                embedding=memory.embedding,
+                payload=memory.to_qdrant_payload()
+            )
+            
+            if success:
+                logger.info(f"Memory {memory_id} promoted to long-term")
+                return True
+            else:
+                logger.error(f"Failed to promote memory {memory_id}")
+                return False
+                
         except Exception as e:
             logger.error(f"Error promoting memory to long-term: {e}")
             return False
     
     def check_summarization_triggers(self, session_id: str) -> bool:
         """Check if summarization should be triggered for a session"""
-        db = get_db()
-        if db is None:
-            return False
-            
         try:
+            if self.qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return False
+                
             # Check volume-based trigger
-            memory_count = db.memory_vectors.count_documents({
+            filters = {
                 'session_id': session_id,
                 'memory_type': 'short_term'
-            })
+            }
+            memory_count = self.qdrant_service.count_vectors(filters)
             
             if memory_count >= 50:  # Adjust threshold as needed
                 return True
                 
             # Check time-based trigger
-            one_hour_ago = datetime.utcnow() - timedelta(hours=1)
-            
-            # Find the oldest memory in the session
-            oldest_memory = db.memory_vectors.find_one(
-                {
-                    'session_id': session_id,
-                    'memory_type': 'short_term'
-                },
-                sort=[('created_at', 1)]
-            )
-            
-            if oldest_memory and 'created_at' in oldest_memory:
-                created_at = oldest_memory['created_at']
-                if isinstance(created_at, str):
-                    created_at = datetime.fromisoformat(created_at)
-                
-                # If the oldest memory is more than an hour old and we have at least 10 memories
-                if created_at < one_hour_ago and memory_count >= 10:
-                    return True
+            # Note: Since we can't easily find the oldest memory in Qdrant without
+            # retrieving all memories, we'll just use the volume-based approach for now.
+            # With sufficiently high message volume, time-based summary will be triggered naturally.
             
             return False
         except Exception as e:
             logger.error(f"Error checking summarization triggers: {e}")
             return False
-        
-
+    
     def store_memory_with_text_async(self, content: str, memory_type: str = 'short_term', 
                                session_id: Optional[str] = None, 
                                character_id: Optional[str] = None, 
                                user_id: Optional[str] = None,
                                importance: int = 5, 
                                metadata: Optional[Dict[str, Any]] = None) -> str:
-            """
-            Store a memory asynchronously and return task ID
+        """
+        Store a memory asynchronously and return task ID
+        
+        Args:
+            Same as store_memory_with_text
             
-            Args:
-                Same as store_memory_with_text
-                
-            Returns:
-                str: Task ID for retrieving the result later
-            """
-            from app.tasks import store_memory_task
-            
-            # Submit task
-            task = store_memory_task.delay(
-                session_id, content, memory_type, 
-                character_id, user_id, importance, metadata
-            )
-            
-            return task.id
+        Returns:
+            str: Task ID for retrieving the result later
+        """
+        from app.tasks import store_memory_task
+        
+        # Submit task
+        task = store_memory_task.delay(
+            session_id, content, None, None, memory_type, 
+            character_id, user_id, importance, metadata
+        )
+        
+        return task.id
 
     def retrieve_memories_async(self, query: str, session_id: Optional[str] = None, 
                             memory_types: List[str] = ['short_term', 'long_term', 'semantic'],
                             limit_per_type: int = 3, min_similarity: float = 0.7) -> str:
-            """
-            Retrieve memories asynchronously and return task ID
+        """
+        Retrieve memories asynchronously and return task ID
+        
+        Args:
+            Same as retrieve_memories
             
-            Args:
-                Same as retrieve_memories
-                
-            Returns:
-                str: Task ID for retrieving the result later
-            """
-            from app.tasks import find_similar_memories_task
-            
-            # Submit task
-            task = find_similar_memories_task.delay(
-                query, session_id, limit_per_type, min_similarity
-            )
-            
-            return task.id
+        Returns:
+            str: Task ID for retrieving the result later
+        """
+        from app.tasks import find_similar_memories_task
+        
+        # Submit task
+        task = find_similar_memories_task.delay(
+            query, session_id, limit_per_type, min_similarity
+        )
+        
+        return task.id

@@ -3,10 +3,16 @@ Configuration settings for different environments
 """
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 class Config:
     """Base configuration"""
     
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+
     # Database
     MONGO_URI = os.environ.get('MONGO_URI', '')
     
@@ -14,9 +20,22 @@ class Config:
     AI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
     AI_MODEL = os.environ.get('OPERNAI_MODEL', 'gpt-4o')
     
+    # Modal API configuration
+    MODAL_API_URL = os.environ.get('MODAL_API_URL')
+    MODAL_API_TOKEN = os.environ.get('MODAL_API_TOKEN')
+
+    # Embedding model configuration
+    EMBEDDING_MODEL = os.environ.get('EMBEDDING_MODEL', 'all-MiniLM-L6-v2')
+
     # Logging
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
     
+    # Qdrant configuration
+    QDRANT_URL = os.environ.get('QDRANT_URL')
+    QDRANT_API_KEY = os.environ.get('QDRANT_API_KEY')
+    QDRANT_COLLECTION_NAME = os.environ.get('QDRANT_COLLECTION_NAME', 'memory_vectors')
+    QDRANT_VECTOR_SIZE = int(os.environ.get('QDRANT_VECTOR_SIZE', '768'))
+
     # Application settings
     DEBUG = False
     TESTING = False

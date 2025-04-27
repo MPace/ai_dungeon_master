@@ -14,11 +14,30 @@ logger = logging.getLogger(__name__)
 logger.info("celery_config.py is executing")
 
 # Create Celery instance first
-celery = Celery(
-    'app',
-    broker=os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0'),
-    backend=os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0'),
-    include=['app.tasks']
+celery = Celery('app')
+
+# Configure the broker and backend
+celery.conf.update({
+    'broker_url': 'redis://localhost:6379/0',
+    'result_backend': 'redis://localhost:6379/0',
+    'task_serializer': 'json',
+    'accept_content': ['json'],
+    'result_serializer': 'json',
+    'enable_utc': True,
+    'task_routes': {
+        'tasks.process_dm_message': {'queue': 'dm_queue'},
+        'tasks.generate_memory_summary': {'queue': 'memory_queue'},
+        'tasks.find_similar_memories_task': {'queue': 'memory_queue'},
+        'tasks.generate_embedding_task': {'queue': 'embedding_queue'},
+        'tasks.store_memory_task': {'queue': 'memory_queue'},
+        'tasks.retrieve_memories_task': {'queue': 'memory_queue'},
+        'tasks.promote_to_long_term_task': {'queue': 'memory_queue'}  # Added this new task
+    }
+})
+
+# This allows the worker to find the app
+celery.conf.update(
+    imports=['app.tasks']
 )
 
 # Load additional configuration from object
@@ -30,7 +49,7 @@ class CeleryConfig:
     task_track_started = True
     task_time_limit = 300
 
-celery.config_from_object(CeleryConfig)
+#celery.config_from_object(CeleryConfig)
 
 @celery.task(bind=True)
 def debug_task(self):

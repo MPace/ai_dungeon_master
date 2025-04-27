@@ -4,10 +4,17 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional, Union
 import logging
 
+from app.services.qdrant_memory_provider import QdrantMemoryProvider
+from app.models.memory_vector import MemoryVector
+
 logger = logging.getLogger(__name__)
 
 class BaseMemoryInterface(ABC):
     """Base interface for all memory types with common functionality"""
+    
+    def __init__(self):
+        """Initialize with the Qdrant memory provider"""
+        self.provider = QdrantMemoryProvider()
     
     @abstractmethod
     def store(self, content: str, embedding: List[float], **kwargs) -> Dict[str, Any]:
@@ -58,68 +65,79 @@ class ShortTermMemoryInterface(BaseMemoryInterface):
               character_id: Optional[str] = None, user_id: Optional[str] = None,
               importance: int = 5, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Store a short-term memory"""
-        from app.services.memory_service import MemoryService
+        try:
+            # Create memory vector object
+            memory = MemoryVector(
+                session_id=session_id,
+                content=content,
+                embedding=embedding,
+                memory_type='short_term',
+                character_id=character_id,
+                user_id=user_id,
+                importance=importance,
+                metadata=metadata or {}
+            )
+            
+            # Store in Qdrant
+            success = self.provider.store_memory(memory)
+            
+            if success:
+                return {'success': True, 'memory': memory}
+            else:
+                return {'success': False, 'error': 'Failed to store memory in Qdrant'}
         
-        return MemoryService.store_memory(
-            session_id=session_id,
-            content=content,
-            embedding=embedding,
-            memory_type='short_term',
-            character_id=character_id,
-            user_id=user_id,
-            importance=importance,
-            metadata=metadata or {}
-        )
+        except Exception as e:
+            logger.error(f"Error in ShortTermMemoryInterface.store: {e}")
+            return {'success': False, 'error': str(e)}
     
     def retrieve(self, query_embedding: List[float], session_id: str, 
                  limit: int = 5, min_similarity: float = 0.7) -> List[Dict[str, Any]]:
         """Retrieve short-term memories similar to the query embedding"""
-        from app.services.memory_service import MemoryService
+        try:
+            # Use provider to find similar memories
+            memories = self.provider.retrieve_similar_memories(
+                query_embedding=query_embedding,
+                session_id=session_id,
+                memory_type='short_term',
+                limit=limit,
+                min_similarity=min_similarity
+            )
+            
+            # Convert MemoryVector objects to dictionaries
+            return [memory.to_dict() for memory in memories]
         
-        result = MemoryService.find_similar_memories(
-            embedding=query_embedding,
-            session_id=session_id,
-            limit=limit,
-            min_similarity=min_similarity
-        )
-        
-        logger.info(f"Performing vector similarity search with embedding dimension {len(query_embedding)}")
-
-        if result['success']:
-            return result['memories']
-        return []
+        except Exception as e:
+            logger.error(f"Error in ShortTermMemoryInterface.retrieve: {e}")
+            return []
     
     def update(self, memory_id: str, **kwargs) -> bool:
         """Update a short-term memory"""
-        from app.extensions import get_db
-        
-        db = get_db()
-        if db is None:
-            return False
-        
         try:
-            result = db.memory_vectors.update_one(
-                {'memory_id': memory_id, 'memory_type': 'short_term'},
-                {'$set': kwargs}
-            )
-            return result.modified_count > 0
-        except Exception:
+            # Get existing memory
+            memory = self.provider.get_memory(memory_id)
+            
+            if memory is None:
+                logger.warning(f"Memory not found for update: {memory_id}")
+                return False
+            
+            # Update memory attributes
+            for key, value in kwargs.items():
+                if hasattr(memory, key):
+                    setattr(memory, key, value)
+            
+            # Save updated memory
+            return self.provider.update_memory(memory)
+        
+        except Exception as e:
+            logger.error(f"Error in ShortTermMemoryInterface.update: {e}")
             return False
     
     def delete(self, memory_id: str) -> bool:
         """Delete a short-term memory"""
-        from app.extensions import get_db
-        
-        db = get_db()
-        if db is None:
-            return False
-        
         try:
-            result = db.memory_vectors.delete_one(
-                {'memory_id': memory_id, 'memory_type': 'short_term'}
-            )
-            return result.deleted_count > 0
-        except Exception:
+            return self.provider.delete_memory(memory_id)
+        except Exception as e:
+            logger.error(f"Error in ShortTermMemoryInterface.delete: {e}")
             return False
 
 
@@ -130,143 +148,80 @@ class LongTermMemoryInterface(BaseMemoryInterface):
               character_id: Optional[str] = None, user_id: Optional[str] = None,
               importance: int = 5, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Store a long-term memory"""
-        from app.services.memory_service import MemoryService
+        try:
+            # Create memory vector object
+            memory = MemoryVector(
+                session_id=session_id,
+                content=content,
+                embedding=embedding,
+                memory_type='long_term',
+                character_id=character_id,
+                user_id=user_id,
+                importance=importance,
+                metadata=metadata or {}
+            )
+            
+            # Store in Qdrant
+            success = self.provider.store_memory(memory)
+            
+            if success:
+                return {'success': True, 'memory': memory}
+            else:
+                return {'success': False, 'error': 'Failed to store memory in Qdrant'}
         
-        return MemoryService.store_memory(
-            session_id=session_id,
-            content=content,
-            embedding=embedding,
-            memory_type='long_term',
-            character_id=character_id,
-            user_id=user_id,
-            importance=importance,
-            metadata=metadata or {}
-        )
+        except Exception as e:
+            logger.error(f"Error in LongTermMemoryInterface.store: {e}")
+            return {'success': False, 'error': str(e)}
     
     def retrieve(self, query_embedding: List[float], character_id: str = None, 
                  limit: int = 5, min_similarity: float = 0.7) -> List[Dict[str, Any]]:
         """Retrieve long-term memories similar to the query embedding"""
-        from app.extensions import get_db
-        import numpy as np
-        
-        db = get_db()
-        if db is None:
-            return []
-        
         try:
-            query = {'memory_type': 'long_term'}
-            if character_id:
-                query['character_id'] = character_id
-                
-            # Try vector search if available
-            try:
-                pipeline = [
-                    {
-                        '$search': {
-                            'index': 'vector_index',
-                            'vectorSearch': {
-                                'queryVector': query_embedding,
-                                'path': 'embedding',
-                                'numCandidates': limit * 10,
-                                'limit': limit
-                            }
-                        }
-                    },
-                    {
-                        '$match': query
-                    },
-                    {
-                        '$addFields': {
-                            'similarity': {
-                                '$vectorDistance': ['$embedding', query_embedding, 'cosine']
-                            }
-                        }
-                    },
-                    {
-                        '$match': {
-                            'similarity': {'$gte': min_similarity}
-                        }
-                    },
-                    {
-                        '$sort': {
-                            'similarity': -1
-                        }
-                    },
-                    {
-                        '$limit': limit
-                    }
-                ]
-                
-                return list(db.memory_vectors.aggregate(pipeline))
-                
-            except Exception:
-                # Fallback to manual calculation
-                memories = list(db.memory_vectors.find(query))
-                
-                # Calculate cosine similarity manually
-                for memory in memories:
-                    memory_embedding = memory.get('embedding', [])
-                    memory['similarity'] = self._cosine_similarity(memory_embedding, query_embedding)
-                
-                # Filter by minimum similarity
-                memories = [m for m in memories if m.get('similarity', 0) >= min_similarity]
-                
-                # Sort by similarity and limit results
-                memories.sort(key=lambda x: x.get('similarity', 0), reverse=True)
-                return memories[:limit]
-                
-        except Exception:
+            # Use provider to find similar memories
+            memories = self.provider.retrieve_similar_memories(
+                query_embedding=query_embedding,
+                character_id=character_id,
+                memory_type='long_term',
+                limit=limit,
+                min_similarity=min_similarity
+            )
+            
+            # Convert MemoryVector objects to dictionaries
+            return [memory.to_dict() for memory in memories]
+        
+        except Exception as e:
+            logger.error(f"Error in LongTermMemoryInterface.retrieve: {e}")
             return []
     
     def update(self, memory_id: str, **kwargs) -> bool:
         """Update a long-term memory"""
-        from app.extensions import get_db
-        
-        db = get_db()
-        if db is None:
-            return False
-        
         try:
-            result = db.memory_vectors.update_one(
-                {'memory_id': memory_id, 'memory_type': 'long_term'},
-                {'$set': kwargs}
-            )
-            return result.modified_count > 0
-        except Exception:
+            # Get existing memory
+            memory = self.provider.get_memory(memory_id)
+            
+            if memory is None:
+                logger.warning(f"Memory not found for update: {memory_id}")
+                return False
+            
+            # Update memory attributes
+            for key, value in kwargs.items():
+                if hasattr(memory, key):
+                    setattr(memory, key, value)
+            
+            # Save updated memory
+            return self.provider.update_memory(memory)
+        
+        except Exception as e:
+            logger.error(f"Error in LongTermMemoryInterface.update: {e}")
             return False
     
     def delete(self, memory_id: str) -> bool:
         """Delete a long-term memory"""
-        from app.extensions import get_db
-        
-        db = get_db()
-        if db is None:
-            return False
-        
         try:
-            result = db.memory_vectors.delete_one(
-                {'memory_id': memory_id, 'memory_type': 'long_term'}
-            )
-            return result.deleted_count > 0
-        except Exception:
+            return self.provider.delete_memory(memory_id)
+        except Exception as e:
+            logger.error(f"Error in LongTermMemoryInterface.delete: {e}")
             return False
-    
-    def _cosine_similarity(self, a, b):
-        """Calculate cosine similarity between two vectors"""
-        if not a or not b:
-            return 0
-            
-        import numpy as np
-        a = np.array(a)
-        b = np.array(b)
-        
-        norm_a = np.linalg.norm(a)
-        norm_b = np.linalg.norm(b)
-        
-        if norm_a == 0 or norm_b == 0:
-            return 0
-            
-        return np.dot(a, b) / (norm_a * norm_b)
 
 
 class SemanticMemoryInterface(BaseMemoryInterface):
@@ -277,134 +232,88 @@ class SemanticMemoryInterface(BaseMemoryInterface):
               concept_type: str = 'general', relationships: Optional[List[Dict[str, str]]] = None,
               importance: int = 8, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Store a semantic memory"""
-        from app.services.memory_service import MemoryService
+        try:
+            metadata = metadata or {}
+            metadata.update({
+                'concept_type': concept_type,
+                'relationships': relationships or []
+            })
+            
+            # Create memory vector object
+            memory = MemoryVector(
+                session_id='semantic',  # Using 'semantic' as a special constant
+                content=content,
+                embedding=embedding,
+                memory_type='semantic',
+                character_id=character_id,
+                user_id=user_id,
+                importance=importance,
+                metadata=metadata
+            )
+            
+            # Store in Qdrant
+            success = self.provider.store_memory(memory)
+            
+            if success:
+                return {'success': True, 'memory': memory}
+            else:
+                return {'success': False, 'error': 'Failed to store memory in Qdrant'}
         
-        metadata = metadata or {}
-        metadata.update({
-            'concept_type': concept_type,
-            'relationships': relationships or []
-        })
-        
-        return MemoryService.store_memory(
-            session_id='semantic',  # Using 'semantic' as a special constant
-            content=content,
-            embedding=embedding,
-            memory_type='semantic',
-            character_id=character_id,
-            user_id=user_id,
-            importance=importance,
-            metadata=metadata
-        )
+        except Exception as e:
+            logger.error(f"Error in SemanticMemoryInterface.store: {e}")
+            return {'success': False, 'error': str(e)}
     
     def retrieve(self, query_embedding: List[float], concept_type: Optional[str] = None,
                  character_id: Optional[str] = None, limit: int = 5, 
                  min_similarity: float = 0.7) -> List[Dict[str, Any]]:
         """Retrieve semantic memories similar to the query embedding"""
-        from app.extensions import get_db
-        
-        db = get_db()
-        if db is None:
-            return []
-        
         try:
-            query = {'memory_type': 'semantic'}
+            # Use provider to find similar memories
+            memories = self.provider.retrieve_similar_memories(
+                query_embedding=query_embedding,
+                character_id=character_id,
+                memory_type='semantic',
+                limit=limit,
+                min_similarity=min_similarity
+            )
             
+            # Filter by concept_type if specified
             if concept_type:
-                query['metadata.concept_type'] = concept_type
-                
-            if character_id:
-                query['character_id'] = character_id
-                
-            # Try using MongoDB's vector search if available
-            try:
-                pipeline = [
-                    {
-                        '$search': {
-                            'index': 'vector_index',
-                            'vectorSearch': {
-                                'queryVector': query_embedding,
-                                'path': 'embedding',
-                                'numCandidates': limit * 10,
-                                'limit': limit
-                            }
-                        }
-                    },
-                    {
-                        '$match': query
-                    },
-                    {
-                        '$addFields': {
-                            'similarity': {
-                                '$vectorDistance': ['$embedding', query_embedding, 'cosine']
-                            }
-                        }
-                    },
-                    {
-                        '$match': {
-                            'similarity': {'$gte': min_similarity}
-                        }
-                    },
-                    {
-                        '$sort': {
-                            'similarity': -1
-                        }
-                    },
-                    {
-                        '$limit': limit
-                    }
-                ]
-                
-                return list(db.memory_vectors.aggregate(pipeline))
-                
-            except Exception:
-                # Fallback to manual similarity calculation
-                from app.services.memory_service import MemoryService
-                memories = list(db.memory_vectors.find(query))
-                
-                # Calculate cosine similarity manually
-                for memory in memories:
-                    memory_embedding = memory.get('embedding', [])
-                    memory['similarity'] = MemoryService._cosine_similarity(memory_embedding, query_embedding)
-                
-                # Filter by minimum similarity
-                memories = [m for m in memories if m.get('similarity', 0) >= min_similarity]
-                
-                # Sort by similarity and limit results
-                memories.sort(key=lambda x: x.get('similarity', 0), reverse=True)
-                return memories[:limit]
-                
-        except Exception:
+                memories = [m for m in memories if m.metadata.get('concept_type') == concept_type]
+            
+            # Convert MemoryVector objects to dictionaries
+            return [memory.to_dict() for memory in memories]
+        
+        except Exception as e:
+            logger.error(f"Error in SemanticMemoryInterface.retrieve: {e}")
             return []
     
     def update(self, memory_id: str, **kwargs) -> bool:
         """Update a semantic memory"""
-        from app.extensions import get_db
-        
-        db = get_db()
-        if db is None:
-            return False
-        
         try:
-            result = db.memory_vectors.update_one(
-                {'memory_id': memory_id, 'memory_type': 'semantic'},
-                {'$set': kwargs}
-            )
-            return result.modified_count > 0
-        except Exception:
+            # Get existing memory
+            memory = self.provider.get_memory(memory_id)
+            
+            if memory is None:
+                logger.warning(f"Memory not found for update: {memory_id}")
+                return False
+            
+            # Update memory attributes
+            for key, value in kwargs.items():
+                if hasattr(memory, key):
+                    setattr(memory, key, value)
+            
+            # Save updated memory
+            return self.provider.update_memory(memory)
+        
+        except Exception as e:
+            logger.error(f"Error in SemanticMemoryInterface.update: {e}")
             return False
     
     def delete(self, memory_id: str) -> bool:
         """Delete a semantic memory"""
-        from app.extensions import get_db
-        
-        db = get_db()
-        if db is None:
-            return False
-        
         try:
-            result = db.memory_vectors.delete_one(
-                {'memory_id': memory_id, 'memory_type': 'semantic'}
-            )
-            return result.deleted_count > 0
-        except Exception:
+            return self.provider.delete_memory(memory_id)
+        except Exception as e:
+            logger.error(f"Error in SemanticMemoryInterface.delete: {e}")
             return False

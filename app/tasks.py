@@ -1,5 +1,6 @@
+# app/tasks.py
 """
-Celery tasks for AI Dungeon Master
+Celery tasks for AI Dungeon Master with Qdrant integration
 """
 from app.celery_config import celery
 import logging
@@ -7,6 +8,8 @@ from flask import current_app
 from flask import Flask
 from app.services.ai_service import AIService
 from app.services.game_service import GameService
+from app.models.memory_vector import MemoryVector
+from app.extensions import get_qdrant_service, get_embedding_service
 
 logger = logging.getLogger(__name__)
 logger.info("Tasks module loading...")
@@ -34,7 +37,7 @@ def process_dm_message(message, session_id, character_data, user_id):
     logger.info(f"Processing DM message task for user {user_id}, session {session_id}")
     
     try:
-    # Initialize services
+        # Initialize services
         from app.services.ai_service import AIService
         from app.services.game_service import GameService
         
@@ -149,26 +152,50 @@ def generate_memory_summary(self, session_id, user_id):
 
 @celery.task(name='tasks.find_similar_memories_task', bind=True)
 def find_similar_memories_task(self, text, session_id, limit, min_similarity):
-    """Find similar memories asynchronously"""
+    """Find similar memories asynchronously using Qdrant"""
     try:
         app = get_flask_app()
         with app.app_context():
-        
-            from app.services.memory_service_enhanced import EnhancedMemoryService
-        
-            # Create memory service
-            memory_service = EnhancedMemoryService()
-        
-            # Find similar memories
-            result = memory_service.retrieve_memories(
-                query=text,
-                session_id=session_id,
-                memory_types=['short_term', 'long_term', 'semantic'],
-                limit_per_type=limit
+            # Get required services
+            qdrant_service = get_qdrant_service()
+            embedding_service = get_embedding_service()
+            
+            if qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return {'success': False, 'error': 'Qdrant service not available'}
+                
+            if embedding_service is None:
+                logger.error("Embedding service not available")
+                return {'success': False, 'error': 'Embedding service not available'}
+            
+            # Generate embedding for query
+            query_embedding = embedding_service.generate_embedding(text)
+            
+            # Build filters
+            filters = {}
+            if session_id:
+                filters['session_id'] = session_id
+            
+            # Retrieve similar vectors from Qdrant
+            results = qdrant_service.find_similar_vectors(
+                query_vector=query_embedding,
+                filters=filters,
+                limit=limit,
+                score_threshold=min_similarity
             )
             
+            # Convert to MemoryVector objects
+            memories = [MemoryVector.from_qdrant_result(result) for result in results]
+            
+            # Update last_accessed for retrieved memories
+            for memory in memories:
+                qdrant_service.update_vector_metadata(
+                    memory_id=memory.memory_id,
+                    payload={'last_accessed': datetime.utcnow()}
+                )
+            
             logger.info(f"Memory retrieval task {self.request.id} completed successfully")
-            return result
+            return {'success': True, 'memories': [memory.to_dict() for memory in memories]}
     except Exception as e:
         logger.error(f"Error in memory retrieval task {self.request.id}: {str(e)}")
         import traceback
@@ -181,7 +208,6 @@ def generate_embedding_task(self, text):
     try:
         app = get_flask_app()
         with app.app_context():
-
             from app.services.embedding_service import EmbeddingService
             
             # Create embedding service instance
@@ -201,12 +227,17 @@ def generate_embedding_task(self, text):
 @celery.task(name='tasks.store_memory_task', bind=True)
 def store_memory_task(self, session_id, content, embedding, task_id, memory_type, 
                      character_id, user_id, importance, metadata):
-    """Store a memory with embedding asynchronously"""
+    """Store a memory with embedding asynchronously in Qdrant"""
     try:
         app = get_flask_app()
         with app.app_context():
-            from app.services.memory_service import MemoryService
             from celery.result import AsyncResult
+            
+            # Get required services
+            qdrant_service = get_qdrant_service()
+            if qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return {'success': False, 'error': 'Qdrant service not available'}
             
             # Wait for embedding result if a task ID was provided
             if embedding is None and task_id is not None:
@@ -218,8 +249,8 @@ def store_memory_task(self, session_id, content, embedding, task_id, memory_type
                 embedding_service = EmbeddingService()
                 embedding = embedding_service.generate_embedding(content)
             
-            # Store memory
-            result = MemoryService.store_memory(
+            # Create memory vector
+            memory = MemoryVector(
                 session_id=session_id,
                 content=content,
                 embedding=embedding,
@@ -230,8 +261,19 @@ def store_memory_task(self, session_id, content, embedding, task_id, memory_type
                 metadata=metadata or {}
             )
             
-            logger.info(f"Memory storage task {self.request.id} completed successfully")
-            return result
+            # Store in Qdrant
+            result = qdrant_service.store_vector(
+                memory_id=memory.memory_id,
+                embedding=embedding,
+                payload=memory.to_qdrant_payload()
+            )
+            
+            if result:
+                logger.info(f"Memory storage task {self.request.id} completed successfully")
+                return {'success': True, 'memory': memory.to_dict()}
+            else:
+                logger.error(f"Failed to store memory in Qdrant: {memory.memory_id}")
+                return {'success': False, 'error': 'Failed to store memory in Qdrant'}
     except Exception as e:
         logger.error(f"Error in memory storage task {self.request.id}: {str(e)}")
         import traceback
@@ -255,7 +297,6 @@ def retrieve_memories_task(self, current_message, session_id, character_id, max_
     try:
         app = get_flask_app()
         with app.app_context():
-
             from app.services.memory_service_enhanced import EnhancedMemoryService
             memory_service = EnhancedMemoryService()
             
@@ -275,6 +316,59 @@ def retrieve_memories_task(self, current_message, session_id, character_id, max_
         import traceback
         logger.error(traceback.format_exc())
         return {"success": False, "error": str(e), "memory_context": ""}
+
+@celery.task(name='tasks.promote_to_long_term_task', bind=True)
+def promote_to_long_term_task(self, memory_id):
+    """
+    Promote a short-term memory to long-term memory in Qdrant
     
-
-
+    Args:
+        memory_id (str): The ID of the memory to promote
+        
+    Returns:
+        dict: Result with success status
+    """
+    try:
+        app = get_flask_app()
+        with app.app_context():
+            # Get required services
+            qdrant_service = get_qdrant_service()
+            if qdrant_service is None:
+                logger.error("Qdrant service not available")
+                return {'success': False, 'error': 'Qdrant service not available'}
+                
+            # Get the memory from Qdrant
+            memory_data = qdrant_service.get_vector(memory_id)
+            if memory_data is None:
+                logger.error(f"Memory not found in Qdrant: {memory_id}")
+                return {'success': False, 'error': 'Memory not found in Qdrant'}
+                
+            # Convert to memory vector
+            memory = MemoryVector.from_qdrant_result(memory_data)
+            
+            # Check if it's a short-term memory
+            if memory.memory_type != 'short_term':
+                logger.warning(f"Memory {memory_id} is not a short-term memory")
+                return {'success': False, 'error': 'Memory is not a short-term memory'}
+                
+            # Update memory type
+            memory.memory_type = 'long_term'
+            
+            # Store back to Qdrant
+            result = qdrant_service.store_vector(
+                memory_id=memory.memory_id,
+                embedding=memory.embedding,
+                payload=memory.to_qdrant_payload()
+            )
+            
+            if result:
+                logger.info(f"Memory {memory_id} promoted to long-term successfully")
+                return {'success': True, 'message': 'Memory promoted to long-term successfully'}
+            else:
+                logger.error(f"Failed to promote memory {memory_id} to long-term")
+                return {'success': False, 'error': 'Failed to promote memory to long-term'}
+    except Exception as e:
+        logger.error(f"Error in promote_to_long_term_task {self.request.id}: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {'success': False, 'error': str(e)}

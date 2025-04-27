@@ -18,5 +18,4 @@ openai==1.3.5
 pymongo==4.5.0
 sentence-transformers==2.2.2
 PyYAML
-# For AI integration (when you're ready)
-# openai==0.27.0
+qdrant-clint==0.10.0

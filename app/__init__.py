@@ -52,6 +52,9 @@ def create_app(config_name='default'):
     app.register_blueprint(game_bp)  # No prefix to maintain compatibility with original URLs
     app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
     
+    from app.celery_config import celery
+    from app import tasks
+
     # Add a route for the root URL to maintain backward compatibility
     @app.route('/')
     def index():
