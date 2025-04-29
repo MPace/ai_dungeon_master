@@ -1,4 +1,4 @@
-# memory_interfaces.py
+# app/services/memory_interfaces.py
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Union
@@ -6,6 +6,7 @@ import logging
 
 from app.services.qdrant_memory_provider import QdrantMemoryProvider
 from app.models.memory_vector import MemoryVector
+from app.extensions import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -317,3 +318,264 @@ class SemanticMemoryInterface(BaseMemoryInterface):
         except Exception as e:
             logger.error(f"Error in SemanticMemoryInterface.delete: {e}")
             return False
+
+
+class WorkingMemoryInterface:
+    """
+    Interface for working memory (most recent conversation turns) stored in MongoDB
+    
+    This implementation follows the SRD specification for Working Memory:
+    - Stored as a list in the GameSession document
+    - Contains raw text of conversations with minimal metadata
+    - Simple append/trim lifecycle
+    """
+    
+    def __init__(self):
+        """Initialize working memory interface"""
+        pass
+    
+    def add_message(self, session_id: str, sender: str, message: str) -> Dict[str, Any]:
+        """
+        Add a message to the working memory (conversation history)
+        
+        Args:
+            session_id (str): Session ID
+            sender (str): Message sender ('player' or 'dm')
+            message (str): Message content
+            
+        Returns:
+            Dict[str, Any]: Result with success status and message
+        """
+        try:
+            # Get database connection
+            db = get_db()
+            if db is None:
+                logger.error("Database connection failed when adding message to working memory")
+                return {'success': False, 'error': 'Database connection error'}
+            
+            # Create message entry
+            message_entry = {
+                'sender': sender,
+                'message': message,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            
+            # Add to history in the session document
+            result = db.sessions.update_one(
+                {'session_id': session_id},
+                {
+                    '$push': {'history': message_entry},
+                    '$set': {'updated_at': datetime.utcnow()}
+                }
+            )
+            
+            if result.modified_count > 0:
+                # Ensure history doesn't exceed the configured limit
+                self._trim_history_if_needed(session_id)
+                logger.info(f"Added message to working memory for session {session_id}")
+                return {'success': True, 'message': 'Message added to working memory'}
+            else:
+                logger.warning(f"Session {session_id} not found, cannot add message")
+                return {'success': False, 'error': 'Session not found'}
+            
+        except Exception as e:
+            logger.error(f"Error adding message to working memory: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def _trim_history_if_needed(self, session_id: str, max_history: int = 20) -> bool:
+        """
+        Trim history if it exceeds the configured limit
+        
+        Args:
+            session_id (str): Session ID
+            max_history (int): Maximum number of messages to keep
+            
+        Returns:
+            bool: Success status
+        """
+        try:
+            # Get database connection
+            db = get_db()
+            if db is None:
+                logger.error("Database connection failed when trimming history")
+                return False
+            
+            # Get current history size
+            session = db.sessions.find_one(
+                {'session_id': session_id},
+                {'history': 1}
+            )
+            
+            if not session or 'history' not in session:
+                logger.warning(f"Session {session_id} not found or has no history")
+                return False
+            
+            history = session['history']
+            history_size = len(history)
+            
+            if history_size <= max_history:
+                # No trimming needed
+                return True
+            
+            # Calculate how many messages to remove
+            remove_count = history_size - max_history
+            
+            # Remove oldest messages
+            result = db.sessions.update_one(
+                {'session_id': session_id},
+                {'$pop': {'history': -1}}  # -1 pops from the beginning (oldest)
+            )
+            
+            # Repeat if we need to remove more than one
+            for _ in range(remove_count - 1):
+                db.sessions.update_one(
+                    {'session_id': session_id},
+                    {'$pop': {'history': -1}}
+                )
+            
+            logger.info(f"Trimmed {remove_count} old messages from session {session_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error trimming history: {e}")
+            return False
+    
+    def get_history(self, session_id: str, limit: int = 10) -> Dict[str, Any]:
+        """
+        Get recent history from working memory
+        
+        Args:
+            session_id (str): Session ID
+            limit (int): Maximum number of messages to retrieve
+            
+        Returns:
+            Dict[str, Any]: Result with success status and history
+        """
+        try:
+            # Get database connection
+            db = get_db()
+            if db is None:
+                logger.error("Database connection failed when getting history")
+                return {'success': False, 'error': 'Database connection error'}
+            
+            # Get session document
+            session = db.sessions.find_one(
+                {'session_id': session_id},
+                {'history': {'$slice': -limit}}  # Get the last 'limit' elements
+            )
+            
+            if not session:
+                logger.warning(f"Session {session_id} not found")
+                return {'success': False, 'error': 'Session not found'}
+            
+            history = session.get('history', [])
+            
+            return {'success': True, 'history': history}
+            
+        except Exception as e:
+            logger.error(f"Error getting history: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def clear_history(self, session_id: str) -> Dict[str, Any]:
+        """
+        Clear the working memory history
+        
+        Args:
+            session_id (str): Session ID
+            
+        Returns:
+            Dict[str, Any]: Result with success status
+        """
+        try:
+            # Get database connection
+            db = get_db()
+            if db is None:
+                logger.error("Database connection failed when clearing history")
+                return {'success': False, 'error': 'Database connection error'}
+            
+            # Clear history in session document
+            result = db.sessions.update_one(
+                {'session_id': session_id},
+                {'$set': {'history': [], 'updated_at': datetime.utcnow()}}
+            )
+            
+            if result.modified_count > 0:
+                logger.info(f"Cleared history for session {session_id}")
+                return {'success': True, 'message': 'History cleared successfully'}
+            else:
+                logger.warning(f"Session {session_id} not found, cannot clear history")
+                return {'success': False, 'error': 'Session not found'}
+            
+        except Exception as e:
+            logger.error(f"Error clearing history: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def promote_to_episodic(self, session_id: str, index: int, significance: str = '') -> Dict[str, Any]:
+        """
+        Promote a working memory message to an episodic memory
+        
+        Args:
+            session_id (str): Session ID
+            index (int): Index of the message in history to promote
+            significance (str, optional): Why this message is significant
+            
+        Returns:
+            Dict[str, Any]: Result with success status and created episodic memory
+        """
+        try:
+            # Get database connection
+            db = get_db()
+            if db is None:
+                logger.error("Database connection failed when promoting to episodic memory")
+                return {'success': False, 'error': 'Database connection error'}
+            
+            # Get the session document
+            session = db.sessions.find_one(
+                {'session_id': session_id},
+                {'history': 1, 'character_id': 1, 'user_id': 1}
+            )
+            
+            if not session:
+                logger.warning(f"Session {session_id} not found")
+                return {'success': False, 'error': 'Session not found'}
+            
+            history = session.get('history', [])
+            
+            # Check if index is valid
+            if index < 0 or index >= len(history):
+                logger.warning(f"Invalid index {index} for history of length {len(history)}")
+                return {'success': False, 'error': 'Invalid message index'}
+            
+            # Get the message to promote
+            message_entry = history[index]
+            
+            # Create an episodic memory from this message
+            from app.services.memory_service_enhanced import EnhancedMemoryService
+            
+            memory_service = EnhancedMemoryService()
+            
+            result = memory_service.store_memory_with_text(
+                content=message_entry['message'],
+                memory_type='episodic_event',
+                session_id=session_id,
+                character_id=session.get('character_id'),
+                user_id=session.get('user_id'),
+                importance=8,  # High importance for promoted memories
+                metadata={
+                    'sender': message_entry.get('sender'),
+                    'timestamp': message_entry.get('timestamp'),
+                    'significance': significance,
+                    'promoted_from_working_memory': True
+                }
+            )
+            
+            if result.get('success', False):
+                logger.info(f"Promoted working memory to episodic for session {session_id}")
+                return {'success': True, 'memory': result.get('memory')}
+            else:
+                logger.error(f"Failed to promote working memory: {result.get('error')}")
+                return {'success': False, 'error': result.get('error')}
+            
+        except Exception as e:
+            logger.error(f"Error promoting working memory to episodic: {e}")
+            return {'success': False, 'error': str(e)}
