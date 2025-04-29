@@ -62,7 +62,7 @@ class QdrantMemoryProvider:
     def retrieve_similar_memories(self, query_embedding: List[float], 
                                 session_id: Optional[str] = None,
                                 character_id: Optional[str] = None,
-                                memory_type: Optional[str] = None,
+                                memory_type: Optional[Union[str, List[str]]] = None,
                                 limit: int = 5,
                                 min_similarity: float = 0.7) -> List[MemoryVector]:
         """
@@ -72,7 +72,7 @@ class QdrantMemoryProvider:
             query_embedding (List[float]): Query vector embedding
             session_id (str, optional): Filter by session ID
             character_id (str, optional): Filter by character ID
-            memory_type (str, optional): Filter by memory type
+            memory_type (str or List[str], optional): Filter by memory type(s)
             limit (int): Maximum number of results
             min_similarity (float): Minimum similarity threshold
             
@@ -233,15 +233,17 @@ class QdrantMemoryProvider:
             return False
     
     def count_memories(self, session_id: Optional[str] = None, 
-                     memory_type: Optional[str] = None,
-                     character_id: Optional[str] = None) -> int:
+                     memory_type: Optional[Union[str, List[str]]] = None,
+                     character_id: Optional[str] = None,
+                     is_summarized: Optional[bool] = None) -> int:
         """
         Count memories matching the filters
         
         Args:
             session_id (str, optional): Filter by session ID
-            memory_type (str, optional): Filter by memory type
+            memory_type (str or List[str], optional): Filter by memory type(s)
             character_id (str, optional): Filter by character ID
+            is_summarized (bool, optional): Filter by summarization status
             
         Returns:
             int: Count of matching memories
@@ -261,6 +263,9 @@ class QdrantMemoryProvider:
                 
             if character_id:
                 filters['character_id'] = character_id
+                
+            if is_summarized is not None:
+                filters['is_summarized'] = is_summarized
             
             # Count vectors in Qdrant
             return self.qdrant_service.count_vectors(filters=filters)
@@ -268,3 +273,123 @@ class QdrantMemoryProvider:
         except Exception as e:
             logger.error(f"Error counting memories in Qdrant: {e}")
             return 0
+            
+    def retrieve_episodic_memories(self, session_id: str, limit: int = 10) -> List[MemoryVector]:
+        """
+        Retrieve episodic memories for a session
+        
+        Args:
+            session_id (str): Session ID
+            limit (int): Maximum number of memories to retrieve
+            
+        Returns:
+            List[MemoryVector]: List of episodic memories
+        """
+        if self.qdrant_service is None:
+            logger.error("Qdrant service not available, cannot retrieve episodic memories")
+            return []
+        
+        try:
+            # Get memories of type 'episodic_event'
+            results = self.qdrant_service.find_memories_by_type(
+                memory_type='episodic_event',
+                session_id=session_id,
+                limit=limit
+            )
+            
+            # Convert to MemoryVector objects
+            memories = [MemoryVector.from_qdrant_result(result) for result in results]
+            return memories
+            
+        except Exception as e:
+            logger.error(f"Error retrieving episodic memories: {e}")
+            return []
+    
+    def retrieve_summarized_memories(self, session_id: str, limit: int = 5) -> List[MemoryVector]:
+        """
+        Retrieve summarized memories for a session
+        
+        Args:
+            session_id (str): Session ID
+            limit (int): Maximum number of memories to retrieve
+            
+        Returns:
+            List[MemoryVector]: List of summary memories
+        """
+        if self.qdrant_service is None:
+            logger.error("Qdrant service not available, cannot retrieve summarized memories")
+            return []
+        
+        try:
+            # Get memories of type 'summary'
+            results = self.qdrant_service.find_memories_by_type(
+                memory_type='summary',
+                session_id=session_id,
+                limit=limit
+            )
+            
+            # Convert to MemoryVector objects
+            memories = [MemoryVector.from_qdrant_result(result) for result in results]
+            return memories
+            
+        except Exception as e:
+            logger.error(f"Error retrieving summarized memories: {e}")
+            return []
+    
+    def retrieve_entity_facts(self, entity_name: str, limit: int = 5) -> List[MemoryVector]:
+        """
+        Retrieve facts about a specific entity
+        
+        Args:
+            entity_name (str): Name of the entity
+            limit (int): Maximum number of facts to retrieve
+            
+        Returns:
+            List[MemoryVector]: List of entity facts
+        """
+        if self.qdrant_service is None:
+            logger.error("Qdrant service not available, cannot retrieve entity facts")
+            return []
+        
+        try:
+            # Get entity facts (type 'entity_fact') referencing this entity
+            results = self.qdrant_service.find_memories_with_entity(
+                entity_name=entity_name,
+                limit=limit
+            )
+            
+            # Convert to MemoryVector objects
+            memories = [MemoryVector.from_qdrant_result(result) for result in results]
+            return memories
+            
+        except Exception as e:
+            logger.error(f"Error retrieving entity facts: {e}")
+            return []
+    
+    def mark_memory_as_summarized(self, memory_id: str, summary_id: str) -> bool:
+        """
+        Mark a memory as having been summarized
+        
+        Args:
+            memory_id (str): ID of the memory to mark
+            summary_id (str): ID of the summary that includes this memory
+            
+        Returns:
+            bool: Success status
+        """
+        if self.qdrant_service is None:
+            logger.error("Qdrant service not available, cannot mark memory as summarized")
+            return False
+        
+        try:
+            # Update memory metadata in Qdrant
+            result = self.qdrant_service.update_vector_metadata(
+                memory_id=memory_id,
+                payload={'is_summarized': True, 'summary_id': summary_id}
+            )
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error marking memory as summarized: {e}")
+            return False

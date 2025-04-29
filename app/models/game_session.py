@@ -1,5 +1,5 @@
 """
-Enhanced GameSession model with memory integration
+Enhanced GameSession model as defined in the SRD
 """
 from datetime import datetime
 import uuid
@@ -7,12 +7,13 @@ from bson.objectid import ObjectId
 from typing import List, Dict, Any, Optional
 
 class GameSession:
-    """GameSession model representing a game session with an AI Dungeon Master and memory tracking"""
+    """GameSession model representing a game session with an AI Dungeon Master"""
     
     def __init__(self, session_id=None, character_id=None, user_id=None,
                  history=None, game_state="intro", created_at=None, 
-                 updated_at=None, pinned_memories=None, session_summary=None,
-                 important_entities=None, player_decisions=None, _id=None):
+                 updated_at=None, _id=None, world_id=None, 
+                 campaign_module_id=None, important_entities=None,
+                 tracked_narrative_state=None):
         self.session_id = session_id or str(uuid.uuid4())
         self.character_id = character_id
         self.user_id = user_id
@@ -20,13 +21,16 @@ class GameSession:
         self.game_state = game_state
         self.created_at = created_at or datetime.utcnow()
         self.updated_at = updated_at or datetime.utcnow()
-        
-        # Memory-related additions
-        self.pinned_memories = pinned_memories or []  # List of pinned memory IDs
-        self.session_summary = session_summary or ""  # Latest session summary
-        self.important_entities = important_entities or {}  # Dict of entity_name: {type, description, importance}
-        self.player_decisions = player_decisions or []  # List of important player decisions
         self._id = _id
+        self.world_id = world_id
+        self.campaign_module_id = campaign_module_id
+        self.important_entities = important_entities or {}  # Dict mapping entity names/IDs to metadata
+        self.tracked_narrative_state = tracked_narrative_state or {
+            'quest_status': {},  # quest_id: current_stage_id / 'completed' / 'failed'
+            'npc_dispositions': {},  # npc_id: current_disposition_level / 'dead'
+            'location_states': {},  # location_id: status / flags
+            'global_flags': []  # Campaign-wide flags that have been set
+        }
     
     @classmethod
     def from_dict(cls, data):
@@ -47,11 +51,11 @@ class GameSession:
             game_state=data.get('game_state', 'intro'),
             created_at=data.get('created_at'),
             updated_at=data.get('updated_at'),
-            pinned_memories=data.get('pinned_memories', []),
-            session_summary=data.get('session_summary', ''),
+            _id=_id,
+            world_id=data.get('world_id'),
+            campaign_module_id=data.get('campaign_module_id'),
             important_entities=data.get('important_entities', {}),
-            player_decisions=data.get('player_decisions', []),
-            _id=_id
+            tracked_narrative_state=data.get('tracked_narrative_state')
         )
     
     def to_dict(self):
@@ -64,10 +68,10 @@ class GameSession:
             'game_state': self.game_state,
             'created_at': self.created_at,
             'updated_at': self.updated_at,
-            'pinned_memories': self.pinned_memories,
-            'session_summary': self.session_summary,
+            'world_id': self.world_id,
+            'campaign_module_id': self.campaign_module_id,
             'important_entities': self.important_entities,
-            'player_decisions': self.player_decisions
+            'tracked_narrative_state': self.tracked_narrative_state
         }
     
     def add_message(self, sender, message):
@@ -77,73 +81,4 @@ class GameSession:
             'message': message,
             'timestamp': datetime.utcnow().isoformat()
         })
-        self.updated_at = datetime.utcnow()
-    
-    def pin_memory(self, memory_id, importance=None, note=None):
-        """
-        Pin a memory to the session for quick reference
-        
-        Args:
-            memory_id (str): The ID of the memory to pin
-            importance (int, optional): Optional importance override (1-10)
-            note (str, optional): Optional note about why this memory is pinned
-        """
-        # Check if already pinned
-        for pinned in self.pinned_memories:
-            if pinned.get('memory_id') == memory_id:
-                # Update if needed
-                if importance is not None:
-                    pinned['importance'] = importance
-                if note is not None:
-                    pinned['note'] = note
-                return
-        
-        # Add new pinned memory
-        self.pinned_memories.append({
-            'memory_id': memory_id,
-            'pinned_at': datetime.utcnow().isoformat(),
-            'importance': importance,
-            'note': note
-        })
-    
-    def unpin_memory(self, memory_id):
-        """Unpin a memory from the session"""
-        self.pinned_memories = [p for p in self.pinned_memories if p.get('memory_id') != memory_id]
-    
-    def add_important_entity(self, name, entity_type, description, importance=5):
-        """
-        Add or update an important entity in the session
-        
-        Args:
-            name (str): Entity name
-            entity_type (str): Type of entity (NPC, location, item, etc.)
-            description (str): Brief description
-            importance (int): Importance score (1-10)
-        """
-        self.important_entities[name] = {
-            'type': entity_type,
-            'description': description,
-            'importance': importance,
-            'updated_at': datetime.utcnow().isoformat()
-        }
-    
-    def record_player_decision(self, decision, context=None, impact=None):
-        """
-        Record an important player decision
-        
-        Args:
-            decision (str): The decision made
-            context (str, optional): Context of the decision
-            impact (str, optional): Potential impact of the decision
-        """
-        self.player_decisions.append({
-            'decision': decision,
-            'context': context,
-            'impact': impact,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-    
-    def update_session_summary(self, summary):
-        """Update the session summary"""
-        self.session_summary = summary
         self.updated_at = datetime.utcnow()

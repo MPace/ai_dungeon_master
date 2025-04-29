@@ -49,16 +49,22 @@ allowed_backgrounds:
   - sage
   - soldier
 
-# --- Optional World-Specific Rules/Lore ---
-# Add any specific flavor or rule adjustments for this world if needed
-# Example:
-# world_rules:
-#   - "Magic is common but often regulated in large cities."
-#   - "Certain deities have strong regional influence (e.g., Tempus in the North)."
+vibe: "High fantasy world with diverse cultures, ancient magic, and epic adventures"
 
-# --- Allowed Campaigns ---
-# You might list IDs of campaigns compatible with this world here,
-# or have the /api/campaigns/<world_id> endpoint filter them.
-# allowed_campaigns:
-#   - lost_mine_intro # Example ID for a pre-made campaign summary YAML
-#   - dragon_heist_prelude # Example ID
+forbidden_elements:
+  - "guns"
+  - "modern technology"
+  - "spaceships"
+  - "robots"
+  - "computers"
+
+common_elements:
+  - "magic"
+  - "dragons"
+  - "elves"
+  - "dwarves"
+  - "swords"
+  - "castles"
+  - "gods and goddesses"
+
+tone_guidelines: "The Forgotten Realms is a rich, established setting with a serious tone but room for humor. Descriptions should be vivid and emphasize the magical nature of the world. NPCs should have distinct personalities and cultural backgrounds based on their region."

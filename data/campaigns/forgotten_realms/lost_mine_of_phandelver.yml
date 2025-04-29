@@ -27,7 +27,111 @@ estimated_length: "Short (Levels 1-5)" # Typically runs characters from level 1 
 
 leveling: "Milestone" # Standard leveling method for LMoP
 
-# Optional: Add specific starting hooks or adjustments if needed
-# starting_hooks:
-#   - "Meet Gundren Rockseeker in Neverwinter..."
-#   - "Ambushed on the Triboar Trail..."
+# Basic Campaign Information
+module_id: "lost_mine_phandelver"
+
+starting_info: "A group of adventurers are hired by a dwarf named Gundren Rockseeker to escort a wagon of supplies to the town of Phandalin."
+
+# Locations
+locations:
+  phandalin:
+    name: "Phandalin"
+    description: "A frontier settlement built on the ruins of a much older town."
+    connections: ["neverwinter", "cragmaw_hideout"]
+    npcs_present: ["sildar_hallwinter", "toblen_stonehill", "elmar_barthen"]
+    events:
+      - trigger_type: "enter_location"
+        conditions: {}
+        outcomes:
+          - action_type: "update_quest_state"
+            parameters:
+              quest_id: "escort_supplies"
+              stage_id: "arrived_at_phandalin"
+
+  cragmaw_hideout:
+    name: "Cragmaw Hideout"
+    description: "A cave that serves as a hideout for the Cragmaw goblins."
+    connections: ["phandalin", "cragmaw_castle"]
+    npcs_present: ["yeemik", "klarg"]
+    required_state: ["found_cragmaw_map"]
+
+# NPCs
+npcs:
+  sildar_hallwinter:
+    name: "Sildar Hallwinter"
+    description: "A human warrior and member of the Lords' Alliance."
+    backstory: "Sildar is an agent of the Lords' Alliance who was traveling with Gundren when they were ambushed."
+    knowledge:
+      gundren_location: "Gundren was taken to Cragmaw Castle"
+      black_spider: "The Black Spider is behind the attack on Gundren"
+    quests_offered: ["rescue_gundren"]
+    initial_disposition: "friendly"
+
+  yeemik:
+    name: "Yeemik"
+    description: "A goblin second-in-command at the Cragmaw Hideout."
+    dialogue_triggers:
+      - trigger_type: "speak_to_npc"
+        conditions:
+          keywords: ["sildar", "prisoner", "trade", "deal"]
+        outcomes:
+          - action_type: "update_quest_state"
+            parameters:
+              quest_id: "rescue_sildar"
+              stage_id: "negotiating_release"
+
+# Quests
+quests:
+  escort_supplies:
+    name: "Escort Supplies to Phandalin"
+    description: "Deliver the wagon of supplies to Barthen's Provisions in Phandalin."
+    stages:
+      - stage_id: "on_the_road"
+        objective: "Travel to Phandalin with the wagon."
+        trigger_conditions:
+          - trigger_type: "enter_location"
+            location_id: "phandalin"
+      - stage_id: "arrived_at_phandalin"
+        objective: "Deliver the supplies to Barthen's Provisions."
+        trigger_conditions:
+          - trigger_type: "speak_to_npc"
+            npc_id: "elmar_barthen"
+            keywords: ["supplies", "deliver", "wagon"]
+    rewards:
+      gold: 10
+      items: ["potion_of_healing"]
+
+  rescue_sildar:
+    name: "Rescue Sildar Hallwinter"
+    description: "Rescue Sildar from the Cragmaw Hideout."
+    stages:
+      - stage_id: "locate_hideout"
+        objective: "Find the location of the Cragmaw Hideout."
+      - stage_id: "negotiating_release"
+        objective: "Negotiate with Yeemik for Sildar's release."
+      - stage_id: "sildar_rescued"
+        objective: "Escort Sildar safely back to Phandalin."
+    initiating_npc: "goblin_ambush"
+    prerequisites: ["escort_supplies"]
+
+# Events
+events:
+  goblin_ambush:
+    trigger_type: "travel_to_location"
+    conditions:
+      from_location: "neverwinter"
+      to_location: "phandalin"
+      first_time: true
+    outcomes:
+      - action_type: "combat_encounter"
+        parameters:
+          enemies: ["goblin", "goblin", "goblin", "goblin"]
+          difficulty: "easy"
+      - action_type: "update_quest_state"
+        parameters:
+          quest_id: "rescue_sildar"
+          stage_id: "locate_hideout"
+      - action_type: "add_global_flag"
+        parameters:
+          flag: "goblins_attacked"
+

@@ -101,7 +101,11 @@ class QdrantService:
                 ("user_id", models.PayloadSchemaType.KEYWORD),
                 ("memory_id", models.PayloadSchemaType.KEYWORD),
                 ("created_at", models.PayloadSchemaType.DATETIME),
-                ("importance", models.PayloadSchemaType.INTEGER)
+                ("importance", models.PayloadSchemaType.INTEGER),
+                # New SRD-related indexes
+                ("is_summarized", models.PayloadSchemaType.BOOL),
+                ("summary_id", models.PayloadSchemaType.KEYWORD),
+                # Entity references would be handled through payload search, not direct indexing
             ]
             
             for field_name, field_type in indexes:
@@ -152,7 +156,7 @@ class QdrantService:
                 ]
             )
             
-            logger.info(f"Vector stored with ID: {memory_id}")
+            logger.info(f"Vector stored with ID: {memory_id}, type: {payload.get('memory_type', 'unknown')}")
             return True
             
         except Exception as e:
@@ -192,17 +196,57 @@ class QdrantService:
                             )
                         )
                     elif key == 'memory_type' and value:
-                        filter_conditions.append(
-                            models.FieldCondition(
-                                key="memory_type",
-                                match=models.MatchValue(value=value)
+                        # Handle multiple memory types
+                        if isinstance(value, list):
+                            # If a list of memory types is provided, match any of them
+                            should_conditions = [
+                                models.FieldCondition(
+                                    key="memory_type",
+                                    match=models.MatchValue(value=memory_type)
+                                )
+                                for memory_type in value
+                            ]
+                            filter_conditions.append(
+                                models.Filter(should=should_conditions, should_match=1)
                             )
-                        )
+                        else:
+                            # Single memory type
+                            filter_conditions.append(
+                                models.FieldCondition(
+                                    key="memory_type",
+                                    match=models.MatchValue(value=value)
+                                )
+                            )
                     elif key == 'character_id' and value:
                         filter_conditions.append(
                             models.FieldCondition(
                                 key="character_id",
                                 match=models.MatchValue(value=value)
+                            )
+                        )
+                    elif key == 'is_summarized' and value is not None:
+                        filter_conditions.append(
+                            models.FieldCondition(
+                                key="is_summarized",
+                                match=models.MatchValue(value=value)
+                            )
+                        )
+                    elif key == 'entity_references' and value:
+                        # Search in entity references array - more complex
+                        # This is a basic implementation - may need refinement
+                        filter_conditions.append(
+                            models.FieldCondition(
+                                key="entity_references.entity_name",
+                                match=models.MatchValue(value=value)
+                            )
+                        )
+                    elif key == 'importance_min' and value is not None:
+                        filter_conditions.append(
+                            models.FieldCondition(
+                                key="importance",
+                                range=models.Range(
+                                    gte=value
+                                )
                             )
                         )
                 
@@ -227,6 +271,9 @@ class QdrantService:
                 result = scored_point.payload.copy()
                 result['similarity'] = scored_point.score
                 result['memory_id'] = scored_point.id
+                
+                # Add the embedding vector for reconstruction
+                result['embedding'] = scored_point.vector
                 
                 # Convert ISO datetime strings back to appropriate format if needed
                 if 'created_at' in result and isinstance(result['created_at'], str):
@@ -395,12 +442,25 @@ class QdrantService:
                 
                 for key, value in filters.items():
                     if value is not None:
-                        filter_conditions.append(
-                            models.FieldCondition(
-                                key=key,
-                                match=models.MatchValue(value=value)
+                        # Special handling for memory_type if it's a list
+                        if key == 'memory_type' and isinstance(value, list):
+                            should_conditions = [
+                                models.FieldCondition(
+                                    key="memory_type",
+                                    match=models.MatchValue(value=memory_type)
+                                )
+                                for memory_type in value
+                            ]
+                            filter_conditions.append(
+                                models.Filter(should=should_conditions, should_match=1)
                             )
-                        )
+                        else:
+                            filter_conditions.append(
+                                models.FieldCondition(
+                                    key=key,
+                                    match=models.MatchValue(value=value)
+                                )
+                            )
                 
                 if filter_conditions:
                     qdrant_filter = models.Filter(
@@ -432,3 +492,123 @@ class QdrantService:
             
         # Re-initialize with updated vector size
         self._ensure_collection_exists()
+    
+    def find_memories_by_type(self, memory_type, session_id=None, limit=10):
+        """
+        Find memories by type
+        
+        Args:
+            memory_type (str or List[str]): Memory type(s) to search for
+            session_id (str, optional): Session ID to filter by
+            limit (int): Maximum number of results
+            
+        Returns:
+            List[Dict]: List of memory vectors
+        """
+        if self.client is None:
+            logger.error("Qdrant client not initialized")
+            return []
+            
+        try:
+            # Build filter
+            filters = {}
+            filters['memory_type'] = memory_type
+            if session_id:
+                filters['session_id'] = session_id
+                
+            # Create dummy vector for search (we'll sort by created_at instead of similarity)
+            dummy_vector = [0.0] * self.vector_size
+            
+            # Use find_similar_vectors with score_threshold=0 for non-similarity-based retrieval
+            results = self.find_similar_vectors(
+                query_vector=dummy_vector,
+                filters=filters,
+                limit=limit,
+                score_threshold=0.0
+            )
+            
+            # Sort by created_at (most recent first)
+            results.sort(key=lambda x: x.get('created_at', datetime.min), reverse=True)
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error finding memories by type: {e}")
+            return []
+    
+    def find_memories_with_entity(self, entity_name, session_id=None, limit=10):
+        """
+        Find memories that reference a specific entity
+        
+        Args:
+            entity_name (str): Entity name to search for
+            session_id (str, optional): Session ID to filter by
+            limit (int): Maximum number of results
+            
+        Returns:
+            List[Dict]: List of memory vectors
+        """
+        if self.client is None:
+            logger.error("Qdrant client not initialized")
+            return []
+            
+        try:
+            # Build filter conditions
+            filter_conditions = []
+            
+            # Entity reference condition - search within entity_references array
+            filter_conditions.append(
+                models.FieldCondition(
+                    key="entity_references.entity_name",
+                    match=models.MatchValue(value=entity_name)
+                )
+            )
+            
+            # Add session filter if provided
+            if session_id:
+                filter_conditions.append(
+                    models.FieldCondition(
+                        key="session_id",
+                        match=models.MatchValue(value=session_id)
+                    )
+                )
+            
+            # Create filter
+            qdrant_filter = models.Filter(must=filter_conditions)
+            
+            # Create dummy vector for search
+            dummy_vector = [0.0] * self.vector_size
+            
+            # Scroll through results to get all matches
+            results = self.client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter=qdrant_filter,
+                limit=limit,
+                with_payload=True,
+                with_vectors=True
+            )[0]
+            
+            # Format results
+            formatted_results = []
+            for point in results:
+                result = point.payload.copy()
+                result['memory_id'] = point.id
+                result['embedding'] = point.vector
+                
+                # Convert ISO datetime strings back to datetime objects
+                if 'created_at' in result and isinstance(result['created_at'], str):
+                    try:
+                        result['created_at'] = datetime.fromisoformat(result['created_at'])
+                    except ValueError:
+                        pass
+                
+                formatted_results.append(result)
+            
+            # Sort by created_at (most recent first)
+            formatted_results.sort(key=lambda x: x.get('created_at', datetime.min), reverse=True)
+            
+            return formatted_results
+            
+        except Exception as e:
+            logger.error(f"Error finding memories with entity: {e}")
+            return []
