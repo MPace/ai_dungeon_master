@@ -1,0 +1,467 @@
+# app/langgraph_core/nodes/narrative_node.py
+"""
+Narrative Update Node for LangGraph
+
+This node handles state changes resulting from validated player actions
+and checks for narrative triggers based on the new state.
+"""
+import logging
+from typing import Dict, Any, List, Optional, Tuple
+from datetime import datetime, timedelta
+
+from app.langgraph_core.state import AIGameState
+from app.langgraph_core.tools.narrative_tools import (
+    NarrativeTriggerEvaluatorTool,
+    AdvanceTimeTool,
+    CalculateTravelTimeTool,
+    UpdateQuestStatusTool,
+    SetGlobalFlagTool,
+    SetAreaFlagTool
+)
+
+logger = logging.getLogger(__name__)
+
+class NarrativeNode:
+    """Node for updating narrative state in the LangGraph"""
+    
+    def __init__(self):
+        """Initialize narrative node with narrative tools"""
+        self.trigger_evaluator = NarrativeTriggerEvaluatorTool()
+        self.advance_time_tool = AdvanceTimeTool()
+        self.travel_time_calculator = CalculateTravelTimeTool()
+        self.quest_updater = UpdateQuestStatusTool()
+        self.global_flag_setter = SetGlobalFlagTool()
+        self.area_flag_setter = SetAreaFlagTool()
+    
+    def __call__(self, state: AIGameState) -> AIGameState:
+        """
+        Update narrative state based on player action and check for triggers
+        
+        Args:
+            state: Current game state after validation
+            
+        Returns:
+            Updated state with narrative changes
+        """
+        try:
+            # Extract player intent and validation result from state
+            intent_data = state.get("intent_data", {})
+            validation_result = state.get("validation_result", {})
+            
+            if not validation_result.get("status", False):
+                logger.warning("Skipping narrative update due to failed validation")
+                return state
+            
+            # Extract relevant data
+            intent = intent_data.get("intent", "")
+            slots = intent_data.get("slots", {})
+            
+            # Handle game state transitions based on player actions
+            self._handle_game_state_transitions(state, intent, slots)
+            
+            # Apply direct state changes based on intent
+            self._apply_direct_state_changes(state, intent, slots, validation_result)
+            
+            # Handle time advancement for actions that involve movement or time
+            if intent in ["explore", "rest"] or self._involves_movement(intent, slots):
+                self._handle_time_advancement(state, intent, slots)
+            
+            # Check for narrative triggers based on the new state
+            self._evaluate_narrative_triggers(state)
+            
+            # Apply default time advancement if no specific time-advancing action
+            if intent not in ["rest", "explore"] and not self._involves_movement(intent, slots):
+                # Add a small time advancement (e.g., 5-10 minutes) for most actions
+                self._apply_default_time_advancement(state)
+            
+            return state
+            
+        except Exception as e:
+            logger.error(f"Error in narrative node: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return state
+    
+    def _handle_game_state_transitions(self, state: AIGameState, 
+                                     intent: str, slots: Dict[str, Any]) -> None:
+        """
+        Handle game state transitions based on player actions
+        
+        Args:
+            state: Current game state
+            intent: Player's intent
+            slots: Intent slots
+        """
+        current_state = state.get("game_state", "exploration")
+        new_state = current_state
+        
+        # Store previous state for transition detection
+        state["previous_game_state"] = current_state
+        
+        # Handle transitions based on current state and intent
+        if current_state != "combat":
+            # Check if action initiates combat
+            if intent in ["weapon_attack", "cast_spell"]:
+                # Check if it's offensive
+                if self._is_offensive_action(intent, slots):
+                    new_state = "combat"
+                    logger.info(f"Transitioning to combat state due to offensive action: {intent}")
+        
+        # Rest transitions
+        if intent == "rest":
+            # Resting is a temporary state that reverts back to exploration
+            new_state = "resting"
+            logger.info("Transitioning to resting state")
+        
+        # Social interaction transitions
+        if intent == "action" and current_state != "social":
+            action = slots.get("action", "").lower()
+            if action in ["persuade", "intimidate", "deceive", "talk", "speak"]:
+                # Check if there's an NPC target
+                if self._has_npc_target(state):
+                    new_state = "social"
+                    logger.info(f"Transitioning to social state due to social action: {action}")
+        
+        # Exploration transitions
+        if intent == "explore" and current_state not in ["combat", "resting"]:
+            new_state = "exploration"
+            logger.info("Transitioning to exploration state")
+        
+        # Escape/flee transitions
+        if intent == "action" and slots.get("action", "").lower() in ["flee", "escape", "run"]:
+            if current_state == "combat":
+                # Fleeing from combat typically returns to exploration
+                new_state = "exploration"
+                logger.info("Transitioning from combat to exploration due to flee action")
+            elif current_state == "social":
+                # Leaving a conversation returns to exploration
+                new_state = "exploration"
+                logger.info("Transitioning from social to exploration due to exit action")
+        
+        # Update game state if changed
+        if new_state != current_state:
+            state["game_state"] = new_state
+            logger.info(f"Game state transitioned from {current_state} to {new_state}")
+    
+    def _is_offensive_action(self, intent: str, slots: Dict[str, Any]) -> bool:
+        """
+        Check if the action is offensive (likely to start combat)
+        
+        Args:
+            intent: Player's intent
+            slots: Intent slots
+            
+        Returns:
+            bool: True if action is offensive
+        """
+        if intent == "weapon_attack":
+            return True
+        
+        if intent == "cast_spell":
+            # Check if spell is offensive
+            spell_name = slots.get("spell_name", "").lower()
+            # Common offensive spell keywords
+            offensive_keywords = [
+                "bolt", "blast", "missile", "arrow", "fire", "ice", "lightning",
+                "thunder", "acid", "poison", "necrotic", "ray", "strike", 
+                "smite", "attack", "damage", "wound", "harm"
+            ]
+            
+            return any(keyword in spell_name for keyword in offensive_keywords)
+        
+        return False
+    
+    def _has_npc_target(self, state: AIGameState) -> bool:
+        """
+        Check if there's an NPC target for social interaction
+        
+        Args:
+            state: Current game state
+            
+        Returns:
+            bool: True if NPC target exists
+        """
+        # Check player input for NPC names/references
+        player_input = state.get("player_input", "").lower()
+        
+        # Check if current location has NPCs
+        current_location = state.get("current_location_id")
+        if not current_location:
+            return False
+        
+        # Get campaign module to check for NPCs
+        campaign_module_id = state.get("campaign_module_id")
+        if not campaign_module_id:
+            return False
+        
+        from app.models.campaign_module import CampaignModule
+        campaign_module = CampaignModule.load(campaign_module_id)
+        
+        if campaign_module and current_location in campaign_module.locations:
+            location = campaign_module.locations[current_location]
+            npcs_present = location.get("npcs_present", [])
+            
+            # Check if any NPC names are mentioned in player input
+            for npc_id in npcs_present:
+                npc = campaign_module.get_npc(npc_id)
+                if npc and "name" in npc:
+                    if npc["name"].lower() in player_input:
+                        return True
+        
+        # Check for general social keywords that indicate NPC interaction
+        social_keywords = ["talk to", "speak with", "ask", "tell", "say to", "question"]
+        return any(keyword in player_input for keyword in social_keywords)
+    
+    def _apply_direct_state_changes(self, state: AIGameState, 
+                                 intent: str, slots: Dict[str, Any],
+                                 validation_result: Dict[str, Any]) -> None:
+        """
+        Apply direct state changes resulting from validated player actions
+        
+        Args:
+            state: Current game state
+            intent: Player's intent
+            slots: Intent slots
+            validation_result: Validation result with details
+        """
+        # Get narrative state from the state object
+        narrative_state = state.get("tracked_narrative_state", {})
+        
+        # Handle specific intents
+        if intent == "manage_item":
+            action_type = slots.get("action_type", "")
+            item_name = slots.get("item_name", "")
+            details = validation_result.get("details", {})
+            
+            if action_type == "take":
+                # Item acquisition would be handled by the mechanics node
+                # Here we just set a flag that an item was taken
+                if "global_flags" not in narrative_state:
+                    narrative_state["global_flags"] = []
+                
+                item_taken_flag = f"item_taken_{item_name.lower().replace(' ', '_')}"
+                if item_taken_flag not in narrative_state["global_flags"]:
+                    narrative_state["global_flags"].append(item_taken_flag)
+                    
+            # Other item actions are primarily handled by the mechanics node
+        
+        elif intent == "explore":
+            # Record exploration in the narrative state
+            sensory_type = slots.get("sensory_type", "visual")
+            location_id = state.get("current_location_id")
+            
+            if location_id:
+                # Update location state to mark it as explored
+                if "location_states" not in narrative_state:
+                    narrative_state["location_states"] = {}
+                
+                if location_id not in narrative_state["location_states"]:
+                    narrative_state["location_states"][location_id] = {}
+                
+                # Mark exploration type
+                exploration_key = f"explored_{sensory_type}"
+                narrative_state["location_states"][location_id][exploration_key] = True
+        
+        # Handle combat outcomes
+        elif intent == "weapon_attack" and state.get("game_state") == "combat":
+            # Set flag for combat engagement
+            if "global_flags" not in narrative_state:
+                narrative_state["global_flags"] = []
+            
+            combat_flag = "player_initiated_combat"
+            if combat_flag not in narrative_state["global_flags"]:
+                narrative_state["global_flags"].append(combat_flag)
+        
+        # Handle rest completion
+        elif intent == "rest" and state.get("game_state") == "resting":
+            duration = slots.get("duration", "short")
+            rest_flag = f"completed_{duration}_rest"
+            
+            if "global_flags" not in narrative_state:
+                narrative_state["global_flags"] = []
+            
+            if rest_flag not in narrative_state["global_flags"]:
+                narrative_state["global_flags"].append(rest_flag)
+        
+        # Update the state with modified narrative state
+        state["tracked_narrative_state"] = narrative_state
+    
+    def _involves_movement(self, intent: str, slots: Dict[str, Any]) -> bool:
+        """
+        Check if the intent involves movement/travel
+        
+        Args:
+            intent: Player's intent
+            slots: Intent slots
+            
+        Returns:
+            bool: True if movement is involved
+        """
+        # Check for movement-related intents or keywords
+        if intent == "explore" and "move" in slots.get("action", "").lower():
+            return True
+        
+        # Check for travel keywords in player input
+        if intent == "action":
+            action = slots.get("action", "").lower()
+            movement_actions = ["move", "travel", "walk", "run", "go", "head", "journey"]
+            return any(move_action in action for move_action in movement_actions)
+        
+        return False
+    
+    def _handle_time_advancement(self, state: AIGameState, intent: str, 
+                              slots: Dict[str, Any]) -> None:
+        """
+        Handle time advancement for actions that involve time passing
+        
+        Args:
+            state: Current game state
+            intent: Player's intent
+            slots: Intent slots
+        """
+        # Get current location for travel calculations
+        location_id = state.get("current_location_id")
+        
+        # Calculate time advancement based on intent
+        if intent == "rest":
+            duration = slots.get("duration", "short")
+            
+            # Calculate rest duration
+            rest_duration = None
+            if duration == "long":
+                # Long rest is 8 hours
+                rest_duration = timedelta(hours=8)
+            else:
+                # Short rest is 1 hour
+                rest_duration = timedelta(hours=1)
+            
+            # Advance time
+            self.advance_time_tool.advance_time(
+                state=state,
+                duration=rest_duration,
+                action_type="rest"
+            )
+            
+            # After rest, transition back to exploration
+            state["game_state"] = "exploration"
+            logger.info("Rest completed, transitioning back to exploration")
+            
+        elif self._involves_movement(intent, slots):
+            # Calculate travel time based on distance and mode
+            # Note: In a real implementation, you would need to determine
+            # the destination and distance from the intent/slots
+            distance = 1.0  # Default to a short distance (e.g., 1 mile)
+            travel_mode = "walk"  # Default to walking
+            
+            travel_duration = self.travel_time_calculator.calculate_travel_time(
+                state=state,
+                distance=distance,
+                travel_mode=travel_mode
+            )
+            
+            # Advance time
+            self.advance_time_tool.advance_time(
+                state=state,
+                duration=travel_duration,
+                action_type="travel",
+                distance=distance
+            )
+            
+        elif intent == "explore":
+            # Exploration typically takes some time
+            # Usually around 10-30 minutes
+            explore_duration = timedelta(minutes=20)
+            
+            # Advance time
+            self.advance_time_tool.advance_time(
+                state=state,
+                duration=explore_duration,
+                action_type="explore"
+            )
+    
+    def _evaluate_narrative_triggers(self, state: AIGameState) -> None:
+        """
+        Check for narrative triggers based on the current state
+        
+        Args:
+            state: Current game state
+        """
+        # Use the NarrativeTriggerEvaluatorTool to check for triggers
+        triggered_events = self.trigger_evaluator.evaluate_triggers(state)
+        
+        # Process each triggered event
+        for event in triggered_events:
+            outcome = event.get("outcome", {})
+            action_type = outcome.get("action_type", "")
+            parameters = outcome.get("parameters", {})
+            
+            # Apply the outcome based on action type
+            if action_type == "update_quest":
+                quest_id = parameters.get("quest_id", "")
+                stage_id = parameters.get("stage_id", "")
+                
+                if quest_id and stage_id:
+                    self.quest_updater.update_quest_status(
+                        state=state,
+                        quest_id=quest_id,
+                        stage_id=stage_id
+                    )
+                    
+            elif action_type == "set_global_flag":
+                flag_name = parameters.get("flag_name", "")
+                flag_value = parameters.get("value", True)
+                
+                if flag_name:
+                    self.global_flag_setter.set_global_flag(
+                        state=state,
+                        flag_name=flag_name,
+                        value=flag_value
+                    )
+                    
+            elif action_type == "set_area_flag":
+                location_id = parameters.get("location_id", "")
+                flag_name = parameters.get("flag_name", "")
+                flag_value = parameters.get("value", True)
+                
+                if location_id and flag_name:
+                    self.area_flag_setter.set_area_flag(
+                        state=state,
+                        location_id_or_region=location_id,
+                        flag_name=flag_name,
+                        value=flag_value
+                    )
+                    
+            # Record first-time events
+            if outcome.get("first_time", False):
+                event_id = event.get("event_id", "unknown_event")
+                self.global_flag_setter.set_global_flag(
+                    state=state,
+                    flag_name=f"event_fired_{event_id}",
+                    value=True
+                )
+    
+    def _apply_default_time_advancement(self, state: AIGameState) -> None:
+        """
+        Apply a small default time advancement for actions that don't
+        explicitly involve time passing
+        
+        Args:
+            state: Current game state
+        """
+        # Default to a short time advancement (5-10 minutes)
+        default_duration = timedelta(minutes=5)
+        
+        # Advance time
+        self.advance_time_tool.advance_time(
+            state=state,
+            duration=default_duration,
+            action_type="default"
+        )
+
+# Create a singleton instance
+narrative_node = NarrativeNode()
+
+# Function to use as node in graph
+def process_narrative(state: AIGameState) -> AIGameState:
+    """Process narrative update for player actions"""
+    return narrative_node(state)
