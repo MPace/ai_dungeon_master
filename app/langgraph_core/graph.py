@@ -13,6 +13,12 @@ from langgraph.graph import StateGraph, END
 from langgraph.checkpoint import MongoDBCheckpointer
 
 from app.langgraph_core.state import AIGameState, create_initial_game_state
+from app.langgraph_core.nodes.intent_node import process_intent
+from app.langgraph_core.nodes.validation_node import process_validation
+from app.langgraph_core.nodes.narrative_node import process_narrative
+from app.langgraph_core.nodes.ai_dm_node import process_ai_dm
+from app.langgraph_core.nodes.apply_mechanics_node import process_apply_mechanics
+from app.langgraph_core.nodes.memory_persistence_node import process_memory_persistence
 from app.extensions import get_db
 
 logger = logging.getLogger(__name__)
@@ -45,14 +51,13 @@ class LangGraphManager:
             # Create state graph
             self.graph = StateGraph(AIGameState)
             
-            # Add nodes (placeholders until we implement the actual node modules)
-            # These will be replaced with actual node implementations
-            self.graph.add_node("intent", self._intent_node_placeholder)
-            self.graph.add_node("validation", self._validation_node_placeholder)
-            self.graph.add_node("narrative", self._narrative_node_placeholder)
-            self.graph.add_node("ai_dm", self._ai_dm_node_placeholder)
-            self.graph.add_node("apply_mechanics", self._apply_mechanics_node_placeholder)
-            self.graph.add_node("memory_persistence", self._memory_persistence_node_placeholder)
+            # Add actual nodes from their modules
+            self.graph.add_node("intent", process_intent)
+            self.graph.add_node("validation", process_validation)
+            self.graph.add_node("narrative", process_narrative)
+            self.graph.add_node("ai_dm", process_ai_dm)
+            self.graph.add_node("apply_mechanics", process_apply_mechanics)
+            self.graph.add_node("memory_persistence", process_memory_persistence)
             
             # Add conditional edges
             # After intent classification, route based on intent
@@ -72,7 +77,8 @@ class LangGraphManager:
                 self._route_after_validation,
                 {
                     "narrative": "narrative",  # Go to narrative update if validation passed
-                    "error": END  # End if validation failed
+                    "ai_dm": "ai_dm",  # Go to AI DM even if validation failed to explain why
+                    "error": END  # End if there's a critical error
                 }
             )
             
@@ -88,8 +94,11 @@ class LangGraphManager:
             # After memory persistence, end
             self.graph.add_edge("memory_persistence", END)
             
+            # Set the entry point
+            self.graph.set_entry_point("intent")
+            
             # Compile the graph
-            self.graph = self.graph.compile()
+            self.graph = self.graph.compile(checkpointer=self.checkpointer)
             logger.info("LangGraph successfully compiled")
             
         except Exception as e:
@@ -97,64 +106,6 @@ class LangGraphManager:
             import traceback
             logger.error(traceback.format_exc())
             self.graph = None
-    
-    def _intent_node_placeholder(self, state: AIGameState) -> AIGameState:
-        """Placeholder for intent node until we implement the actual node"""
-        # In a real implementation, this would call the intent classifier
-        logger.info("Placeholder: Intent node processing")
-        
-        # Just set a dummy intent for now
-        state["intent_data"] = {
-            "intent": "general",
-            "slots": {},
-            "confidence": 1.0,
-            "success": True
-        }
-        
-        return state
-    
-    def _validation_node_placeholder(self, state: AIGameState) -> AIGameState:
-        """Placeholder for validation node until we implement the actual node"""
-        logger.info("Placeholder: Validation node processing")
-        
-        # Just set a dummy validation result for now
-        state["validation_result"] = {
-            "status": True,
-            "reason": None,
-            "details": None
-        }
-        
-        return state
-    
-    def _narrative_node_placeholder(self, state: AIGameState) -> AIGameState:
-        """Placeholder for narrative node until we implement the actual node"""
-        logger.info("Placeholder: Narrative node processing")
-        
-        # No changes to state for now
-        return state
-    
-    def _ai_dm_node_placeholder(self, state: AIGameState) -> AIGameState:
-        """Placeholder for AI DM node until we implement the actual node"""
-        logger.info("Placeholder: AI DM node processing")
-        
-        # Set a dummy DM response
-        state["dm_response"] = "This is a placeholder DM response. The real implementation will call the AI service."
-        
-        return state
-    
-    def _apply_mechanics_node_placeholder(self, state: AIGameState) -> AIGameState:
-        """Placeholder for apply mechanics node until we implement the actual node"""
-        logger.info("Placeholder: Apply mechanics node processing")
-        
-        # No changes to state for now
-        return state
-    
-    def _memory_persistence_node_placeholder(self, state: AIGameState) -> AIGameState:
-        """Placeholder for memory persistence node until we implement the actual node"""
-        logger.info("Placeholder: Memory persistence node processing")
-        
-        # No changes to state for now
-        return state
     
     def _route_after_intent(self, state: AIGameState) -> str:
         """Route after intent classification based on the intent result"""
@@ -188,10 +139,8 @@ class LangGraphManager:
             return "narrative"
         else:
             logger.warning(f"Validation failed: {validation_result.get('reason')}")
-            # In a real implementation, we would update the state with an error message
-            # and then continue to AI DM to explain the error
-            # For now, just end the graph
-            return "error"
+            # On validation failure, go to AI DM to explain the issue
+            return "ai_dm"
     
     def process_message(self, session_id: str, message: str, 
                      character_id: Optional[str] = None, 
@@ -222,14 +171,12 @@ class LangGraphManager:
         
         try:
             # Check if we already have a checkpoint for this session
-            has_checkpoint = self.checkpointer.exists(session_id)
+            has_checkpoint = self.checkpointer.get_tuple({"configurable": {"thread_id": session_id}})
             
-            # Prepare initial state or update existing checkpoint
+            # Prepare initial state
             if has_checkpoint:
                 # Load the existing state
                 logger.info(f"Loading existing checkpoint for session {session_id}")
-                # Only set the player input and leave the rest of the state as is
-                # This will be set as the input to the first node in the graph
                 state_dict = {"player_input": message}
             else:
                 # Create a new initial state
@@ -246,20 +193,33 @@ class LangGraphManager:
             
             # Process the message through the graph
             logger.info(f"Processing message for session {session_id}")
-            # The config with thread_id ensures the checkpointer uses the session_id
-            # as the identifier for checkpoints
             result = self.graph.invoke(
                 state_dict,
                 config={
                     "configurable": {
-                        "thread_id": session_id,
-                        "checkpointer": self.checkpointer
+                        "thread_id": session_id
                     }
                 }
             )
             
             # Extract the DM response from the result
             dm_response = result.get("dm_response", "")
+            
+            # Log memory processing status
+            if result.get("memory_processing_complete", False):
+                logger.info("Memory processing completed successfully")
+            else:
+                logger.warning(f"Memory processing incomplete or failed: {result.get('memory_processing_error')}")
+            
+            # Update the session with current state info
+            if has_checkpoint and result.get("current_location_id"):
+                # Store any important state information in MongoDB
+                db = get_db()
+                if db is not None:
+                    db.sessions.update_one(
+                        {"session_id": session_id},
+                        {"$set": {"current_location_id": result.get("current_location_id")}}
+                    )
             
             return {
                 "success": True,
@@ -277,9 +237,10 @@ class LangGraphManager:
                 "error": str(e),
                 "response": "Sorry, something went wrong while processing your message."
             }
-    
-    def get_manager():
-        """Singleton getter for the LangGraphManager"""
-        if not hasattr(get_manager, "instance"):
-            get_manager.instance = LangGraphManager()
-        return get_manager.instance
+
+# Create a singleton instance getter
+def get_manager():
+    """Singleton getter for the LangGraphManager"""
+    if not hasattr(get_manager, "instance"):
+        get_manager.instance = LangGraphManager()
+    return get_manager.instance

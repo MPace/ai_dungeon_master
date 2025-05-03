@@ -160,9 +160,9 @@ class AIDMNode:
         return memory_context
     
     def _assemble_prompt(self, state: AIGameState, 
-                  narrative_context: Dict[str, Any],
-                  memory_context: Dict[str, str],
-                  validation_failed: bool) -> str:
+                      narrative_context: Dict[str, Any],
+                      memory_context: Dict[str, str],
+                      validation_failed: bool) -> str:
         """
         Assemble the prompt for the AI DM
         
@@ -175,60 +175,82 @@ class AIDMNode:
         Returns:
             Assembled prompt template
         """
+        # Get current game state and intent
+        game_state = state.get("game_state", "exploration")
+        intent_data = state.get("intent_data", {})
+        intent = intent_data.get("intent", "general")
+        slots = intent_data.get("slots", {})
+        
         # Get character data
         character_id = state.get("current_character_id")
         character_data = self._get_character_data(state)
         
-        # System Prompt section as specified in SRD 3.8
+        # Base system prompt
         system_prompt = (
-            "You are the AI Dungeon Master, an expert in running engaging D&D 5e games. "
-            "Your role is to describe the world, roleplay NPCs, adjudicate actions based on "
-            "rules and narrative consistency, and create an immersive experience.\n\n"
+            "You are a seasoned Dungeon Master for a Dungeons & Dragons 5th Edition game, "
+            "guiding a solo player through a rich fantasy world. Your role is to weave an "
+            "immersive, engaging story, staying fully in character as a narrator and arbiter "
+            "of the world. Respond with vivid descriptions, distinct NPC personalities, and "
+            "a natural flow that draws the player into the adventure. Adhere strictly to D&D 5e "
+            "rules, incorporating dice rolls (e.g., 'Roll a d20 for Perception') and mechanics "
+            "only when necessary—blend them seamlessly into the narrative. When D&D 5e rules "
+            "require a dice roll (e.g., Initiative, attack, skill check), prompt the player to "
+            "roll the die (e.g., 'Roll a d20 for Initiative') and pause your response there. "
+            "Do not guess, assume, or simulate the player's roll—wait for their next message "
+            "with the result before advancing the story or resolving outcomes.\n\n"
             
-            "Core Task: Describe the world vividly, portray NPCs with distinct personalities, "
-            "manage game mechanics, and respond to player actions in a way that advances "
-            "the narrative while respecting player agency.\n\n"
-            
-            "Context Usage Instructions: Base your response ONLY on the provided context "
-            "(History, Entities, Relevant Documents) and Player Input. Prioritize facts from "
-            "Relevant Documents over conversational Entity summaries if they conflict.\n\n"
-            
-            "Output Format: Respond with vivid descriptions using all senses. Use bold for "
-            "important people, places, and items. Break long text into paragraphs. When D&D 5e "
-            "rules require a dice roll (e.g., Initiative, attack, skill check), prompt the "
-            "player to roll the die (e.g., 'Roll a d20 for Initiative') and pause your response "
-            "to wait for their roll result.\n\n"
+            "Format your response:\n"
+            "- Use bold for important people, places, and items\n"
+            "- Break long text into paragraphs every 3–4 sentences\n"
+            "- Use Markdown style formatting\n"
+            "- Avoid repeating prior information\n\n"
         )
         
-        # Add information about world profile (this would come from actual world data in full implementation)
-        world_id = state.get("world_id")
-        world_profile_context = ""
-        if world_id:
-            from app.models.world_profile import WorldProfile
-            world_profile = WorldProfile.load(world_id)
-            if world_profile:
-                world_profile_context = f"## WORLD PROFILE:\n"
-                world_profile_context += f"World: {world_profile.name}\n"
-                world_profile_context += f"Vibe: {world_profile.vibe}\n"
-                
-                if world_profile.forbidden_elements:
-                    world_profile_context += "Forbidden Elements: "
-                    world_profile_context += ", ".join(world_profile.forbidden_elements) + "\n"
-                    
-                if world_profile.common_elements:
-                    world_profile_context += "Common Elements: "
-                    world_profile_context += ", ".join(world_profile.common_elements) + "\n"
-                    
-                if world_profile.tone_guidelines:
-                    world_profile_context += f"Tone: {world_profile.tone_guidelines}\n"
-        
-        # Add validation failure information if applicable
-        validation_context = ""
-        if validation_failed:
-            validation_result = state.get("validation_result", {})
-            reason = validation_result.get("reason", "Action not possible")
-            validation_context = f"## ACTION VALIDATION:\nThe player's attempted action cannot be performed. Reason: {reason}\n\n"
-            validation_context += "Please acknowledge this in your response, explaining why the action isn't possible, then offer alternative actions the player might take.\n\n"
+        # Add state-specific instructions
+        if game_state == "combat":
+            system_prompt += (
+                "The player is currently in combat. Narrate the scene with high stakes "
+                "and visceral detail—blood, steel, and chaos. Manage combat turns: "
+                "describe the enemy's action, then prompt the player for their move. "
+                "For dice rolls like initiative, attack rolls, or saves, always prompt "
+                "the player to roll and stop there—do not assume or simulate the player's roll. "
+                "Wait for the player to provide the result in their next message before "
+                "continuing the combat sequence. Keep the pace fast and tense, but respect "
+                "the player's agency over their rolls.\n\n"
+            )
+        elif game_state == "social":
+            system_prompt += (
+                "The player is in a social interaction. Portray NPCs with distinct "
+                "personalities, motivations, and speech patterns. Respond to social "
+                "approaches and charisma-based actions with appropriate reactions. "
+                "Give NPCs clear voices, mannerisms, and attitudes that make them memorable. "
+                "Allow for persuasion, deception, and intimidation attempts where appropriate, "
+                "calling for dice rolls when needed.\n\n"
+            )
+        elif game_state == "exploration":
+            system_prompt += (
+                "The player is exploring. Describe the environment in rich detail with "
+                "sensory information and interesting features that reward investigation. "
+                "Offer clear directions and points of interest. Hint at possible secrets "
+                "or hidden elements to create a sense of wonder and discovery. When perception, "
+                "investigation, or other checks are needed, prompt for dice rolls and wait "
+                "for player input.\n\n"
+            )
+        elif game_state == "intro":
+            system_prompt += (
+                "This is the beginning of a new adventure. Begin with the character already "
+                "in an exciting, tense, or mysterious situation. Choose from a VARIETY of "
+                "engaging scenarios such as: in the middle of combat or a chase scene, "
+                "waking up in an unusual or dangerous place, witnessing something impossible "
+                "or forbidden, being mistaken for someone important, discovering a body or "
+                "crime scene, finding a mysterious object, caught in a catastrophe, "
+                "overhearing a secret conversation, or being hunted by unknown forces. "
+                "CREATE A UNIQUE SCENARIO - DO NOT default to a burning tavern or any single "
+                "formulaic opening. Consider the character's background and abilities when "
+                "crafting this opening scene. Establish clear stakes and immediate tension "
+                "while providing just enough context for the player to make decisions. "
+                "Begin with vivid sensory details that pull the player into the action.\n\n"
+            )
         
         # Add character information
         character_info = "## CHARACTER INFORMATION:\n"
@@ -264,7 +286,7 @@ class AIDMNode:
         else:
             character_info += "No character data available.\n"
         
-        # Add narrative context as specified in SRD 3.8
+        # Add narrative context
         narrative_context_text = "## NARRATIVE CONTEXT:\n"
         
         # Location description
@@ -293,16 +315,20 @@ class AIDMNode:
                 narrative_context_text += f"- {quest.get('name', 'Unknown Quest')}: {quest.get('objective', '')}\n"
             narrative_context_text += "\n"
         
-        # Combine all sections following SRD 3.8 structure
+        # Add validation failure information if applicable
+        if validation_failed:
+            validation_result = state.get("validation_result", {})
+            reason = validation_result.get("reason", "Action not possible")
+            narrative_context_text += f"## ACTION FAILED:\n{reason}\n\n"
+        
+        # Combine all sections
         full_prompt = (
             f"{system_prompt}\n\n"
-            f"{world_profile_context}\n\n"
-            f"{narrative_context_text}\n\n"
             f"{character_info}\n\n"
-            f"{validation_context}"
+            f"{narrative_context_text}\n\n"
         )
         
-        # Add memory context sections as specified in SRD 3.8
+        # Add memory context sections
         if memory_context.get("history"):
             full_prompt += f"## CONVERSATION HISTORY:\n{memory_context['history']}\n\n"
         

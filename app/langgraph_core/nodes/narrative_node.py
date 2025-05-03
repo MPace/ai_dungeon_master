@@ -18,6 +18,7 @@ from app.langgraph_core.tools.narrative_tools import (
     SetGlobalFlagTool,
     SetAreaFlagTool
 )
+from app.models.campaign_module import CampaignModule
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +104,7 @@ class NarrativeNode:
             # Check if action initiates combat
             if intent in ["weapon_attack", "cast_spell"]:
                 # Check if it's offensive
-                if self._is_offensive_action(intent, slots):
+                if self._is_offensive_action(state, intent, slots):
                     new_state = "combat"
                     logger.info(f"Transitioning to combat state due to offensive action: {intent}")
         
@@ -143,11 +144,12 @@ class NarrativeNode:
             state["game_state"] = new_state
             logger.info(f"Game state transitioned from {current_state} to {new_state}")
     
-    def _is_offensive_action(self, intent: str, slots: Dict[str, Any]) -> bool:
+    def _is_offensive_action(self, state: AIGameState, intent: str, slots: Dict[str, Any]) -> bool:
         """
         Check if the action is offensive (likely to start combat)
         
         Args:
+            state: Current game state
             intent: Player's intent
             slots: Intent slots
             
@@ -158,9 +160,22 @@ class NarrativeNode:
             return True
         
         if intent == "cast_spell":
-            # Check if spell is offensive
             spell_name = slots.get("spell_name", "").lower()
-            # Common offensive spell keywords
+            
+            # First, try to look up the spell in the campaign module
+            campaign_module_id = state.get("campaign_module_id")
+            if campaign_module_id:
+                try:
+                    campaign_module = CampaignModule.load(campaign_module_id)
+                    if campaign_module and hasattr(campaign_module, 'spells'):
+                        spell_data = campaign_module.spells.get(spell_name)
+                        if spell_data:
+                            # Check if the spell has damage or harmful effects
+                            return spell_data.get("damage", False) or spell_data.get("harmful", False)
+                except Exception as e:
+                    logger.warning(f"Could not load campaign module for spell data: {e}")
+            
+            # Fallback to keyword-based detection
             offensive_keywords = [
                 "bolt", "blast", "missile", "arrow", "fire", "ice", "lightning",
                 "thunder", "acid", "poison", "necrotic", "ray", "strike", 
@@ -194,7 +209,6 @@ class NarrativeNode:
         if not campaign_module_id:
             return False
         
-        from app.models.campaign_module import CampaignModule
         campaign_module = CampaignModule.load(campaign_module_id)
         
         if campaign_module and current_location in campaign_module.locations:
@@ -205,12 +219,23 @@ class NarrativeNode:
             for npc_id in npcs_present:
                 npc = campaign_module.get_npc(npc_id)
                 if npc and "name" in npc:
-                    if npc["name"].lower() in player_input:
+                    npc_name = npc["name"].lower()
+                    # Check for full name or partial matches
+                    if npc_name in player_input:
+                        return True
+                    # Check for first/last name matches
+                    name_parts = npc_name.split()
+                    if any(part in player_input for part in name_parts):
                         return True
         
         # Check for general social keywords that indicate NPC interaction
-        social_keywords = ["talk to", "speak with", "ask", "tell", "say to", "question"]
-        return any(keyword in player_input for keyword in social_keywords)
+        social_keywords = ["talk to", "speak with", "ask", "tell", "say to", "question", "greet", "approach"]
+        
+        # Check for pronouns that might refer to NPCs
+        pronoun_keywords = ["him", "her", "them", "the man", "the woman", "the guard", "the merchant"]
+        
+        return any(keyword in player_input for keyword in social_keywords) or \
+               any(pronoun in player_input for pronoun in pronoun_keywords)
     
     def _apply_direct_state_changes(self, state: AIGameState, 
                                  intent: str, slots: Dict[str, Any],
@@ -242,8 +267,6 @@ class NarrativeNode:
                 item_taken_flag = f"item_taken_{item_name.lower().replace(' ', '_')}"
                 if item_taken_flag not in narrative_state["global_flags"]:
                     narrative_state["global_flags"].append(item_taken_flag)
-                    
-            # Other item actions are primarily handled by the mechanics node
         
         elif intent == "explore":
             # Record exploration in the narrative state
@@ -272,17 +295,6 @@ class NarrativeNode:
             if combat_flag not in narrative_state["global_flags"]:
                 narrative_state["global_flags"].append(combat_flag)
         
-        # Handle rest completion
-        elif intent == "rest" and state.get("game_state") == "resting":
-            duration = slots.get("duration", "short")
-            rest_flag = f"completed_{duration}_rest"
-            
-            if "global_flags" not in narrative_state:
-                narrative_state["global_flags"] = []
-            
-            if rest_flag not in narrative_state["global_flags"]:
-                narrative_state["global_flags"].append(rest_flag)
-        
         # Update the state with modified narrative state
         state["tracked_narrative_state"] = narrative_state
     
@@ -304,7 +316,7 @@ class NarrativeNode:
         # Check for travel keywords in player input
         if intent == "action":
             action = slots.get("action", "").lower()
-            movement_actions = ["move", "travel", "walk", "run", "go", "head", "journey"]
+            movement_actions = ["move", "travel", "walk", "run", "go", "head", "journey", "proceed", "advance"]
             return any(move_action in action for move_action in movement_actions)
         
         return False
@@ -324,27 +336,23 @@ class NarrativeNode:
         
         # Calculate time advancement based on intent
         if intent == "rest":
-            duration = slots.get("duration", "short")
+            rest_duration = slots.get("duration", "short")
             
             # Calculate rest duration
-            rest_duration = None
-            if duration == "long":
+            if rest_duration == "long":
                 # Long rest is 8 hours
-                rest_duration = timedelta(hours=8)
+                self.advance_time_tool.advance_time(
+                    state=state,
+                    duration=timedelta(hours=8),
+                    action_type="rest"
+                )
             else:
                 # Short rest is 1 hour
-                rest_duration = timedelta(hours=1)
-            
-            # Advance time
-            self.advance_time_tool.advance_time(
-                state=state,
-                duration=rest_duration,
-                action_type="rest"
-            )
-            
-            # After rest, transition back to exploration
-            state["game_state"] = "exploration"
-            logger.info("Rest completed, transitioning back to exploration")
+                self.advance_time_tool.advance_time(
+                    state=state,
+                    duration=timedelta(hours=1),
+                    action_type="rest"
+                )
             
         elif self._involves_movement(intent, slots):
             # Calculate travel time based on distance and mode
