@@ -1,3 +1,4 @@
+# app/game/routes.py
 """
 Game routes
 """
@@ -6,6 +7,7 @@ from app.game import game_bp
 from app.services.game_service import GameService
 from app.services.character_service import CharacterService
 from app.extensions import get_db
+from app.langgraph_core.graph import get_manager  # Add this import
 from functools import wraps
 import logging
 from datetime import datetime
@@ -66,16 +68,74 @@ def play_game(character_id):
         # Convert the Character object to a dictionary for JSON serialization
         character_dict = character.to_dict()
         
-        # Log character data for debugging
-        logger.info(f"Character dictionary has keys: {character_dict.keys()}")
+        # Store character_id in session
+        session['character_id'] = character_id
+        
+        # Get or create game session
+        db = get_db()
+        game_session = None
+        
+        if db is not None:
+            # First, check if there's an existing active game session
+            game_session = db.sessions.find_one({
+                'character_id': character_id,
+                'user_id': user_id,
+                'status': {'$ne': 'completed'}  # Not completed
+            })
+            
+            if game_session:
+                logger.info(f"Found existing game session: {game_session.get('session_id')}")
+            else:
+                # Create a new game session
+                logger.info("Creating new game session")
+                
+                # Get world_id and campaign_module_id from character data
+                world_id = character_dict.get('world_id')
+                campaign_module_id = character_dict.get('campaign_id') or character_dict.get('campaign_module_id')
+                
+                # If not in character data, use defaults or let the user choose
+                if not world_id:
+                    world_id = 'forgotten_realms'  # Default world
+                
+                # Create the session using GameService
+                session_result = GameService.create_session(
+                    character_id=character_id,
+                    user_id=user_id,
+                    world_id=world_id,
+                    campaign_module_id=campaign_module_id
+                )
+                
+                if session_result.get('success'):
+                    game_session = session_result.get('session')
+                    logger.info(f"Created new game session: {game_session.session_id}")
+                else:
+                    logger.error(f"Failed to create game session: {session_result.get('error')}")
+                    flash('Error creating game session', 'error')
+                    return redirect(url_for('game.dashboard'))
+        
+        # Store all necessary IDs in Flask session
+        if game_session:
+            session['session_id'] = game_session.get('session_id')
+            session['world_id'] = game_session.get('world_id')
+            session['campaign_module_id'] = game_session.get('campaign_module_id')
+        else:
+            # Fallback if no database connection
+            session['session_id'] = str(uuid.uuid4())
+            session['world_id'] = character_dict.get('world_id', 'forgotten_realms')
+            session['campaign_module_id'] = character_dict.get('campaign_id')
+        
+        # User ID should already be in session from login
+        session['user_id'] = user_id
+        session['character_id'] = character_id
+        
+        # Log session data for debugging
+        logger.info(f"Session data stored: {dict(session)}")
         
         # Update last played timestamp
         try:
             character.last_played = datetime.utcnow()
-            character_dict = character.to_dict()  # Update the dictionary with new timestamp
             
             # Save the updated timestamp
-            db = get_db()
             if db is not None:
                 db.characters.update_one(
                     {'character_id': character_id},
@@ -84,7 +144,11 @@ def play_game(character_id):
         except Exception as e:
             logger.warning(f"Error updating last_played timestamp: {e}")
         
-        return render_template('dm.html', character=character_dict)
+        return render_template('dm.html', 
+                             character=character_dict,
+                             session_id=session.get('session_id'),
+                             world_id=session.get('world_id'),
+                             campaign_module_id=session.get('campaign_module_id'))
     
     except Exception as e:
         logger.error(f"Error in play_game route: {e}")
@@ -96,17 +160,21 @@ def play_game(character_id):
 @game_bp.route('/api/send-message', methods=['POST'])
 @login_required
 def send_message():
-    """Process a message from the player and return a DM response asynchronously"""
+    """Process a message from the player and return a DM response"""
     try:
         data = request.json
-        message = data.get('message', '')
+        player_message = data.get('message', '')  # Get player's message
         session_id = data.get('session_id')
-        character_data = data.get('character_data')
         
+        # Get IDs from Flask session (preferred) or request data (fallback)
+        session_id = session.get('session_id') or data.get('session_id')
+        character_id = session.get('character_id') or data.get('character_data', {}).get('character_id')
         user_id = session.get('user_id')
-        
+        world_id = session.get('world_id')
+        campaign_module_id = session.get('campaign_module_id')
+
         # Validate required inputs
-        if not message:
+        if not player_message:
             return jsonify({
                 'success': False,
                 'error': 'No message provided'
@@ -117,54 +185,109 @@ def send_message():
                 'success': False,
                 'error': 'User not authenticated'
             }), 401
+        
+        if not character_id:
+            return jsonify({
+                'success': False,
+                'error': 'No character selected'
+            }), 400
             
         if not session_id:
-            # If no session_id, create a new session
-            logger.info("No session ID provided, creating new session")
-            
-            if not character_data or not character_data.get('character_id'):
-                return jsonify({
-                    'success': False,
-                    'error': 'No character data provided for new session'
-                }), 400
-            
-            # Create a new game session
-            session_result = GameService.create_session(
-                character_id=character_data['character_id'],
-                user_id=user_id
-            )
-            
-            if not session_result.get('success', False):
-                return jsonify({
-                    'success': False,
-                    'error': f"Failed to create session: {session_result.get('error', 'Unknown error')}"
-                }), 500
-                
-            session_id = session_result.get('session_id')
-            
-            logger.info(f"Created new session: {session_id}")
-
-        # Submit task to Celery
-        from app.tasks import process_dm_message
-        task = process_dm_message.delay(message, session_id, character_data, user_id)
+        # If no session_id, something went wrong with session creation
+            logger.error("No session_id found in Flask session or request data")
+            return jsonify({
+                'success': False,
+                'error': 'No active game session'
+            }), 400
         
-        # Return task ID immediately
-        return jsonify({
-            'success': True,
-            'task_id': task.id,
-            'session_id': session_id,
-            'status': 'processing',
-            'message': 'Your message is being processed by the DM. Please wait for the response.'
-        })
+        # Get the LangGraph manager
+        manager = get_manager()
+        
+        # Process the message through LangGraph
+        result = manager.process_message(
+            session_id=session_id,
+            message=player_message,
+            character_id=character_id,
+            user_id=user_id,
+            world_id=world_id,
+            campaign_module_id=campaign_module_id
+        )
+        
+        # Process the LangGraph response
+        if result.get('success'):
+            # Extract the AI DM's response
+            dm_response = result.get('response', 'The DM seems lost in thought...')
+            
+            # Prepare the success response dictionary
+            response_data = {
+                'dm_response': dm_response,
+                'success': True
+            }
+            
+            # Optional: Extract additional data from state if the frontend needs it
+            if 'state' in result:
+                state = result['state']
+                
+                # Extract game state
+                game_state = state.get('game_state')
+                if game_state:
+                    response_data['game_state'] = game_state
+                
+                # Extract character stats
+                tracked_narrative_state = state.get('tracked_narrative_state', {})
+                character_stats = tracked_narrative_state.get('character_stats', {}).get(character_id)
+                if character_stats:
+                    response_data['character_stats'] = character_stats
+                
+                # Extract current location
+                current_location = state.get('current_location_id')
+                if current_location:
+                    response_data['current_location'] = current_location
+                
+                # Extract pending checks or rolls
+                pending_checks = tracked_narrative_state.get('pending_checks', [])
+                pending_rolls = tracked_narrative_state.get('pending_rolls', [])
+                if pending_checks or pending_rolls:
+                    response_data['pending_actions'] = {
+                        'checks': pending_checks,
+                        'rolls': pending_rolls
+                    }
+            
+            # Include session_id in response
+            response_data['session_id'] = session_id
+            
+            return jsonify(response_data)
+            
+        else:
+            # Processing failed - handle the error
+            error = result.get('error', 'Unknown error')
+            
+            # Log the error server-side
+            logger.error(f'LangGraph processing failed for session {session_id}: {error}')
+            
+            # Prepare an error response for the frontend
+            response_data = {
+                'dm_response': 'Sorry, the connection flickers. Could you repeat that?',
+                'error': error,
+                'success': False,
+                'session_id': session_id
+            }
+            
+            return jsonify(response_data), 500
         
     except Exception as e:
         logger.error(f"Unhandled exception in send_message: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
-        return jsonify({
-            'success': False,
-            'error': f"Server error: {str(e)}"
-        }), 500
+        
+        # Prepare error response for unexpected exceptions
+        response_data = {
+            'dm_response': 'The magical energies waver momentarily. Please try again.',
+            'error': f"Server error: {str(e)}",
+            'success': False
+        }
+        
+        return jsonify(response_data), 500
 
 @game_bp.route('/api/roll-dice', methods=['POST'])
 @login_required
@@ -198,7 +321,6 @@ def roll_dice():
         return jsonify({
             'error': f"Server error: {str(e)}"
         }), 500
-    
 
 @game_bp.route('/api/check-task/<task_id>', methods=['GET'])
 @login_required

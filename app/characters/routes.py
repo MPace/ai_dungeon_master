@@ -221,6 +221,16 @@ def save_character_route():
         # Delete any existing drafts with this ID
         CharacterService.delete_character_draft(character_id, user_id)
         
+        # Extract world_id and campaign info for session storage
+        world_id = character_data.get('world_id') or character_data.get('worldId')
+        campaign_id = character_data.get('campaign_id') or character_data.get('campaignId')
+        
+        # Store these in the character data for later retrieval
+        if world_id:
+            character_data['world_id'] = world_id
+        if campaign_id:
+            character_data['campaign_id'] = campaign_id
+        
         # Now save the character
         result = CharacterService.create_character(character_data, user_id)
         
@@ -231,6 +241,13 @@ def save_character_route():
             # Log this submission to prevent future duplicates
             if submission_id is not None:
                 CharacterService.log_submission(submission_id, saved_id, user_id)
+            
+            # Store IDs in session for immediate use in gameplay
+            session['character_id'] = saved_id
+            if world_id:
+                session['world_id'] = world_id
+            if campaign_id:
+                session['campaign_module_id'] = campaign_id
             
             return jsonify({
                 'success': True,
