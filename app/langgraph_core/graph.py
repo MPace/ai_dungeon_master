@@ -9,6 +9,13 @@ import logging
 from typing import Dict, List, Any, Tuple, Callable, Optional, TypedDict
 import os
 
+from langchain.memory import ConversationBufferWindowMemory
+from langchain.memory import VectorStoreRetrieverMemory
+from langchain_community.memory import EntityMemory
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_core.retrievers import BaseRetriever
+from langchain_core.documents import Document
+
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint import MongoDBCheckpointer
 
@@ -16,12 +23,59 @@ from app.langgraph_core.state import AIGameState, create_initial_game_state
 from app.langgraph_core.nodes.intent_node import process_intent
 from app.langgraph_core.nodes.validation_node import process_validation
 from app.langgraph_core.nodes.narrative_node import process_narrative
-from app.langgraph_core.nodes.ai_dm_node import process_ai_dm
+from app.langgraph_core.nodes.ai_dm_node import AIDMNode, process_ai_dm
 from app.langgraph_core.nodes.apply_mechanics_node import process_apply_mechanics
 from app.langgraph_core.nodes.memory_persistence_node import process_memory_persistence
-from app.extensions import get_db
+from app.extensions import get_db, get_qdrant_service
+from app.services.embedding_service import EmbeddingService
 
 logger = logging.getLogger(__name__)
+
+class QdrantRetriever(BaseRetriever):
+    """Custom retriever for Qdrant vector store"""
+    
+    def __init__(self, qdrant_service, embedding_service, k: int = 5):
+        """Initialize the Qdrant retriever"""
+        self.qdrant_service = qdrant_service
+        self.embedding_service = embedding_service
+        self.k = k
+    
+    def _get_relevant_documents(self, query: str) -> List[Document]:
+        """Get relevant documents from Qdrant"""
+        try:
+            # Generate embedding for the query
+            embedded_query = self.embedding_service.embed_text(query)
+            
+            # Search for relevant vectors
+            filters = {
+                'memory_type': ['episodic_event', 'summary', 'entity_fact']
+            }
+            
+            results = self.qdrant_service.find_similar_vectors(
+                query_vector=embedded_query,
+                filters=filters,
+                limit=self.k,
+                score_threshold=0.7
+            )
+            
+            # Convert results to LangChain Document format
+            documents = self.qdrant_service.find_similar_documents(
+                query_vector=embedded_query,
+                filters=filters,
+                limit=self.k,
+                score_threshold=0.7
+            )
+            
+            return documents
+            
+        except Exception as e:
+            logger.error(f"Error retrieving documents from Qdrant: {e}")
+            return []
+    
+    async def _aget_relevant_documents(self, query: str) -> List[Document]:
+        """Async version of get_relevant_documents"""
+        # For now, just call the sync version
+        return self._get_relevant_documents(query)
 
 class LangGraphManager:
     """Manager class for LangGraph execution"""
@@ -30,11 +84,82 @@ class LangGraphManager:
         """Initialize LangGraph Manager"""
         self.graph = None
         self.checkpointer = None
+        self.conversation_memory = None
+        self.vector_memory = None
+        self.entity_memory = None
+        self.llm = None
         self._initialize_graph()
+    
+    def _initialize_memory_components(self):
+        """Initialize LangChain memory components"""
+        try:
+            # Initialize the LLM (shared across components)
+            self.llm = ChatOpenAI(
+                model_name="gpt-4",
+                temperature=0.8,
+                api_key=os.getenv("OPENAI_API_KEY")
+            )
+            
+            # Initialize ConversationBufferWindowMemory
+            self.conversation_memory = ConversationBufferWindowMemory(
+                k=10,  # Keep last 10 conversation turns
+                memory_key="history",
+                input_key="player_input",
+                return_messages=False  # Return as string
+            )
+            
+            # Initialize VectorStoreRetrieverMemory with Qdrant
+            qdrant_service = get_qdrant_service()
+            embedding_service = EmbeddingService()
+            
+            if qdrant_service is not None and embedding_service is not None:
+                # Create custom retriever for Qdrant
+                retriever = QdrantRetriever(
+                    qdrant_service=qdrant_service,
+                    embedding_service=embedding_service,
+                    k=5  # Retrieve top 5 relevant memories
+                )
+                
+                self.vector_memory = VectorStoreRetrieverMemory(
+                    retriever=retriever,
+                    memory_key="relevant_docs",
+                    input_key="player_input"
+                )
+            else:
+                logger.warning("Qdrant service not available, vector memory disabled")
+            
+            # Initialize EntityMemory
+            self.entity_memory = EntityMemory(
+                llm=self.llm,
+                memory_key="entities",
+                entity_extraction_prompt="""Human: Extract all the entities from the following conversation. Return them as a comma-separated list.
+
+Conversation:
+{input}
+
+Entities: """,
+                entity_summarization_prompt="""Human: Summarize the following information about {entity}:
+
+{summary}
+
+New Information: {input}
+
+Updated Summary: """
+            )
+            
+            logger.info("LangChain memory components initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"Error initializing memory components: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
     
     def _initialize_graph(self):
         """Initialize the LangGraph with nodes and edges"""
         try:
+            # Initialize memory components first
+            self._initialize_memory_components()
+            
             # Initialize checkpointer with MongoDB
             mongo_uri = os.environ.get("MONGO_URI")
             if not mongo_uri:
@@ -51,11 +176,19 @@ class LangGraphManager:
             # Create state graph
             self.graph = StateGraph(AIGameState)
             
+            # Initialize nodes with necessary dependencies
+            ai_dm_node = AIDMNode(
+                conversation_memory=self.conversation_memory,
+                vector_memory=self.vector_memory,
+                entity_memory=self.entity_memory
+            )
+            
             # Add actual nodes from their modules
             self.graph.add_node("intent", process_intent)
             self.graph.add_node("validation", process_validation)
             self.graph.add_node("narrative", process_narrative)
-            self.graph.add_node("ai_dm", process_ai_dm)
+            # Use the initialized ai_dm_node instead of the imported process_ai_dm
+            self.graph.add_node("ai_dm", ai_dm_node)
             self.graph.add_node("apply_mechanics", process_apply_mechanics)
             self.graph.add_node("memory_persistence", process_memory_persistence)
             
@@ -97,50 +230,21 @@ class LangGraphManager:
             # Set the entry point
             self.graph.set_entry_point("intent")
             
-            # Compile the graph
-            self.graph = self.graph.compile(checkpointer=self.checkpointer)
-            logger.info("LangGraph successfully compiled")
+            # Compile the graph with checkpointer
+            self.graph = self.graph.compile(
+                checkpointer=self.checkpointer,
+                interrupt_after=None,
+                interrupt_before=None,
+                debug=False
+            )
+            
+            logger.info("LangGraph successfully compiled with memory components")
             
         except Exception as e:
             logger.error(f"Error initializing LangGraph: {e}")
             import traceback
             logger.error(traceback.format_exc())
             self.graph = None
-    
-    def _route_after_intent(self, state: AIGameState) -> str:
-        """Route after intent classification based on the intent result"""
-        intent_data = state.get("intent_data")
-        
-        if not intent_data or not intent_data.get("success"):
-            logger.warning("Intent classification failed or not present")
-            return "error"
-        
-        intent = intent_data.get("intent", "")
-        
-        # Direct certain intents straight to AI DM
-        if intent in ["general", "recall", "ask_rule"]:
-            logger.info(f"Routing intent '{intent}' directly to AI DM")
-            return "ai_dm"
-        
-        # For all other intents, go to validation
-        logger.info(f"Routing intent '{intent}' to validation")
-        return "validation"
-    
-    def _route_after_validation(self, state: AIGameState) -> str:
-        """Route after validation based on the validation result"""
-        validation_result = state.get("validation_result")
-        
-        if not validation_result:
-            logger.warning("Validation result not present")
-            return "error"
-        
-        if validation_result.get("status"):
-            logger.info("Validation passed, proceeding to narrative update")
-            return "narrative"
-        else:
-            logger.warning(f"Validation failed: {validation_result.get('reason')}")
-            # On validation failure, go to AI DM to explain the issue
-            return "ai_dm"
     
     def process_message(self, session_id: str, message: str, 
                      character_id: Optional[str] = None, 
@@ -237,6 +341,41 @@ class LangGraphManager:
                 "error": str(e),
                 "response": "Sorry, something went wrong while processing your message."
             }
+    
+    def _route_after_intent(self, state: AIGameState) -> str:
+        """Route after intent classification based on the intent result"""
+        intent_data = state.get("intent_data")
+        
+        if not intent_data or not intent_data.get("success"):
+            logger.warning("Intent classification failed or not present")
+            return "error"
+        
+        intent = intent_data.get("intent", "")
+        
+        # Direct certain intents straight to AI DM
+        if intent in ["general", "recall", "ask_rule"]:
+            logger.info(f"Routing intent '{intent}' directly to AI DM")
+            return "ai_dm"
+        
+        # For all other intents, go to validation
+        logger.info(f"Routing intent '{intent}' to validation")
+        return "validation"
+    
+    def _route_after_validation(self, state: AIGameState) -> str:
+        """Route after validation based on the validation result"""
+        validation_result = state.get("validation_result")
+        
+        if not validation_result:
+            logger.warning("Validation result not present")
+            return "error"
+        
+        if validation_result.get("status"):
+            logger.info("Validation passed, proceeding to narrative update")
+            return "narrative"
+        else:
+            logger.warning(f"Validation failed: {validation_result.get('reason')}")
+            # On validation failure, go to AI DM to explain the issue
+            return "ai_dm"
 
 # Create a singleton instance getter
 def get_manager():

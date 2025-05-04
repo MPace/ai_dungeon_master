@@ -8,6 +8,8 @@ import logging
 import os
 from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
+from langgraph_core.documents import Document
+from qdrant_client.models import Filter, FieldCondition, MatchAny, MatchValue
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
@@ -163,139 +165,156 @@ class QdrantService:
             logger.error(f"Error storing vector: {e}")
             return False
     
-    def find_similar_vectors(self, query_vector: List[float], filters: Optional[Dict[str, Any]] = None, 
-                           limit: int = 5, score_threshold: float = 0.7) -> List[Dict[str, Any]]:
+    
+    def find_similar_vectors(self, query_vector: List[float], filters: Dict[str, Any] = None,
+                           limit: int = 10, score_threshold: float = 0.7,
+                           collection_name: str = None) -> List[Dict[str, Any]]:
         """
         Find vectors similar to the query vector
         
         Args:
-            query_vector (List[float]): Query vector
-            filters (Dict[str, Any], optional): Filters to apply
-            limit (int): Maximum number of results
-            score_threshold (float): Minimum similarity score threshold
+            query_vector: The query vector to find similar vectors for
+            filters: Filters to apply to the search
+            limit: Maximum number of results to return
+            score_threshold: Minimum similarity score
+            collection_name: Name of the collection to search
             
         Returns:
-            List[Dict[str, Any]]: List of similar vectors with metadata
+            List of similar vectors with metadata
         """
-        if self.client is None:
-            logger.error("Qdrant client not initialized")
-            return []
-            
         try:
-            # Build Qdrant filter from the provided filters
-            qdrant_filter = None
-            if filters:
-                filter_conditions = []
-                
-                for key, value in filters.items():
-                    if key == 'session_id' and value:
-                        filter_conditions.append(
-                            models.FieldCondition(
-                                key="session_id",
-                                match=models.MatchValue(value=value)
-                            )
-                        )
-                    elif key == 'memory_type' and value:
-                        # Handle multiple memory types
-                        if isinstance(value, list):
-                            # If a list of memory types is provided, match any of them
-                            should_conditions = [
-                                models.FieldCondition(
-                                    key="memory_type",
-                                    match=models.MatchValue(value=memory_type)
-                                )
-                                for memory_type in value
-                            ]
-                            filter_conditions.append(
-                                models.Filter(should=should_conditions, should_match=1)
-                            )
-                        else:
-                            # Single memory type
-                            filter_conditions.append(
-                                models.FieldCondition(
-                                    key="memory_type",
-                                    match=models.MatchValue(value=value)
-                                )
-                            )
-                    elif key == 'character_id' and value:
-                        filter_conditions.append(
-                            models.FieldCondition(
-                                key="character_id",
-                                match=models.MatchValue(value=value)
-                            )
-                        )
-                    elif key == 'is_summarized' and value is not None:
-                        filter_conditions.append(
-                            models.FieldCondition(
-                                key="is_summarized",
-                                match=models.MatchValue(value=value)
-                            )
-                        )
-                    elif key == 'entity_references' and value:
-                        # Search in entity references array - more complex
-                        # This is a basic implementation - may need refinement
-                        filter_conditions.append(
-                            models.FieldCondition(
-                                key="entity_references.entity_name",
-                                match=models.MatchValue(value=value)
-                            )
-                        )
-                    elif key == 'importance_min' and value is not None:
-                        filter_conditions.append(
-                            models.FieldCondition(
-                                key="importance",
-                                range=models.Range(
-                                    gte=value
-                                )
-                            )
-                        )
-                
-                if filter_conditions:
-                    qdrant_filter = models.Filter(
-                        must=filter_conditions
-                    )
+            collection_name = collection_name or self.collection_name
             
-            # Search for similar vectors
+            # Build filter conditions
+            filter_conditions = []
+            
+            if filters:
+                for key, value in filters.items():
+                    if key == 'memory_type' and isinstance(value, list):
+                        # Handle list of memory types with MatchAny
+                        filter_conditions.append(
+                            FieldCondition(
+                                key="memory_type",
+                                match=MatchAny(any=value)
+                            )
+                        )
+                    elif isinstance(value, list):
+                        # Handle other list values
+                        filter_conditions.append(
+                            FieldCondition(
+                                key=key,
+                                match=MatchAny(any=value)
+                            )
+                        )
+                    else:
+                        # Handle single values
+                        filter_conditions.append(
+                            FieldCondition(
+                                key=key,
+                                match=MatchValue(value=value)
+                            )
+                        )
+            
+            # Create filter object
+            search_filter = Filter(must=filter_conditions) if filter_conditions else None
+            
+            # Perform search
             search_result = self.client.search(
-                collection_name=self.collection_name,
+                collection_name=collection_name,
                 query_vector=query_vector,
-                query_filter=qdrant_filter,
+                query_filter=search_filter,
                 limit=limit,
                 score_threshold=score_threshold
             )
             
-            # Process the search results
+            # Process results
             results = []
-            for scored_point in search_result:
-                # Combine payload with score and point ID
-                result = scored_point.payload.copy()
-                result['similarity'] = scored_point.score
-                result['memory_id'] = scored_point.id
+            for hit in search_result:
+                result = {
+                    'id': hit.id,
+                    'score': hit.score,
+                    'content': hit.payload.get('content', ''),
+                    'memory_type': hit.payload.get('memory_type', ''),
+                    'memory_id': hit.payload.get('memory_id', hit.id),
+                    'importance': hit.payload.get('importance', 0),
+                    'created_at': hit.payload.get('created_at', ''),
+                    'session_id': hit.payload.get('session_id', ''),
+                    'metadata': hit.payload.get('metadata', {})
+                }
                 
-                # Add the embedding vector for reconstruction
-                result['embedding'] = scored_point.vector
-                
-                # Convert ISO datetime strings back to appropriate format if needed
-                if 'created_at' in result and isinstance(result['created_at'], str):
-                    try:
-                        result['created_at'] = datetime.fromisoformat(result['created_at'])
-                    except ValueError:
-                        pass
-                        
-                if 'last_accessed' in result and isinstance(result['last_accessed'], str):
-                    try:
-                        result['last_accessed'] = datetime.fromisoformat(result['last_accessed'])
-                    except ValueError:
-                        pass
+                # Add all payload fields to result
+                for key, value in hit.payload.items():
+                    if key not in result:
+                        result[key] = value
                 
                 results.append(result)
             
-            logger.info(f"Found {len(results)} similar vectors")
             return results
             
         except Exception as e:
             logger.error(f"Error finding similar vectors: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return []
+    
+    def find_similar_documents(self, query_vector: List[float], filters: Dict[str, Any] = None,
+                            limit: int = 10, score_threshold: float = 0.7,
+                            collection_name: str = None) -> List[Document]:
+        """
+        Find vectors similar to the query vector and return as LangChain Documents
+        
+        Args:
+            query_vector: The query vector to find similar vectors for
+            filters: Filters to apply to the search
+            limit: Maximum number of results to return
+            score_threshold: Minimum similarity score
+            collection_name: Name of the collection to search
+            
+        Returns:
+            List of LangChain Document objects
+        """
+        # Get similar vectors
+        results = self.find_similar_vectors(
+            query_vector=query_vector,
+            filters=filters,
+            limit=limit,
+            score_threshold=score_threshold,
+            collection_name=collection_name
+        )
+        
+        # Convert to LangChain Documents
+        documents = []
+        for result in results:
+            # Extract content for page_content
+            content = result.get('content', '')
+            
+            # Prepare metadata
+            metadata = {
+                'memory_id': result.get('memory_id', result.get('id', '')),
+                'memory_type': result.get('memory_type', ''),
+                'importance': result.get('importance', 0),
+                'created_at': result.get('created_at', ''),
+                'session_id': result.get('session_id', ''),
+                'score': result.get('score', 0.0)
+            }
+            
+            # Add additional metadata from the result
+            if 'metadata' in result:
+                metadata.update(result['metadata'])
+            
+            # Add other fields from result that aren't already in metadata
+            for key, value in result.items():
+                if key not in ['content', 'id', 'score'] and key not in metadata:
+                    metadata[key] = value
+            
+            # Create Document object
+            document = Document(
+                page_content=content,
+                metadata=metadata
+            )
+            documents.append(document)
+        
+        return documents
     
     def delete_vector(self, memory_id: str) -> bool:
         """

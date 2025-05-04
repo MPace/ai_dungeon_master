@@ -8,6 +8,7 @@ and checks for narrative triggers based on the new state.
 import logging
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
+import re
 
 from app.langgraph_core.state import AIGameState
 from app.langgraph_core.tools.narrative_tools import (
@@ -168,10 +169,26 @@ class NarrativeNode:
                 try:
                     campaign_module = CampaignModule.load(campaign_module_id)
                     if campaign_module and hasattr(campaign_module, 'spells'):
-                        spell_data = campaign_module.spells.get(spell_name)
+                        spell_data = None
+                        # Search for spell in the module
+                        for spell in campaign_module.spells:
+                            if isinstance(spell, dict) and spell.get("name", "").lower() == spell_name:
+                                spell_data = spell
+                                break
+                        
                         if spell_data:
                             # Check if the spell has damage or harmful effects
-                            return spell_data.get("damage", False) or spell_data.get("harmful", False)
+                            if spell_data.get("damage"):
+                                return True
+                            
+                            # Check for harmful effects
+                            school = spell_data.get("school", "").lower()
+                            if school in ["evocation", "necromancy", "enchantment"]:
+                                # Check description for harmful keywords
+                                description = spell_data.get("description", "").lower()
+                                harmful_keywords = ["damage", "harm", "kill", "destroy", "wound", "control", "curse"]
+                                if any(keyword in description for keyword in harmful_keywords):
+                                    return True
                 except Exception as e:
                     logger.warning(f"Could not load campaign module for spell data: {e}")
             
@@ -267,6 +284,33 @@ class NarrativeNode:
                 item_taken_flag = f"item_taken_{item_name.lower().replace(' ', '_')}"
                 if item_taken_flag not in narrative_state["global_flags"]:
                     narrative_state["global_flags"].append(item_taken_flag)
+            
+            elif action_type == "drop":
+                # Mark that item was dropped at current location
+                location_id = state.get("current_location_id")
+                if location_id:
+                    if "location_states" not in narrative_state:
+                        narrative_state["location_states"] = {}
+                    
+                    if location_id not in narrative_state["location_states"]:
+                        narrative_state["location_states"][location_id] = {}
+                    
+                    # Add item to location's dropped items
+                    location_state = narrative_state["location_states"][location_id]
+                    if "dropped_items" not in location_state:
+                        location_state["dropped_items"] = []
+                    
+                    if item_name not in location_state["dropped_items"]:
+                        location_state["dropped_items"].append(item_name)
+            
+            elif action_type == "equip" or action_type == "unequip":
+                # Set equipment change flag
+                if "global_flags" not in narrative_state:
+                    narrative_state["global_flags"] = []
+                
+                equip_flag = f"equipment_changed_{item_name.lower().replace(' ', '_')}"
+                if equip_flag not in narrative_state["global_flags"]:
+                    narrative_state["global_flags"].append(equip_flag)
         
         elif intent == "explore":
             # Record exploration in the narrative state
@@ -284,6 +328,37 @@ class NarrativeNode:
                 # Mark exploration type
                 exploration_key = f"explored_{sensory_type}"
                 narrative_state["location_states"][location_id][exploration_key] = True
+                
+                # Set timestamp
+                exploration_time_key = f"last_explored_{sensory_type}"
+                narrative_state["location_states"][location_id][exploration_time_key] = datetime.utcnow().isoformat()
+        
+        elif intent == "use_feature":
+            # Track feature use
+            feature_name = slots.get("feature_name", "")
+            if "global_flags" not in narrative_state:
+                narrative_state["global_flags"] = []
+            
+            feature_used_flag = f"feature_used_{feature_name.lower().replace(' ', '_')}"
+            narrative_state["global_flags"].append(feature_used_flag)
+            
+            # Track feature uses count
+            if "feature_use_counts" not in narrative_state:
+                narrative_state["feature_use_counts"] = {}
+            
+            if feature_name not in narrative_state["feature_use_counts"]:
+                narrative_state["feature_use_counts"][feature_name] = 0
+            
+            narrative_state["feature_use_counts"][feature_name] += 1
+        
+        elif intent == "use_item":
+            # Track item use
+            item_name = slots.get("item_name", "")
+            if "global_flags" not in narrative_state:
+                narrative_state["global_flags"] = []
+            
+            item_used_flag = f"item_used_{item_name.lower().replace(' ', '_')}"
+            narrative_state["global_flags"].append(item_used_flag)
         
         # Handle combat outcomes
         elif intent == "weapon_attack" and state.get("game_state") == "combat":
@@ -294,6 +369,39 @@ class NarrativeNode:
             combat_flag = "player_initiated_combat"
             if combat_flag not in narrative_state["global_flags"]:
                 narrative_state["global_flags"].append(combat_flag)
+        
+        elif intent == "cast_spell":
+            # Track spell casting
+            spell_name = slots.get("spell_name", "")
+            if "global_flags" not in narrative_state:
+                narrative_state["global_flags"] = []
+            
+            spell_cast_flag = f"spell_cast_{spell_name.lower().replace(' ', '_')}"
+            narrative_state["global_flags"].append(spell_cast_flag)
+            
+            # Track spell use count
+            if "spell_cast_counts" not in narrative_state:
+                narrative_state["spell_cast_counts"] = {}
+            
+            if spell_name not in narrative_state["spell_cast_counts"]:
+                narrative_state["spell_cast_counts"][spell_name] = 0
+            
+            narrative_state["spell_cast_counts"][spell_name] += 1
+        
+        elif intent == "action":
+            # Track general actions
+            action = slots.get("action", "")
+            skill = slots.get("skill", "")
+            
+            if "global_flags" not in narrative_state:
+                narrative_state["global_flags"] = []
+            
+            action_flag = f"action_performed_{action.lower().replace(' ', '_')}"
+            narrative_state["global_flags"].append(action_flag)
+            
+            if skill:
+                skill_flag = f"skill_used_{skill.lower().replace(' ', '_')}"
+                narrative_state["global_flags"].append(skill_flag)
         
         # Update the state with modified narrative state
         state["tracked_narrative_state"] = narrative_state
@@ -332,7 +440,7 @@ class NarrativeNode:
             slots: Intent slots
         """
         # Get current location for travel calculations
-        location_id = state.get("current_location_id")
+        current_location_id = state.get("current_location_id")
         
         # Calculate time advancement based on intent
         if intent == "rest":
@@ -355,12 +463,10 @@ class NarrativeNode:
                 )
             
         elif self._involves_movement(intent, slots):
-            # Calculate travel time based on distance and mode
-            # Note: In a real implementation, you would need to determine
-            # the destination and distance from the intent/slots
-            distance = 1.0  # Default to a short distance (e.g., 1 mile)
-            travel_mode = "walk"  # Default to walking
+            # Extract travel details from state
+            destination, distance, travel_mode = self._extract_travel_details(state, intent, slots)
             
+            # Calculate travel time based on extracted details
             travel_duration = self.travel_time_calculator.calculate_travel_time(
                 state=state,
                 distance=distance,
@@ -375,6 +481,10 @@ class NarrativeNode:
                 distance=distance
             )
             
+            # Update current location if a destination was determined
+            if destination:
+                state["current_location_id"] = destination
+            
         elif intent == "explore":
             # Exploration typically takes some time
             # Usually around 10-30 minutes
@@ -386,6 +496,88 @@ class NarrativeNode:
                 duration=explore_duration,
                 action_type="explore"
             )
+    
+    def _extract_travel_details(self, state: AIGameState, intent: str, 
+                              slots: Dict[str, Any]) -> Tuple[Optional[str], float, str]:
+        """
+        Extract travel destination, distance, and mode from state
+        
+        Args:
+            state: Current game state
+            intent: Player's intent
+            slots: Intent slots
+            
+        Returns:
+            Tuple of (destination, distance, travel_mode)
+        """
+        # Default values
+        destination = None
+        distance = 1.0  # Default to 1 mile
+        travel_mode = "walk"  # Default to walking
+        
+        # Try to extract from slots
+        if "destination" in slots:
+            destination = slots["destination"]
+        if "distance" in slots:
+            try:
+                distance = float(slots["distance"])
+            except ValueError:
+                pass
+        if "travel_mode" in slots:
+            travel_mode = slots["travel_mode"]
+        
+        # If no destination in slots, try to parse from player input
+        if not destination:
+            player_input = state.get("player_input", "").lower()
+            campaign_module_id = state.get("campaign_module_id")
+            current_location_id = state.get("current_location_id")
+            
+            if campaign_module_id and current_location_id:
+                campaign_module = CampaignModule.load(campaign_module_id)
+                
+                if campaign_module and current_location_id in campaign_module.locations:
+                    current_location = campaign_module.locations[current_location_id]
+                    connections = current_location.get("connections", [])
+                    
+                    # Check if any connected location is mentioned in player input
+                    for connected_location_id in connections:
+                        if connected_location_id in campaign_module.locations:
+                            connected_location = campaign_module.locations[connected_location_id]
+                            location_name = connected_location.get("name", "").lower()
+                            
+                            if location_name and location_name in player_input:
+                                destination = connected_location_id
+                                
+                                # Try to extract distance from location data
+                                if isinstance(connections, dict) and connected_location_id in connections:
+                                    connection_data = connections[connected_location_id]
+                                    if isinstance(connection_data, dict) and "distance" in connection_data:
+                                        distance = connection_data["distance"]
+                                
+                                break
+        
+        # Extract travel mode from player input if not in slots
+        if travel_mode == "walk":
+            player_input = state.get("player_input", "").lower()
+            travel_mode_keywords = {
+                "run": "run",
+                "ride": "horse",
+                "horseback": "horse",
+                "cart": "wagon",
+                "wagon": "wagon",
+                "boat": "boat",
+                "ship": "ship",
+                "sail": "ship",
+                "swim": "swim",
+                "fly": "flying"
+            }
+            
+            for keyword, mode in travel_mode_keywords.items():
+                if keyword in player_input:
+                    travel_mode = mode
+                    break
+        
+        return destination, distance, travel_mode
     
     def _evaluate_narrative_triggers(self, state: AIGameState) -> None:
         """
@@ -399,49 +591,98 @@ class NarrativeNode:
         
         # Process each triggered event
         for event in triggered_events:
-            outcome = event.get("outcome", {})
-            action_type = outcome.get("action_type", "")
-            parameters = outcome.get("parameters", {})
+            outcomes = event.get("outcomes", [])
+            event_id = event.get("id", "unknown_event")
             
-            # Apply the outcome based on action type
-            if action_type == "update_quest":
-                quest_id = parameters.get("quest_id", "")
-                stage_id = parameters.get("stage_id", "")
+            for outcome in outcomes:
+                action_type = outcome.get("action_type", "")
+                parameters = outcome.get("parameters", {})
                 
-                if quest_id and stage_id:
-                    self.quest_updater.update_quest_status(
-                        state=state,
-                        quest_id=quest_id,
-                        stage_id=stage_id
-                    )
+                # Apply the outcome based on action type
+                if action_type == "update_quest":
+                    quest_id = parameters.get("quest_id", "")
+                    stage_id = parameters.get("stage_id", "")
                     
-            elif action_type == "set_global_flag":
-                flag_name = parameters.get("flag_name", "")
-                flag_value = parameters.get("value", True)
+                    if quest_id and stage_id:
+                        self.quest_updater.update_quest_status(
+                            state=state,
+                            quest_id=quest_id,
+                            stage_id=stage_id
+                        )
+                        
+                elif action_type == "set_global_flag":
+                    flag_name = parameters.get("flag_name", "")
+                    flag_value = parameters.get("value", True)
+                    
+                    if flag_name:
+                        self.global_flag_setter.set_global_flag(
+                            state=state,
+                            flag_name=flag_name,
+                            value=flag_value
+                        )
+                        
+                elif action_type == "set_area_flag":
+                    location_id = parameters.get("location_id", "")
+                    flag_name = parameters.get("flag_name", "")
+                    flag_value = parameters.get("value", True)
+                    
+                    if location_id and flag_name:
+                        self.area_flag_setter.set_area_flag(
+                            state=state,
+                            location_id_or_region=location_id,
+                            flag_name=flag_name,
+                            value=flag_value
+                        )
                 
-                if flag_name:
-                    self.global_flag_setter.set_global_flag(
-                        state=state,
-                        flag_name=flag_name,
-                        value=flag_value
-                    )
+                elif action_type == "modify_npc_disposition":
+                    npc_id = parameters.get("npc_id", "")
+                    disposition = parameters.get("disposition", "")
                     
-            elif action_type == "set_area_flag":
-                location_id = parameters.get("location_id", "")
-                flag_name = parameters.get("flag_name", "")
-                flag_value = parameters.get("value", True)
+                    if npc_id and disposition:
+                        narrative_state = state.get("tracked_narrative_state", {})
+                        if "npc_dispositions" not in narrative_state:
+                            narrative_state["npc_dispositions"] = {}
+                        
+                        narrative_state["npc_dispositions"][npc_id] = disposition
+                        state["tracked_narrative_state"] = narrative_state
                 
-                if location_id and flag_name:
-                    self.area_flag_setter.set_area_flag(
-                        state=state,
-                        location_id_or_region=location_id,
-                        flag_name=flag_name,
-                        value=flag_value
-                    )
+                elif action_type == "add_inventory_item":
+                    item_id = parameters.get("item_id", "")
+                    quantity = parameters.get("quantity", 1)
                     
+                    if item_id:
+                        # This should be handled by the mechanics node, but we can set a flag
+                        narrative_state = state.get("tracked_narrative_state", {})
+                        if "global_flags" not in narrative_state:
+                            narrative_state["global_flags"] = []
+                        
+                        item_flag = f"item_granted_{item_id}"
+                        narrative_state["global_flags"].append(item_flag)
+                        state["tracked_narrative_state"] = narrative_state
+                
+                elif action_type == "spawn_npc":
+                    npc_id = parameters.get("npc_id", "")
+                    location_id = parameters.get("location_id", "")
+                    
+                    if npc_id and location_id:
+                        narrative_state = state.get("tracked_narrative_state", {})
+                        if "location_states" not in narrative_state:
+                            narrative_state["location_states"] = {}
+                        
+                        if location_id not in narrative_state["location_states"]:
+                            narrative_state["location_states"][location_id] = {}
+                        
+                        location_state = narrative_state["location_states"][location_id]
+                        if "npcs_present" not in location_state:
+                            location_state["npcs_present"] = []
+                        
+                        if npc_id not in location_state["npcs_present"]:
+                            location_state["npcs_present"].append(npc_id)
+                        
+                        state["tracked_narrative_state"] = narrative_state
+            
             # Record first-time events
-            if outcome.get("first_time", False):
-                event_id = event.get("event_id", "unknown_event")
+            if event.get("first_time", False):
                 self.global_flag_setter.set_global_flag(
                     state=state,
                     flag_name=f"event_fired_{event_id}",
