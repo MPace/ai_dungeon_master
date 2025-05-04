@@ -39,39 +39,6 @@ def dashboard():
 
     return redirect(url_for('dashboard.index'))
 
-#    characters = []
-#    drafts = []
-
-#    try:
-        # Get characters 
-#        character_result = CharacterService.list_characters(user_id)
-#        if character_result['success']:
-#            characters = character_result['characters']
-#        else:
-#            error_msg = character_result.get('error', 'Unknown error')
-#            logger.error(f"Error loading characters: {error_msg}")
-#            flash(f"Error loading characters: {error_msg}", 'error')
-
-         # Get drafts
-#        drafts_result = CharacterService.list_character_drafts(user_id)
-#        if drafts_result['success']:
-#            drafts = drafts_result['drafts']
-#            logger.info(f"Successfully loaded {len(drafts)} drafts")
-#        else:
-#            error_msg = drafts_result.get('error', 'Unknown error')
-#            logger.error(f"Error loading drafts: {error_msg}")
-#            flash(f'Error loading drafts: {error_msg}', 'error')
-    
-#    except Exception as e:
-#        import traceback
-#        traceback.print_exc()
-#        flash('Error loading dashboard: ' + str(e), 'error')
-    
-#    return render_template('user.html',
-#                              username=session.get('username', 'User'),
-#                              characters=characters,
-#                              drafts=drafts)
-
 @game_bp.route('/play/<character_id>')
 @login_required
 def play_game(character_id):
@@ -150,6 +117,32 @@ def send_message():
                 'success': False,
                 'error': 'User not authenticated'
             }), 401
+            
+        if not session_id:
+            # If no session_id, create a new session
+            logger.info("No session ID provided, creating new session")
+            
+            if not character_data or not character_data.get('character_id'):
+                return jsonify({
+                    'success': False,
+                    'error': 'No character data provided for new session'
+                }), 400
+            
+            # Create a new game session
+            session_result = GameService.create_session(
+                character_id=character_data['character_id'],
+                user_id=user_id
+            )
+            
+            if not session_result.get('success', False):
+                return jsonify({
+                    'success': False,
+                    'error': f"Failed to create session: {session_result.get('error', 'Unknown error')}"
+                }), 500
+                
+            session_id = session_result.get('session_id')
+            
+            logger.info(f"Created new session: {session_id}")
 
         # Submit task to Celery
         from app.tasks import process_dm_message
@@ -159,6 +152,7 @@ def send_message():
         return jsonify({
             'success': True,
             'task_id': task.id,
+            'session_id': session_id,
             'status': 'processing',
             'message': 'Your message is being processed by the DM. Please wait for the response.'
         })

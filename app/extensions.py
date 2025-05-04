@@ -242,6 +242,11 @@ def init_collections(db):
     if 'sessions' not in db.list_collection_names():
         db.create_collection('sessions')
         logger.info("Created 'sessions' collection")
+        
+        # Add indexes for sessions collection
+        db.sessions.create_index("session_id", unique=True)
+        db.sessions.create_index([("user_id", 1), ("character_id", 1)])
+        logger.info("Added indexes to 'sessions' collection")
 
     # Add memory vectors collection
     if 'memory_vectors' not in db.list_collection_names():
@@ -280,6 +285,37 @@ def init_collections(db):
             partialFilterExpression={"memory_type": "short_term"}
         )
         logger.info("Created TTL index for 'short_term' memories")
+    
+    # Add AI responses collection
+    if 'ai_responses' not in db.list_collection_names():
+        db.create_collection('ai_responses')
+        logger.info("Created 'ai_responses' collection")
+        
+        # Add indexes for AI responses
+        db.ai_responses.create_index("response_id", unique=True)
+        db.ai_responses.create_index([("session_id", 1), ("created_at", -1)])
+        db.ai_responses.create_index([("user_id", 1), ("created_at", -1)])
+        logger.info("Added indexes to 'ai_responses' collection")
+    
+    # Add dice rolls collection
+    if 'dice_rolls' not in db.list_collection_names():
+        db.create_collection('dice_rolls')
+        logger.info("Created 'dice_rolls' collection")
+        
+        # Add indexes for dice rolls
+        db.dice_rolls.create_index([("session_id", 1), ("timestamp", -1)])
+        db.dice_rolls.create_index([("user_id", 1), ("timestamp", -1)])
+        logger.info("Added indexes to 'dice_rolls' collection")
+    
+    # Add LangGraph checkpoints collection
+    if 'langgraph_checkpoints' not in db.list_collection_names():
+        db.create_collection('langgraph_checkpoints')
+        logger.info("Created 'langgraph_checkpoints' collection")
+        
+        # Add indexes for LangGraph checkpoints
+        db.langgraph_checkpoints.create_index("thread_id", unique=True)
+        db.langgraph_checkpoints.create_index("created_at")
+        logger.info("Added indexes to 'langgraph_checkpoints' collection")
     
     logger.info("Database collections initialized.")
 
@@ -451,6 +487,7 @@ def delete_character(character_id, user_id=None):
 def init_extensions(app):
     """Initialize extensions"""
     global db, mongo_db, embedding_service, qdrant_service
+    
     # Initialize database
     with app.app_context():
         init_db()
@@ -466,6 +503,7 @@ def init_extensions(app):
         logger.warning("Application will run without embedding capabilities")
         embedding_service = None
 
+    # Initialize Qdrant service
     try:
         from app.services.qdrant_service import QdrantService
         
@@ -490,8 +528,6 @@ def init_extensions(app):
         logger.error(f"Error initializing Qdrant service: {e}")
         logger.warning("Application will run without vector database capabilities")
         qdrant_service = None
-
     
     # Register close_db to be called when a request ends
     app.teardown_appcontext(close_db)
-    

@@ -27,6 +27,15 @@ def create_app(config_name='default'):
         except Exception as e:
             logger.error(f"Error initializing MCP: {e}")
 
+        # Initialize LangGraph system
+        try:
+            from app.langgraph_core import get_orchestration_service
+            orchestration_service = get_orchestration_service()
+            logger.info("LangGraph orchestration service initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing LangGraph: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
 
     # Initialize CSRF protection
     csrf = CSRFProtect()
